@@ -5,13 +5,13 @@
 ![SQLite](https://img.shields.io/badge/sqlite-3-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)
-![Last Commit](https://img.shields.io/github/last-commit/NikoKiru/racing-championship-analysis)
+![Last Commit](https://img.shields.io/github/last-commit/NikoKiru/F1_Season_Calculator)
 
 A Python tool that analyzes racing championship scenarios by calculating standings across different combinations of races. The tool processes race data from a CSV file and stores the results in a SQLite database.
 
-![Build Status](https://img.shields.io/github/workflow/status/NikoKiru/racing-championship-analysis/CI)
-![GitHub issues](https://img.shields.io/github/issues/NikoKiru/racing-championship-analysis)
-![GitHub stars](https://img.shields.io/github/stars/NikoKiru/racing-championship-analysis)
+![Build Status](https://img.shields.io/github/workflow/status/NikoKiru/F1_Season_Calculator/CI)
+![GitHub issues](https://img.shields.io/github/issues/NikoKiru/F1_Season_Calculator)
+![GitHub stars](https://img.shields.io/github/stars/NikoKiru/F1_Season_Calculator)
 
 ## Features
 
@@ -32,8 +32,8 @@ A Python tool that analyzes racing championship scenarios by calculating standin
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/NikoKiru/racing-championship-analysis.git
-cd racing-championship-analysis
+git clone https://github.com/NikoKiru/F1_Season_Calculator.git
+cd F1_Season_Calculator
 ```
 
 2. Install required packages:
