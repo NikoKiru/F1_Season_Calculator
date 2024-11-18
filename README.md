@@ -89,10 +89,10 @@ CREATE TABLE championship_results (
 
 Example `championships.csv`:
 ```csv
-Driver,1,1,1
-Verstappen,25,18,25
-Norris,18,25,18
-Leclerc,15,15,15
+Driver,1,2,3
+VER,25,18,25
+NOR,18,25,18
+LEC,15,15,15
 ```
 
 ## Contributing
