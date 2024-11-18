@@ -95,6 +95,133 @@ NOR,18,25,18
 LEC,15,15,15
 ```
 
+# Championship Results API
+
+A Flask-based REST API that provides access to racing championship data stored in SQLite. This API allows you to query championship results, driver statistics, and historical racing data.
+
+## Prerequisites
+
+- Python 3.x
+- Flask
+- SQLite3
+
+## Installation
+
+1. Clone the repository
+2. Install the required dependencies:
+```bash
+pip install flask
+```
+
+3. Ensure you have a SQLite database named `championships.db` with a table `championship_results` containing the following columns:
+   - championship_id
+   - standings (comma-separated list of driver abbreviations)
+   - num_races
+   - (any additional columns will be included in the API responses)
+
+## API Endpoints
+
+### Get All Championship Data
+```
+GET /api/data
+```
+Returns all championship data from the database.
+
+### Get Specific Championship
+```
+GET /api/championship/<id>
+```
+Returns data for a specific championship by ID.
+
+**Parameters:**
+- `id` (integer): The championship ID
+
+### Get Driver's Championship Wins
+```
+GET /api/driver_wins/<abbreviation>
+```
+Returns the number of championships won by a specific driver.
+
+**Parameters:**
+- `abbreviation` (string): Driver's abbreviation code
+
+### Get All Championship Wins
+```
+GET /api/all_championship_wins
+```
+Returns a summary of championship wins for all drivers.
+
+### Get Highest Rounds Won
+```
+GET /api/highest_rounds_won
+```
+Returns the highest number of rounds won by each driver in a single championship.
+
+## Response Formats
+
+All endpoints return data in JSON format. Here are example responses:
+
+### Single Championship Response
+```json
+{
+    "championship_id": 1,
+    "standings": "HAM,VER,BOT",
+    "num_races": 22
+}
+```
+
+### Driver Wins Response
+```json
+{
+    "driver": "HAM",
+    "championships_won": 7
+}
+```
+
+## Error Handling
+
+The API includes basic error handling:
+- Returns 404 if a requested championship is not found
+- Standard Flask error handling for invalid routes and methods
+
+## Running the Application
+
+To start the server:
+```bash
+python app.py
+```
+
+The API will be available at `http://localhost:5000`
+
+## Development
+
+The application runs in debug mode by default when started directly. For production deployment, make sure to disable debug mode and configure appropriate security measures.
+
+## Database Schema
+
+The application expects a SQLite database with the following structure:
+
+```sql
+CREATE TABLE championship_results (
+    championship_id INTEGER PRIMARY KEY,
+    standings TEXT,
+    num_races INTEGER
+    -- Additional columns as needed
+);
+```
+
+## Notes
+
+- The standings column stores driver abbreviations as comma-separated values
+- The first driver in the standings is considered the championship winner
+- All driver abbreviations are stored and compared in uppercase
+
+## Security Considerations
+
+- The application currently uses string formatting for table names. In a production environment, consider using parameterized queries for all database operations
+- Implement appropriate authentication and rate limiting for production use
+- Consider adding input validation for driver abbreviations and other parameters
+
 ## Contributing
 
 Feel free to submit issues and enhancement requests!
