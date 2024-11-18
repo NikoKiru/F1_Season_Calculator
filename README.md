@@ -1,6 +1,17 @@
 # Racing Championship Analysis Tool
 
+![Python](https://img.shields.io/badge/python-3.6+-blue.svg)
+![Pandas](https://img.shields.io/badge/pandas-latest-blue.svg)
+![SQLite](https://img.shields.io/badge/sqlite-3-green.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)
+![Last Commit](https://img.shields.io/github/last-commit/NikoKiru/racing-championship-analysis)
+
 A Python tool that analyzes racing championship scenarios by calculating standings across different combinations of races. The tool processes race data from a CSV file and stores the results in a SQLite database.
+
+![Build Status](https://img.shields.io/github/workflow/status/NikoKiru/racing-championship-analysis/CI)
+![GitHub issues](https://img.shields.io/github/issues/NikoKiru/racing-championship-analysis)
+![GitHub stars](https://img.shields.io/github/stars/NikoKiru/racing-championship-analysis)
 
 ## Features
 
@@ -21,7 +32,7 @@ A Python tool that analyzes racing championship scenarios by calculating standin
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/racing-championship-analysis.git
+git clone https://github.com/NikoKiru/racing-championship-analysis.git
 cd racing-championship-analysis
 ```
 
@@ -34,11 +45,11 @@ pip install pandas
 
 1. Prepare your input CSV file with the following format:
    - First column: Driver names
-   - Subsequent columns: Race scores
+   - Subsequent columns: Race Points
 
 2. Run the script:
 ```bash
-python main.py
+python f1.py
 ```
 
 3. Configure the following variables in the script if needed:
@@ -78,10 +89,10 @@ CREATE TABLE championship_results (
 
 Example `championships.csv`:
 ```csv
-Driver,Race1,Race2,Race3
-Hamilton,25,18,25
-Verstappen,18,25,18
-Bottas,15,15,15
+Driver,1,1,1
+Verstappen,25,18,25
+Norris,18,25,18
+Leclerc,15,15,15
 ```
 
 ## Contributing
@@ -90,14 +101,14 @@ Feel free to submit issues and enhancement requests!
 
 ## License
 
-[Add your chosen license here]
+MIT License
 
 ## Author
 
-[Your Name]
+NikoKiru
 
 ## Acknowledgments
 
 - Thanks to anyone whose code was used
 - Any inspirations
-- etc
+- ChainBear
