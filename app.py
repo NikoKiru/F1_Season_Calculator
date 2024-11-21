@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import sqlite3
 
 app = Flask(__name__)
@@ -121,6 +121,47 @@ def highest_rounds_won():
             highest_rounds[winner] = number_of_rounds
 
     return jsonify(highest_rounds)
+
+@app.route('/api/largest_championship_wins', methods=['GET'])
+def largest_championship_wins():
+    # Get query parameters
+    driver = request.args.get('driver')  # Driver abbreviation
+    num_races = request.args.get('num_races', type=int)  # Number of races
+
+    if not driver or not num_races:
+        return jsonify({"error": "Please provide both 'driver' and 'num_races' as query parameters"}), 400
+
+    conn = sqlite3.connect('championships.db')
+    cursor = conn.cursor()
+
+    # Replace `table_name`, `standings_column`, and `number_of_rounds_column` with actual names
+    table_name = 'championship_results'
+    standings_column = 'standings'
+    number_of_rounds_column = 'num_races'
+    championship_id_column = 'championship_id'
+
+    # Query to find championships where the driver won and the number of races matches
+    query = f"""
+        SELECT {championship_id_column}, {standings_column}, {number_of_rounds_column}
+        FROM {table_name}
+        WHERE {number_of_rounds_column} = ?
+    """
+    cursor.execute(query, (num_races,))
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    # Filter championships where the driver is first in the standings
+    matching_championships = []
+    for row in rows:
+        championship_id, standings, number_of_rounds = row
+        winner = standings.split(',')[0]  # Get the first place in standings
+        if winner == driver:
+            matching_championships.append(championship_id)
+
+    # Return the matching championship IDs
+    return jsonify({driver: matching_championships})
+
 
 # Run the Flask app
 if __name__ == '__main__':
