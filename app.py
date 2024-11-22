@@ -162,6 +162,39 @@ def largest_championship_wins():
     # Return the matching championship IDs
     return jsonify({driver: matching_championships})
 
+@app.route('/api/highest_position', methods=['GET'])
+def highest_position():
+    conn = sqlite3.connect('championships.db')
+    cursor = conn.cursor()
+
+    # Replace `table_name` and `standings_column` with actual names
+    table_name = 'championship_results'
+    standings_column = 'standings'
+
+    # Query to fetch all standings
+    query = f"SELECT {standings_column} FROM {table_name}"
+    cursor.execute(query)
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    # Dictionary to store the highest position for each driver
+    highest_positions = {}
+
+    # Process each championship standings
+    for row in rows:
+        standings = row[0]  # The standings string
+        drivers = [driver.strip() for driver in standings.split(",")]  # Split by comma and strip whitespace
+
+        # Update each driver's highest position
+        for position, driver in enumerate(drivers, start=1):
+            if driver not in highest_positions or position < highest_positions[driver]:
+                highest_positions[driver] = position
+
+    # Return the results as JSON
+    return jsonify(highest_positions)
+
+
 
 # Run the Flask app
 if __name__ == '__main__':
