@@ -276,6 +276,115 @@ def highest_position():
     return jsonify(highest_positions)
 
 
+@app.route('/api/head_to_head/<string:driver1>/<string:driver2>', methods=['GET'])
+def head_to_head(driver1, driver2):
+    """
+    Head-to-Head Driver Comparison
+    Compares two drivers to see who finished ahead more often across all championship scenarios.
+    ---
+    parameters:
+      - name: driver1
+        in: path
+        type: string
+        required: true
+        description: The abbreviation for the first driver.
+      - name: driver2
+        in: path
+        type: string
+        required: true
+        description: The abbreviation for the second driver.
+    responses:
+      200:
+        description: A JSON object showing the win count for each driver in the head-to-head comparison.
+    """
+    conn = sqlite3.connect('championships.db')
+    cursor = conn.cursor()
+
+    d1 = driver1.upper()
+    d2 = driver2.upper()
+
+    # This query is complex. It adds commas to the start and end of the standings string
+    # to safely find the position of a driver's abbreviation.
+    query = f"""
+        SELECT
+            SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',') < INSTR(',' || standings || ',', ',' || ? || ',') THEN 1 ELSE 0 END) as driver1_wins,
+            SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',') > INSTR(',' || standings || ',', ',' || ? || ',') THEN 1 ELSE 0 END) as driver2_wins
+        FROM championship_results
+        WHERE INSTR(standings, ?) > 0 AND INSTR(standings, ?) > 0;
+    """
+    cursor.execute(query, (d1, d2, d1, d2, d1, d2))
+    
+    result = cursor.fetchone()
+    conn.close()
+
+    return jsonify({
+        d1: result[0],
+        d2: result[1]
+    })
+
+@app.route('/api/min_races_to_win/<string:driver>', methods=['GET'])
+def min_races_to_win(driver):
+    """
+    Minimum Races Needed for a Driver to Win a Championship
+    Calculates the smallest number of races a driver needed to win a championship.
+    ---
+    parameters:
+      - name: driver
+        in: path
+        type: string
+        required: true
+        description: The driver's abbreviation.
+    responses:
+      200:
+        description: The minimum number of races for a championship win.
+    """
+    conn = sqlite3.connect('championships.db')
+    cursor = conn.cursor()
+
+    query = "SELECT MIN(num_races) FROM championship_results WHERE winner = ?"
+    cursor.execute(query, (driver.upper(),))
+    result = cursor.fetchone()
+    conn.close()
+
+    return jsonify({
+        "driver": driver.upper(),
+        "min_races_for_win": result[0] if result else None
+    })
+
+@app.route('/api/most_common_runner_up', methods=['GET'])
+def most_common_runner_up():
+    """
+    Most Common Championship Runner-Up
+    Counts how many times each driver finished in second place across all scenarios.
+    ---
+    responses:
+      200:
+        description: A JSON object with drivers and their count of second-place finishes.
+    """
+    conn = sqlite3.connect('championships.db')
+    cursor = conn.cursor()
+
+    # This query extracts the second driver from the comma-separated standings string.
+    query = """
+        SELECT
+            SUBSTR(
+                SUBSTR(standings, INSTR(standings, ',') + 1),
+                1,
+                INSTR(SUBSTR(standings, INSTR(standings, ',') + 1), ',') - 1
+            ) as runner_up,
+            COUNT(*) as second_place_finishes
+        FROM championship_results
+        GROUP BY runner_up
+        ORDER BY second_place_finishes DESC;
+    """
+    cursor.execute(query)
+    rows = cursor.fetchall()
+    conn.close()
+
+    runner_up_counts = {row[0]: row[1] for row in rows if row[0]}
+
+    return jsonify(runner_up_counts)
+
 
 # Run the Flask app
 if __name__ == '__main__':
