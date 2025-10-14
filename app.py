@@ -49,18 +49,20 @@ def count_driver_wins(abbreviation):
     conn = sqlite3.connect('championships.db')
     cursor = conn.cursor()
     
-    # Replace `table_name` and `standings_column` with your actual table and column names
     table_name = 'championship_results'
     standings_column = 'standings'
 
-    # Query to fetch all standings
-    cursor.execute(f"SELECT {standings_column} FROM {table_name}")
-    rows = cursor.fetchall()
+    # Query to count championships where the driver is the winner
+    query = f"""
+        SELECT COUNT(*)
+        FROM {table_name}
+        WHERE SUBSTR({standings_column}, 1, INSTR({standings_column} || ',', ',') - 1) = ?
+    """
+    
+    cursor.execute(query, (abbreviation.upper(),))
+    wins = cursor.fetchone()[0]
     
     conn.close()
-
-    # Count championships won by the driver
-    wins = sum(1 for row in rows if row[0].split(',')[0] == abbreviation.upper())
 
     return jsonify({
         "driver": abbreviation.upper(),
@@ -72,23 +74,25 @@ def all_championship_wins():
     conn = sqlite3.connect('championships.db')
     cursor = conn.cursor()
 
-    # Replace `table_name` and `standings_column` with your actual table and column names
     table_name = 'championship_results'
     standings_column = 'standings'
 
-    # Query to fetch all standings
-    cursor.execute(f"SELECT {standings_column} FROM {table_name}")
+    # Query to get the winner of each championship and count the wins
+    query = f"""
+        SELECT 
+            SUBSTR({standings_column}, 1, INSTR({standings_column} || ',', ',') - 1) as winner,
+            COUNT(*) as wins
+        FROM {table_name}
+        GROUP BY winner
+        ORDER BY wins DESC
+    """
+    
+    cursor.execute(query)
     rows = cursor.fetchall()
-
     conn.close()
 
-    # Create a dictionary to store the count of championships for each driver
-    championship_wins = {}
-
-    for row in rows:
-        # Get the first-place abbreviation from the standings
-        winner = row[0].split(',')[0]
-        championship_wins[winner] = championship_wins.get(winner, 0) + 1
+    # Format as a dictionary
+    championship_wins = {row[0]: row[1] for row in rows}
 
     return jsonify(championship_wins)
 
@@ -97,28 +101,25 @@ def highest_rounds_won():
     conn = sqlite3.connect('championships.db')
     cursor = conn.cursor()
 
-    # Replace `table_name` and column names with your actual table and column names
     table_name = 'championship_results'
     standings_column = 'standings'
     number_of_rounds_column = 'num_races'
 
-    # Query to fetch all championships and their corresponding data
-    cursor.execute(f"SELECT {standings_column}, {number_of_rounds_column} FROM {table_name}")
+    # Query to get the highest number of rounds for each driver's wins
+    query = f"""
+        SELECT 
+            SUBSTR({standings_column}, 1, INSTR({standings_column} || ',', ',') - 1) as winner,
+            MAX({number_of_rounds_column}) as max_rounds
+        FROM {table_name}
+        GROUP BY winner
+    """
+    
+    cursor.execute(query)
     rows = cursor.fetchall()
-
     conn.close()
 
-    # Dictionary to store the highest number of rounds won by each driver
-    highest_rounds = {}
-
-    for row in rows:
-        standings = row[0].split(',')
-        winner = standings[0]  # The first driver in the standings is the winner
-        number_of_rounds = row[1]  # Number of rounds in this championship
-
-        # Update the highest rounds for this driver if this championship's rounds are greater
-        if winner not in highest_rounds or number_of_rounds > highest_rounds[winner]:
-            highest_rounds[winner] = number_of_rounds
+    # Format as a dictionary
+    highest_rounds = {row[0]: row[1] for row in rows}
 
     return jsonify(highest_rounds)
 
@@ -134,7 +135,6 @@ def largest_championship_wins():
     conn = sqlite3.connect('championships.db')
     cursor = conn.cursor()
 
-    # Replace `table_name`, `standings_column`, and `number_of_rounds_column` with actual names
     table_name = 'championship_results'
     standings_column = 'standings'
     number_of_rounds_column = 'num_races'
@@ -142,22 +142,17 @@ def largest_championship_wins():
 
     # Query to find championships where the driver won and the number of races matches
     query = f"""
-        SELECT {championship_id_column}, {standings_column}, {number_of_rounds_column}
+        SELECT {championship_id_column}
         FROM {table_name}
-        WHERE {number_of_rounds_column} = ?
+        WHERE {number_of_rounds_column} = ? 
+        AND SUBSTR({standings_column}, 1, INSTR({standings_column} || ',', ',') - 1) = ?
     """
-    cursor.execute(query, (num_races,))
+    cursor.execute(query, (num_races, driver.upper()))
     rows = cursor.fetchall()
-
     conn.close()
 
-    # Filter championships where the driver is first in the standings
-    matching_championships = []
-    for row in rows:
-        championship_id, standings, number_of_rounds = row
-        winner = standings.split(',')[0]  # Get the first place in standings
-        if winner == driver:
-            matching_championships.append(championship_id)
+    # Extract championship IDs
+    matching_championships = [row[0] for row in rows]
 
     # Return the matching championship IDs
     return jsonify({driver: matching_championships})
