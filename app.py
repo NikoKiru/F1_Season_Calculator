@@ -1,7 +1,9 @@
 from flask import Flask, jsonify, request
 import sqlite3
+from flasgger import Swagger
 
 app = Flask(__name__)
+swagger = Swagger(app)
 
 # Function to query all data from the SQLite database
 def get_all_data():
@@ -27,11 +29,50 @@ def get_all_data():
 # Flask route to return all data as JSON
 @app.route('/api/data', methods=['GET'])
 def get_data():
+    """
+    Fetch All Championship Data
+    This endpoint retrieves all championship results stored in the database.
+    ---
+    responses:
+      200:
+        description: A list of all championship results.
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              championship_id:
+                type: integer
+              num_races:
+                type: integer
+              rounds:
+                type: string
+              standings:
+                type: string
+              winner:
+                type: string
+    """
     data = get_all_data()
     return jsonify(data)
 
 @app.route('/api/championship/<int:id>', methods=['GET'])
 def get_championship(id):
+    """
+    Fetch a Specific Championship by ID
+    This endpoint retrieves a single championship result by its unique ID.
+    ---
+    parameters:
+      - name: id
+        in: path
+        type: integer
+        required: true
+        description: The unique ID of the championship to retrieve.
+    responses:
+      200:
+        description: The championship data.
+      404:
+        description: Championship not found.
+    """
     conn = sqlite3.connect('championships.db')
     cursor = conn.cursor()
     cursor.execute(f"SELECT * FROM championship_results WHERE championship_id = ?", (id,))
@@ -46,18 +87,27 @@ def get_championship(id):
 
 @app.route('/api/driver_wins/<string:abbreviation>', methods=['GET'])
 def count_driver_wins(abbreviation):
+    """
+    Count Championships Won by a Driver
+    This endpoint returns the total number of championships won by a specific driver.
+    ---
+    parameters:
+      - name: abbreviation
+        in: path
+        type: string
+        required: true
+        description: The abbreviation of the driver (e.g., VER, HAM).
+    responses:
+      200:
+        description: The total number of wins for the specified driver.
+    """
     conn = sqlite3.connect('championships.db')
     cursor = conn.cursor()
     
     table_name = 'championship_results'
-    standings_column = 'standings'
 
-    # Query to count championships where the driver is the winner
-    query = f"""
-        SELECT COUNT(*)
-        FROM {table_name}
-        WHERE SUBSTR({standings_column}, 1, INSTR({standings_column} || ',', ',') - 1) = ?
-    """
+    # Query using the indexed 'winner' column
+    query = f"SELECT COUNT(*) FROM {table_name} WHERE winner = ?"
     
     cursor.execute(query, (abbreviation.upper(),))
     wins = cursor.fetchone()[0]
@@ -71,17 +121,22 @@ def count_driver_wins(abbreviation):
 
 @app.route('/api/all_championship_wins', methods=['GET'])
 def all_championship_wins():
+    """
+    Get All Championship Wins for All Drivers
+    This endpoint returns a summary of championship wins for every driver.
+    ---
+    responses:
+      200:
+        description: A JSON object where keys are driver abbreviations and values are their total wins.
+    """
     conn = sqlite3.connect('championships.db')
     cursor = conn.cursor()
 
     table_name = 'championship_results'
-    standings_column = 'standings'
 
-    # Query to get the winner of each championship and count the wins
+    # Query to group by the indexed 'winner' column
     query = f"""
-        SELECT 
-            SUBSTR({standings_column}, 1, INSTR({standings_column} || ',', ',') - 1) as winner,
-            COUNT(*) as wins
+        SELECT winner, COUNT(*) as wins
         FROM {table_name}
         GROUP BY winner
         ORDER BY wins DESC
@@ -98,18 +153,23 @@ def all_championship_wins():
 
 @app.route('/api/highest_rounds_won', methods=['GET'])
 def highest_rounds_won():
+    """
+    Get the Highest Number of Rounds in a Winning Championship for Each Driver
+    This endpoint returns the maximum number of races in a championship that each driver has won.
+    ---
+    responses:
+      200:
+        description: A JSON object where keys are driver abbreviations and values are the highest number of rounds in a championship they've won.
+    """
     conn = sqlite3.connect('championships.db')
     cursor = conn.cursor()
 
     table_name = 'championship_results'
-    standings_column = 'standings'
     number_of_rounds_column = 'num_races'
 
-    # Query to get the highest number of rounds for each driver's wins
+    # Query to group by the indexed 'winner' column
     query = f"""
-        SELECT 
-            SUBSTR({standings_column}, 1, INSTR({standings_column} || ',', ',') - 1) as winner,
-            MAX({number_of_rounds_column}) as max_rounds
+        SELECT winner, MAX({number_of_rounds_column}) as max_rounds
         FROM {table_name}
         GROUP BY winner
     """
@@ -125,6 +185,27 @@ def highest_rounds_won():
 
 @app.route('/api/largest_championship_wins', methods=['GET'])
 def largest_championship_wins():
+    """
+    Find Championships Won by a Driver with a Specific Number of Races
+    This endpoint returns the IDs of championships won by a specific driver in seasons with a given number of races.
+    ---
+    parameters:
+      - name: driver
+        in: query
+        type: string
+        required: true
+        description: The abbreviation of the driver.
+      - name: num_races
+        in: query
+        type: integer
+        required: true
+        description: The number of races in the championship.
+    responses:
+      200:
+        description: A list of championship IDs matching the criteria.
+      400:
+        description: Missing required query parameters.
+    """
     # Get query parameters
     driver = request.args.get('driver')  # Driver abbreviation
     num_races = request.args.get('num_races', type=int)  # Number of races
@@ -136,16 +217,13 @@ def largest_championship_wins():
     cursor = conn.cursor()
 
     table_name = 'championship_results'
-    standings_column = 'standings'
-    number_of_rounds_column = 'num_races'
     championship_id_column = 'championship_id'
 
-    # Query to find championships where the driver won and the number of races matches
+    # Query using the indexed 'winner' and 'num_races' columns
     query = f"""
         SELECT {championship_id_column}
         FROM {table_name}
-        WHERE {number_of_rounds_column} = ? 
-        AND SUBSTR({standings_column}, 1, INSTR({standings_column} || ',', ',') - 1) = ?
+        WHERE num_races = ? AND winner = ?
     """
     cursor.execute(query, (num_races, driver.upper()))
     rows = cursor.fetchall()
@@ -159,6 +237,14 @@ def largest_championship_wins():
 
 @app.route('/api/highest_position', methods=['GET'])
 def highest_position():
+    """
+    Get the Highest Championship Position for Each Driver
+    This endpoint returns the best final championship ranking for every driver across all scenarios.
+    ---
+    responses:
+      200:
+        description: A JSON object where keys are driver abbreviations and values are their highest achieved rank.
+    """
     conn = sqlite3.connect('championships.db')
     cursor = conn.cursor()
 

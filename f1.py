@@ -35,20 +35,26 @@ def save_to_database(db_name, table_name, championship_data):
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
     
-    # Create table if not exists
+    # Create table with a dedicated 'winner' column
     cursor.execute(f"""
     CREATE TABLE IF NOT EXISTS {table_name} (
         championship_id INTEGER PRIMARY KEY AUTOINCREMENT,
         num_races INTEGER,
         rounds TEXT,
-        standings TEXT
+        standings TEXT,
+        winner TEXT
     );
     """)
     
+    # Create indexes to speed up queries
+    cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_winner ON {table_name} (winner);")
+    cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_num_races ON {table_name} (num_races);")
+    cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_winner_num_races ON {table_name} (winner, num_races);")
+
     # Insert data in bulk
     cursor.executemany(f"""
-    INSERT INTO {table_name} (num_races, rounds, standings)
-    VALUES (?, ?, ?);
+    INSERT INTO {table_name} (num_races, rounds, standings, winner)
+    VALUES (?, ?, ?, ?);
     """, championship_data)
     
     conn.commit()
@@ -71,10 +77,11 @@ def main(csv_path, db_name, table_name, batch_size=100000):
         sorted_drivers = calculate_standings(drivers, scores, race_subset)
         
         # Prepare data for database
+        winner = sorted_drivers[0]
         standings_str = ','.join(sorted_drivers)
         # Add 1 to race indices for rounds string to be 1-based
         rounds_str = ','.join(map(str, [r + 1 for r in race_subset]))
-        championship_data_batch.append((len(race_subset), rounds_str, standings_str))
+        championship_data_batch.append((len(race_subset), rounds_str, standings_str, winner))
         
         # Step 4: Save to database in batches
         if (i + 1) % batch_size == 0:
