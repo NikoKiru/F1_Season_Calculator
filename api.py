@@ -1,13 +1,9 @@
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, url_for, jsonify
+    Blueprint, jsonify, request
 )
 from .db import get_db
 
-bp = Blueprint('app', __name__)
-
-@bp.route('/')
-def index():
-    return render_template('index.html')
+bp = Blueprint('api', __name__, url_prefix='/api')
 
 # Function to query all data from the SQLite database
 def get_all_data():
@@ -23,8 +19,8 @@ def get_all_data():
     return data
 
 # Flask route to return all data as JSON
-@bp.route('/api/data', methods=['GET'])
-def get_data():
+@bp.route('/data', methods=['GET'])
+def get_data_route():
     """
     Fetch All Championship Data
     This endpoint retrieves all championship results stored in the database.
@@ -32,26 +28,11 @@ def get_data():
     responses:
       200:
         description: A list of all championship results.
-        schema:
-          type: array
-          items:
-            type: object
-            properties:
-              championship_id:
-                type: integer
-              num_races:
-                type: integer
-              rounds:
-                type: string
-              standings:
-                type: string
-              winner:
-                type: string
     """
     data = get_all_data()
     return jsonify(data)
 
-@bp.route('/api/championship/<int:id>', methods=['GET'])
+@bp.route('/championship/<int:id>', methods=['GET'])
 def get_championship(id):
     """
     Fetch a Specific Championship by ID
@@ -77,7 +58,7 @@ def get_championship(id):
     else:
         return jsonify({"error": "Championship not found"}), 404
 
-@bp.route('/api/driver_wins/<string:abbreviation>', methods=['GET'])
+@bp.route('/driver_wins/<string:abbreviation>', methods=['GET'])
 def count_driver_wins(abbreviation):
     """
     Count Championships Won by a Driver
@@ -107,7 +88,7 @@ def count_driver_wins(abbreviation):
         "championships_won": wins
     })
 
-@bp.route('/api/all_championship_wins', methods=['GET'])
+@bp.route('/all_championship_wins', methods=['GET'])
 def all_championship_wins():
     """
     Get All Championship Wins for All Drivers
@@ -136,7 +117,7 @@ def all_championship_wins():
 
     return jsonify(championship_wins)
 
-@bp.route('/api/highest_rounds_won', methods=['GET'])
+@bp.route('/highest_rounds_won', methods=['GET'])
 def highest_rounds_won():
     """
     Get the Highest Number of Rounds in a Winning Championship for Each Driver
@@ -165,7 +146,7 @@ def highest_rounds_won():
 
     return jsonify(highest_rounds)
 
-@bp.route('/api/largest_championship_wins', methods=['GET'])
+@bp.route('/largest_championship_wins', methods=['GET'])
 def largest_championship_wins():
     """
     Find Championships Won by a Driver with a Specific Number of Races
@@ -214,7 +195,7 @@ def largest_championship_wins():
     # Return the matching championship IDs
     return jsonify({driver: matching_championships})
 
-@bp.route('/api/highest_position', methods=['GET'])
+@bp.route('/highest_position', methods=['GET'])
 def highest_position():
     """
     Get the Highest Championship Position for Each Driver
@@ -253,7 +234,7 @@ def highest_position():
     return jsonify(highest_positions)
 
 
-@bp.route('/api/head_to_head/<string:driver1>/<string:driver2>', methods=['GET'])
+@bp.route('/head_to_head/<string:driver1>/<string:driver2>', methods=['GET'])
 def head_to_head(driver1, driver2):
     """
     Head-to-Head Driver Comparison
@@ -295,7 +276,7 @@ def head_to_head(driver1, driver2):
         d2: result['driver2_wins']
     })
 
-@bp.route('/api/min_races_to_win/<string:driver>', methods=['GET'])
+@bp.route('/min_races_to_win/<string:driver>', methods=['GET'])
 def min_races_to_win(driver):
     """
     Minimum Races Needed for a Driver to Win a Championship
@@ -321,7 +302,7 @@ def min_races_to_win(driver):
         "min_races_for_win": result[0] if result else None
     })
 
-@bp.route('/api/most_common_runner_up', methods=['GET'])
+@bp.route('/most_common_runner_up', methods=['GET'])
 def most_common_runner_up():
     """
     Most Common Championship Runner-Up
@@ -351,46 +332,3 @@ def most_common_runner_up():
     runner_up_counts = {row['runner_up']: row['second_place_finishes'] for row in rows if row['runner_up']}
 
     return jsonify(runner_up_counts)
-
-@bp.route('/championship/<int:id>')
-def championship_page(id):
-    data = get_championship(id).get_json()
-    if "error" in data:
-        return render_template('championship.html', data=None), 404
-    return render_template('championship.html', data=data)
-
-@bp.route('/all_championship_wins')
-def all_championship_wins_page():
-    data = all_championship_wins().get_json()
-    return render_template('all_championship_wins.html', data=data)
-
-@bp.route('/driver_wins')
-def driver_wins_page():
-    return render_template('driver_wins.html')
-
-@bp.route('/highest_rounds_won')
-def highest_rounds_won_page():
-    data = highest_rounds_won().get_json()
-    return render_template('highest_rounds_won.html', data=data)
-
-@bp.route('/highest_position')
-def highest_position_page():
-    data = highest_position().get_json()
-    return render_template('highest_position.html', data=data)
-
-@bp.route('/most_common_runner_up')
-def most_common_runner_up_page():
-    data = most_common_runner_up().get_json()
-    return render_template('most_common_runner_up.html', data=data)
-
-@bp.route('/head_to_head')
-def head_to_head_page():
-    return render_template('head_to_head.html')
-
-@bp.route('/min_races_to_win')
-def min_races_to_win_page():
-    return render_template('min_races_to_win.html')
-
-@bp.route('/largest_championship_wins')
-def largest_championship_wins_page():
-    return render_template('largest_championship_wins.html')

@@ -7,6 +7,7 @@ def create_app(test_config=None):
     app.config.from_mapping(
         SECRET_KEY='dev',
         DATABASE=os.path.join(app.instance_path, 'championships.db'),
+        DATA_FOLDER=os.path.join(app.root_path, '..', 'data')
     )
 
     if test_config is None:
@@ -25,20 +26,16 @@ def create_app(test_config=None):
     from . import db
     db.init_app(app)
 
-    from . import f1
-    f1.init_app(app)
-
-    # Move the database file to the instance folder
-    db_path = os.path.join(app.root_path, 'championships.db')
-    instance_db_path = app.config['DATABASE']
-    if os.path.exists(db_path) and not os.path.exists(instance_db_path):
-        os.rename(db_path, instance_db_path)
+    from . import commands
+    commands.init_app(app)
 
     from flasgger import Swagger
     swagger = Swagger(app)
 
     # Register blueprints here
-    from . import app as main_app
-    app.register_blueprint(main_app.bp)
+    from . import views
+    app.register_blueprint(views.bp)
+    from . import api
+    app.register_blueprint(api.bp)
 
     return app

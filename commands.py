@@ -49,7 +49,7 @@ def process_data(batch_size=100000):
     """Processes the championship data and saves it to the database."""
     db = get_db()
     table_name = "championship_results"
-    csv_path = os.path.join(current_app.root_path, "championships.csv")
+    csv_path = os.path.join(current_app.config['DATA_FOLDER'], "championships.csv")
 
     # Step 1: Read input CSV into NumPy arrays
     drivers, scores = read_csv(csv_path)

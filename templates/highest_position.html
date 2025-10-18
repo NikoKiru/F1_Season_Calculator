@@ -20,7 +20,7 @@
                         <span class="driver-wins">
                             Position: {{ info.position }} (IDs: 
                             {% for id in info.championship_ids %}
-                                <a href="{{ url_for('app.championship_page', id=id) }}">{{ id }}</a>{% if not loop.last %}, {% endif %}
+                                <a href="{{ url_for('views.championship_page', id=id) }}">{{ id }}</a>{% if not loop.last %}, {% endif %}
                             {% endfor %})
                         </span>
                     </li>
