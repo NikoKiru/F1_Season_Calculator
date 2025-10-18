@@ -392,6 +392,54 @@ def most_common_runner_up():
     return jsonify(runner_up_counts)
 
 
+@app.route('/all_championship_wins')
+def all_championship_wins_page():
+    conn = sqlite3.connect('championships.db')
+    cursor = conn.cursor()
+    table_name = 'championship_results'
+    query = f"""
+        SELECT winner, COUNT(*) as wins
+        FROM {table_name}
+        GROUP BY winner
+        ORDER BY wins DESC
+    """
+    cursor.execute(query)
+    rows = cursor.fetchall()
+    conn.close()
+    championship_wins = {row[0]: row[1] for row in rows}
+    return render_template('all_championship_wins.html', data=championship_wins)
+
+@app.route('/driver_wins')
+def driver_wins_page():
+    return render_template('driver_wins.html')
+
+@app.route('/highest_rounds_won')
+def highest_rounds_won_page():
+    data = highest_rounds_won().get_json()
+    return render_template('highest_rounds_won.html', data=data)
+
+@app.route('/highest_position')
+def highest_position_page():
+    data = highest_position().get_json()
+    return render_template('highest_position.html', data=data)
+
+@app.route('/most_common_runner_up')
+def most_common_runner_up_page():
+    data = most_common_runner_up().get_json()
+    return render_template('most_common_runner_up.html', data=data)
+
+@app.route('/head_to_head')
+def head_to_head_page():
+    return render_template('head_to_head.html')
+
+@app.route('/min_races_to_win')
+def min_races_to_win_page():
+    return render_template('min_races_to_win.html')
+
+@app.route('/largest_championship_wins')
+def largest_championship_wins_page():
+    return render_template('largest_championship_wins.html')
+
 # Run the Flask app
 if __name__ == '__main__':
     app.run(debug=True)

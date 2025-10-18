@@ -25,6 +25,91 @@ main {
 
 a {
     color: #d10000;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.endpoint-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.endpoint-link {
+    background: #e10600;
+    color: #fff;
+    padding: 15px;
+    text-align: center;
+    border-radius: 8px;
+    font-size: 1.1em;
+    transition: background 0.3s;
+}
+
+.endpoint-link:hover {
+    background: #b80000;
+    text-decoration: none;
+}
+
+.data-container {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.driver-list {
+    list-style: none;
+    padding: 0;
+}
+
+.driver-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.driver-name {
+    font-weight: bold;
+}
+
+form {
+    display: flex;
+    gap: 10px;
+}
+
+input[type="text"] {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+button {
+    padding: 10px 20px;
+    background: #d10000;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background: #b80000;
+}
+
+.back-link {
+    display: inline-block;
+    margin-top: 20px;
+}
+
+.driver-result {
+    font-size: 1.2em;
+    font-weight: bold;
 }
 
 footer {
