@@ -27,7 +27,7 @@
                     <tbody>
                         {% for driver in data.standings.split(',') %}
                             <tr>
-                                <td>{{ driver }}</td>
+                                <td>{{ data.driver_names[driver] }}</td>
                                 <td>{{ data.driver_points[driver] }}</td>
                             </tr>
                         {% endfor %}

@@ -3,6 +3,7 @@ from flask import (
 )
 from .db import get_db
 from .rounds import ROUND_NAMES_2025
+from .drivers import DRIVER_NAMES
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -27,6 +28,7 @@ def get_all_data():
             drivers = championship_data['standings'].split(',')
             points = [int(p) for p in championship_data['points'].split(',')]
             championship_data['driver_points'] = dict(zip(drivers, points))
+            championship_data['driver_names'] = {driver: DRIVER_NAMES.get(driver, 'Unknown') for driver in drivers}
         data.append(championship_data)
     return data
 
@@ -75,6 +77,7 @@ def get_championship(id):
             drivers = championship_data['standings'].split(',')
             points = [int(p) for p in championship_data['points'].split(',')]
             championship_data['driver_points'] = dict(zip(drivers, points))
+            championship_data['driver_names'] = {driver: DRIVER_NAMES.get(driver, 'Unknown') for driver in drivers}
         return jsonify(championship_data)
     else:
         return jsonify({"error": "Championship not found"}), 404
