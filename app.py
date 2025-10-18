@@ -239,40 +239,42 @@ def largest_championship_wins():
 def highest_position():
     """
     Get the Highest Championship Position for Each Driver
-    This endpoint returns the best final championship ranking for every driver across all scenarios.
+    This endpoint returns the best final championship ranking for every driver, including up to the 5 largest championship IDs where this rank was achieved.
     ---
     responses:
       200:
-        description: A JSON object where keys are driver abbreviations and values are their highest achieved rank.
+        description: A JSON object where keys are driver abbreviations and values are objects containing their highest rank and a list of up to 5 corresponding championship IDs.
     """
     conn = sqlite3.connect('championships.db')
     cursor = conn.cursor()
 
-    # Replace `table_name` and `standings_column` with actual names
     table_name = 'championship_results'
     standings_column = 'standings'
+    championship_id_column = 'championship_id'
 
-    # Query to fetch all standings
-    query = f"SELECT {standings_column} FROM {table_name}"
+    # Query to fetch all standings, ordered by championship_id descending to process largest IDs first
+    query = f"SELECT {championship_id_column}, {standings_column} FROM {table_name} ORDER BY {championship_id_column} DESC"
     cursor.execute(query)
     rows = cursor.fetchall()
 
     conn.close()
 
-    # Dictionary to store the highest position for each driver
     highest_positions = {}
 
-    # Process each championship standings
     for row in rows:
-        standings = row[0]  # The standings string
-        drivers = [driver.strip() for driver in standings.split(",")]  # Split by comma and strip whitespace
+        championship_id = row[0]
+        standings = row[1]
+        drivers = [driver.strip() for driver in standings.split(",")]
 
-        # Update each driver's highest position
         for position, driver in enumerate(drivers, start=1):
-            if driver not in highest_positions or position < highest_positions[driver]:
-                highest_positions[driver] = position
+            if driver not in highest_positions:
+                highest_positions[driver] = {"position": position, "championship_ids": [championship_id]}
+            elif position < highest_positions[driver]["position"]:
+                highest_positions[driver] = {"position": position, "championship_ids": [championship_id]}
+            elif position == highest_positions[driver]["position"]:
+                if len(highest_positions[driver]["championship_ids"]) < 5:
+                    highest_positions[driver]["championship_ids"].append(championship_id)
 
-    # Return the results as JSON
     return jsonify(highest_positions)
 
 
