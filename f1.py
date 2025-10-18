@@ -1,7 +1,11 @@
 import pandas as pd
 import itertools
-import sqlite3
 import numpy as np
+import click
+from flask.cli import with_appcontext
+from .db import get_db
+import os
+from flask import current_app
 
 # Step 1: Read the CSV file and convert to NumPy for performance
 def read_csv(file_path):
@@ -28,40 +32,25 @@ def calculate_standings(drivers, scores, race_subset):
     return sorted_drivers
 
 # Step 4: Save to SQLite database
-def save_to_database(db_name, table_name, championship_data):
+def save_to_database(db, table_name, championship_data):
     if not championship_data:
         return
         
-    conn = sqlite3.connect(db_name)
-    cursor = conn.cursor()
-    
-    # Create table with a dedicated 'winner' column
-    cursor.execute(f"""
-    CREATE TABLE IF NOT EXISTS {table_name} (
-        championship_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        num_races INTEGER,
-        rounds TEXT,
-        standings TEXT,
-        winner TEXT
-    );
-    """)
-    
-    # Create indexes to speed up queries
-    cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_winner ON {table_name} (winner);")
-    cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_num_races ON {table_name} (num_races);")
-    cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_winner_num_races ON {table_name} (winner, num_races);")
-
     # Insert data in bulk
-    cursor.executemany(f"""
+    db.executemany(f"""
     INSERT INTO {table_name} (num_races, rounds, standings, winner)
     VALUES (?, ?, ?, ?);
     """, championship_data)
     
-    conn.commit()
-    conn.close()
+    db.commit()
 
 # Main function
-def main(csv_path, db_name, table_name, batch_size=100000):
+def process_data(batch_size=100000):
+    """Processes the championship data and saves it to the database."""
+    db = get_db()
+    table_name = "championship_results"
+    csv_path = os.path.join(current_app.root_path, "championships.csv")
+
     # Step 1: Read input CSV into NumPy arrays
     drivers, scores = read_csv(csv_path)
     num_races = scores.shape[1]
@@ -85,20 +74,23 @@ def main(csv_path, db_name, table_name, batch_size=100000):
         
         # Step 4: Save to database in batches
         if (i + 1) % batch_size == 0:
-            save_to_database(db_name, table_name, championship_data_batch)
+            save_to_database(db, table_name, championship_data_batch)
             print(f"Processed and saved {i + 1} combinations...")
             championship_data_batch = []
     
     # Save any remaining data
     if championship_data_batch:
-        save_to_database(db_name, table_name, championship_data_batch)
+        save_to_database(db, table_name, championship_data_batch)
         print(f"Processed and saved final batch of {len(championship_data_batch)} combinations.")
 
-    print(f"All data saved to {db_name}, table: {table_name}")
+    print(f"All data saved to database, table: {table_name}")
 
-# Run the script
-if __name__ == "__main__":
-    csv_path = "championships.csv"
-    db_name = "championships.db"
-    table_name = "championship_results"
-    main(csv_path, db_name, table_name)
+@click.command('process-data')
+@with_appcontext
+def process_data_command():
+    """Processes championship data and saves it to the database."""
+    process_data()
+    click.echo('Processed and saved data to database.')
+
+def init_app(app):
+    app.cli.add_command(process_data_command)

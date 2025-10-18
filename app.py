@@ -1,37 +1,29 @@
-from flask import Flask, jsonify, request, render_template
-import sqlite3
-from flasgger import Swagger
+from flask import (
+    Blueprint, flash, g, redirect, render_template, request, url_for, jsonify
+)
+from .db import get_db
 
-app = Flask(__name__)
-swagger = Swagger(app)
+bp = Blueprint('app', __name__)
 
-@app.route('/')
+@bp.route('/')
 def index():
     return render_template('index.html')
 
 # Function to query all data from the SQLite database
 def get_all_data():
-    conn = sqlite3.connect('championships.db')
-    cursor = conn.cursor()
-
+    db = get_db()
     # Replace `table_name` with the actual name of your table
     table_name = 'championship_results'
 
     # Fetch all data from the table
-    cursor.execute(f"SELECT * FROM {table_name}")
-    rows = cursor.fetchall()
-
-    # Get column names
-    column_names = [description[0] for description in cursor.description]
+    rows = db.execute(f"SELECT * FROM {table_name}").fetchall()
 
     # Format data as a list of dictionaries
-    data = [dict(zip(column_names, row)) for row in rows]
-    print(data)
-    conn.close()
+    data = [dict(row) for row in rows]
     return data
 
 # Flask route to return all data as JSON
-@app.route('/api/data', methods=['GET'])
+@bp.route('/api/data', methods=['GET'])
 def get_data():
     """
     Fetch All Championship Data
@@ -59,7 +51,7 @@ def get_data():
     data = get_all_data()
     return jsonify(data)
 
-@app.route('/api/championship/<int:id>', methods=['GET'])
+@bp.route('/api/championship/<int:id>', methods=['GET'])
 def get_championship(id):
     """
     Fetch a Specific Championship by ID
@@ -77,19 +69,15 @@ def get_championship(id):
       404:
         description: Championship not found.
     """
-    conn = sqlite3.connect('championships.db')
-    cursor = conn.cursor()
-    cursor.execute(f"SELECT * FROM championship_results WHERE championship_id = ?", (id,))
-    row = cursor.fetchone()
-    column_names = [description[0] for description in cursor.description]
-    conn.close()
+    db = get_db()
+    row = db.execute(f"SELECT * FROM championship_results WHERE championship_id = ?", (id,)).fetchone()
 
     if row:
-        return jsonify(dict(zip(column_names, row)))
+        return jsonify(dict(row))
     else:
         return jsonify({"error": "Championship not found"}), 404
 
-@app.route('/api/driver_wins/<string:abbreviation>', methods=['GET'])
+@bp.route('/api/driver_wins/<string:abbreviation>', methods=['GET'])
 def count_driver_wins(abbreviation):
     """
     Count Championships Won by a Driver
@@ -105,25 +93,21 @@ def count_driver_wins(abbreviation):
       200:
         description: The total number of wins for the specified driver.
     """
-    conn = sqlite3.connect('championships.db')
-    cursor = conn.cursor()
+    db = get_db()
     
     table_name = 'championship_results'
 
     # Query using the indexed 'winner' column
     query = f"SELECT COUNT(*) FROM {table_name} WHERE winner = ?"
     
-    cursor.execute(query, (abbreviation.upper(),))
-    wins = cursor.fetchone()[0]
+    wins = db.execute(query, (abbreviation.upper(),)).fetchone()[0]
     
-    conn.close()
-
     return jsonify({
         "driver": abbreviation.upper(),
         "championships_won": wins
     })
 
-@app.route('/api/all_championship_wins', methods=['GET'])
+@bp.route('/api/all_championship_wins', methods=['GET'])
 def all_championship_wins():
     """
     Get All Championship Wins for All Drivers
@@ -133,8 +117,7 @@ def all_championship_wins():
       200:
         description: A JSON object where keys are driver abbreviations and values are their total wins.
     """
-    conn = sqlite3.connect('championships.db')
-    cursor = conn.cursor()
+    db = get_db()
 
     table_name = 'championship_results'
 
@@ -146,16 +129,14 @@ def all_championship_wins():
         ORDER BY wins DESC
     """
     
-    cursor.execute(query)
-    rows = cursor.fetchall()
-    conn.close()
+    rows = db.execute(query).fetchall()
 
     # Format as a dictionary
-    championship_wins = {row[0]: row[1] for row in rows}
+    championship_wins = {row['winner']: row['wins'] for row in rows}
 
     return jsonify(championship_wins)
 
-@app.route('/api/highest_rounds_won', methods=['GET'])
+@bp.route('/api/highest_rounds_won', methods=['GET'])
 def highest_rounds_won():
     """
     Get the Highest Number of Rounds in a Winning Championship for Each Driver
@@ -165,8 +146,7 @@ def highest_rounds_won():
       200:
         description: A JSON object where keys are driver abbreviations and values are the highest number of rounds in a championship they've won.
     """
-    conn = sqlite3.connect('championships.db')
-    cursor = conn.cursor()
+    db = get_db()
 
     table_name = 'championship_results'
     number_of_rounds_column = 'num_races'
@@ -178,16 +158,14 @@ def highest_rounds_won():
         GROUP BY winner
     """
     
-    cursor.execute(query)
-    rows = cursor.fetchall()
-    conn.close()
+    rows = db.execute(query).fetchall()
 
     # Format as a dictionary
-    highest_rounds = {row[0]: row[1] for row in rows}
+    highest_rounds = {row['winner']: row['max_rounds'] for row in rows}
 
     return jsonify(highest_rounds)
 
-@app.route('/api/largest_championship_wins', methods=['GET'])
+@bp.route('/api/largest_championship_wins', methods=['GET'])
 def largest_championship_wins():
     """
     Find Championships Won by a Driver with a Specific Number of Races
@@ -217,8 +195,7 @@ def largest_championship_wins():
     if not driver or not num_races:
         return jsonify({"error": "Please provide both 'driver' and 'num_races' as query parameters"}), 400
 
-    conn = sqlite3.connect('championships.db')
-    cursor = conn.cursor()
+    db = get_db()
 
     table_name = 'championship_results'
     championship_id_column = 'championship_id'
@@ -229,17 +206,15 @@ def largest_championship_wins():
         FROM {table_name}
         WHERE num_races = ? AND winner = ?
     """
-    cursor.execute(query, (num_races, driver.upper()))
-    rows = cursor.fetchall()
-    conn.close()
+    rows = db.execute(query, (num_races, driver.upper())).fetchall()
 
     # Extract championship IDs
-    matching_championships = [row[0] for row in rows]
+    matching_championships = [row[championship_id_column] for row in rows]
 
     # Return the matching championship IDs
     return jsonify({driver: matching_championships})
 
-@app.route('/api/highest_position', methods=['GET'])
+@bp.route('/api/highest_position', methods=['GET'])
 def highest_position():
     """
     Get the Highest Championship Position for Each Driver
@@ -249,8 +224,7 @@ def highest_position():
       200:
         description: A JSON object where keys are driver abbreviations and values are objects containing their highest rank and a list of up to 5 corresponding championship IDs.
     """
-    conn = sqlite3.connect('championships.db')
-    cursor = conn.cursor()
+    db = get_db()
 
     table_name = 'championship_results'
     standings_column = 'standings'
@@ -258,16 +232,13 @@ def highest_position():
 
     # Query to fetch all standings, ordered by championship_id descending to process largest IDs first
     query = f"SELECT {championship_id_column}, {standings_column} FROM {table_name} ORDER BY {championship_id_column} DESC"
-    cursor.execute(query)
-    rows = cursor.fetchall()
-
-    conn.close()
+    rows = db.execute(query).fetchall()
 
     highest_positions = {}
 
     for row in rows:
-        championship_id = row[0]
-        standings = row[1]
+        championship_id = row[championship_id_column]
+        standings = row[standings_column]
         drivers = [driver.strip() for driver in standings.split(",")]
 
         for position, driver in enumerate(drivers, start=1):
@@ -282,7 +253,7 @@ def highest_position():
     return jsonify(highest_positions)
 
 
-@app.route('/api/head_to_head/<string:driver1>/<string:driver2>', methods=['GET'])
+@bp.route('/api/head_to_head/<string:driver1>/<string:driver2>', methods=['GET'])
 def head_to_head(driver1, driver2):
     """
     Head-to-Head Driver Comparison
@@ -303,8 +274,7 @@ def head_to_head(driver1, driver2):
       200:
         description: A JSON object showing the win count for each driver in the head-to-head comparison.
     """
-    conn = sqlite3.connect('championships.db')
-    cursor = conn.cursor()
+    db = get_db()
 
     d1 = driver1.upper()
     d2 = driver2.upper()
@@ -318,17 +288,14 @@ def head_to_head(driver1, driver2):
         FROM championship_results
         WHERE INSTR(standings, ?) > 0 AND INSTR(standings, ?) > 0;
     """
-    cursor.execute(query, (d1, d2, d1, d2, d1, d2))
+    result = db.execute(query, (d1, d2, d1, d2, d1, d2)).fetchone()
     
-    result = cursor.fetchone()
-    conn.close()
-
     return jsonify({
-        d1: result[0],
-        d2: result[1]
+        d1: result['driver1_wins'],
+        d2: result['driver2_wins']
     })
 
-@app.route('/api/min_races_to_win/<string:driver>', methods=['GET'])
+@bp.route('/api/min_races_to_win/<string:driver>', methods=['GET'])
 def min_races_to_win(driver):
     """
     Minimum Races Needed for a Driver to Win a Championship
@@ -344,20 +311,17 @@ def min_races_to_win(driver):
       200:
         description: The minimum number of races for a championship win.
     """
-    conn = sqlite3.connect('championships.db')
-    cursor = conn.cursor()
+    db = get_db()
 
     query = "SELECT MIN(num_races) FROM championship_results WHERE winner = ?"
-    cursor.execute(query, (driver.upper(),))
-    result = cursor.fetchone()
-    conn.close()
+    result = db.execute(query, (driver.upper(),)).fetchone()
 
     return jsonify({
         "driver": driver.upper(),
         "min_races_for_win": result[0] if result else None
     })
 
-@app.route('/api/most_common_runner_up', methods=['GET'])
+@bp.route('/api/most_common_runner_up', methods=['GET'])
 def most_common_runner_up():
     """
     Most Common Championship Runner-Up
@@ -367,8 +331,7 @@ def most_common_runner_up():
       200:
         description: A JSON object with drivers and their count of second-place finishes.
     """
-    conn = sqlite3.connect('championships.db')
-    cursor = conn.cursor()
+    db = get_db()
 
     # This query extracts the second driver from the comma-separated standings string.
     query = """
@@ -383,70 +346,51 @@ def most_common_runner_up():
         GROUP BY runner_up
         ORDER BY second_place_finishes DESC;
     """
-    cursor.execute(query)
-    rows = cursor.fetchall()
-    conn.close()
+    rows = db.execute(query).fetchall()
 
-    runner_up_counts = {row[0]: row[1] for row in rows if row[0]}
+    runner_up_counts = {row['runner_up']: row['second_place_finishes'] for row in rows if row['runner_up']}
 
     return jsonify(runner_up_counts)
 
-
-@app.route('/championship/<int:id>')
+@bp.route('/championship/<int:id>')
 def championship_page(id):
     data = get_championship(id).get_json()
     if "error" in data:
         return render_template('championship.html', data=None), 404
     return render_template('championship.html', data=data)
 
-@app.route('/all_championship_wins')
+@bp.route('/all_championship_wins')
 def all_championship_wins_page():
-    conn = sqlite3.connect('championships.db')
-    cursor = conn.cursor()
-    table_name = 'championship_results'
-    query = f"""
-        SELECT winner, COUNT(*) as wins
-        FROM {table_name}
-        GROUP BY winner
-        ORDER BY wins DESC
-    """
-    cursor.execute(query)
-    rows = cursor.fetchall()
-    conn.close()
-    championship_wins = {row[0]: row[1] for row in rows}
-    return render_template('all_championship_wins.html', data=championship_wins)
+    data = all_championship_wins().get_json()
+    return render_template('all_championship_wins.html', data=data)
 
-@app.route('/driver_wins')
+@bp.route('/driver_wins')
 def driver_wins_page():
     return render_template('driver_wins.html')
 
-@app.route('/highest_rounds_won')
+@bp.route('/highest_rounds_won')
 def highest_rounds_won_page():
     data = highest_rounds_won().get_json()
     return render_template('highest_rounds_won.html', data=data)
 
-@app.route('/highest_position')
+@bp.route('/highest_position')
 def highest_position_page():
     data = highest_position().get_json()
     return render_template('highest_position.html', data=data)
 
-@app.route('/most_common_runner_up')
+@bp.route('/most_common_runner_up')
 def most_common_runner_up_page():
     data = most_common_runner_up().get_json()
     return render_template('most_common_runner_up.html', data=data)
 
-@app.route('/head_to_head')
+@bp.route('/head_to_head')
 def head_to_head_page():
     return render_template('head_to_head.html')
 
-@app.route('/min_races_to_win')
+@bp.route('/min_races_to_win')
 def min_races_to_win_page():
     return render_template('min_races_to_win.html')
 
-@app.route('/largest_championship_wins')
+@bp.route('/largest_championship_wins')
 def largest_championship_wins_page():
     return render_template('largest_championship_wins.html')
-
-# Run the Flask app
-if __name__ == '__main__':
-    app.run(debug=True)
