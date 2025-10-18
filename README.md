@@ -134,11 +134,15 @@ CREATE TABLE championship_results (
     championship_id INTEGER PRIMARY KEY AUTOINCREMENT,
     num_races INTEGER,
     rounds TEXT,
-    standings TEXT
+    standings TEXT,
+    winner TEXT
 );
 ```
 -   `rounds`: A comma-separated string of the race numbers included in the championship.
 -   `standings`: A comma-separated string of driver abbreviations, ordered by their final rank.
+-   `winner`: The abbreviation of the driver who won the championship.
+
+Indexes are created on `winner` and `num_races` to improve query performance.
 
 ## Contributing
 
