@@ -1,9 +1,13 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import sqlite3
 from flasgger import Swagger
 
 app = Flask(__name__)
 swagger = Swagger(app)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 # Function to query all data from the SQLite database
 def get_all_data():
