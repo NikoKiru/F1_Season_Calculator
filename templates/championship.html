@@ -17,11 +17,22 @@
                 <p><strong>Number of Races:</strong> {{ data.num_races }}</p>
                 <p><strong>Rounds Included:</strong> {{ data.round_names|join(', ') }}</p>
                 <h3>Final Standings:</h3>
-                <ol class="driver-list">
-                    {% for driver in data.standings.split(',') %}
-                        <li>{{ driver }} ({{ data.driver_points[driver] }} points)</li>
-                    {% endfor %}
-                </ol>
+                <table class="standings-table">
+                    <thead>
+                        <tr>
+                            <th>Driver</th>
+                            <th>Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for driver in data.standings.split(',') %}
+                            <tr>
+                                <td>{{ driver }}</td>
+                                <td>{{ data.driver_points[driver] }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             {% else %}
                 <p>Championship not found.</p>
             {% endif %}
