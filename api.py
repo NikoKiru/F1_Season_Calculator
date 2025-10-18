@@ -113,34 +113,7 @@ def all_championship_wins():
 
     return jsonify(championship_wins)
 
-@bp.route('/highest_rounds_won', methods=['GET'])
-def highest_rounds_won():
-    """
-    Get the Highest Number of Rounds in a Winning Championship for Each Driver
-    This endpoint returns the maximum number of races in a championship that each driver has won.
-    ---
-    responses:
-      200:
-        description: A JSON object where keys are driver abbreviations and values are the highest number of rounds in a championship they've won.
-    """
-    db = get_db()
 
-    table_name = 'championship_results'
-    number_of_rounds_column = 'num_races'
-
-    # Query to group by the indexed 'winner' column
-    query = f"""
-        SELECT winner, MAX({number_of_rounds_column}) as max_rounds
-        FROM {table_name}
-        GROUP BY winner
-    """
-    
-    rows = db.execute(query).fetchall()
-
-    # Format as a dictionary
-    highest_rounds = {row['winner']: row['max_rounds'] for row in rows}
-
-    return jsonify(highest_rounds)
 
 @bp.route('/largest_championship_wins', methods=['GET'])
 def largest_championship_wins():
