@@ -23,9 +23,7 @@ def all_championship_wins_page():
     data = response.get_json()
     return render_template('all_championship_wins.html', data=data)
 
-@bp.route('/driver_wins')
-def driver_wins_page():
-    return render_template('driver_wins.html')
+
 
 @bp.route('/highest_rounds_won')
 def highest_rounds_won_page():

@@ -82,35 +82,7 @@ def get_championship(id):
     else:
         return jsonify({"error": "Championship not found"}), 404
 
-@bp.route('/driver_wins/<string:abbreviation>', methods=['GET'])
-def count_driver_wins(abbreviation):
-    """
-    Count Championships Won by a Driver
-    This endpoint returns the total number of championships won by a specific driver.
-    ---
-    parameters:
-      - name: abbreviation
-        in: path
-        type: string
-        required: true
-        description: The abbreviation of the driver (e.g., VER, HAM).
-    responses:
-      200:
-        description: The total number of wins for the specified driver.
-    """
-    db = get_db()
-    
-    table_name = 'championship_results'
 
-    # Query using the indexed 'winner' column
-    query = f"SELECT COUNT(*) FROM {table_name} WHERE winner = ?"
-    
-    wins = db.execute(query, (abbreviation.upper(),)).fetchone()[0]
-    
-    return jsonify({
-        "driver": abbreviation.upper(),
-        "championships_won": wins
-    })
 
 @bp.route('/all_championship_wins', methods=['GET'])
 def all_championship_wins():
