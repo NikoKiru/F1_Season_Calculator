@@ -11,39 +11,20 @@
         <h1>Minimum Races to Win a Championship</h1>
     </header>
     <main>
-        <form id="min-races-form">
-            <input type="text" id="driver-abbr" placeholder="Enter driver abbreviation (e.g., VER)">
-            <button type="submit">Get Info</button>
-        </form>
-        <div id="min-races-result" class="data-container" style="margin-top: 20px;">
-            <!-- Results will be displayed here -->
+        <div class="data-container">
+            <ul class="driver-list">
+                {% for driver, min_races in data.items() %}
+                <li>
+                    <span class="driver-name">{{ driver }}</span>
+                    <span>{{ min_races }}</span>
+                </li>
+                {% endfor %}
+            </ul>
         </div>
         <a href="{{ url_for('views.index') }}" class="back-link">Back to Home</a>
     </main>
     <footer>
         <p>&copy; 2025 F1 Season Calculator</p>
     </footer>
-    <script>
-        document.getElementById('min-races-form').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const driverAbbr = document.getElementById('driver-abbr').value.trim();
-            if (driverAbbr) {
-                fetch(`/api/min_races_to_win/${driverAbbr}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const resultDiv = document.getElementById('min-races-result');
-                        if (data.min_races_for_win !== null) {
-                            resultDiv.innerHTML = `<p class="driver-result">${data.driver} needed a minimum of ${data.min_races_for_win} races to win.</p>`;
-                        } else {
-                            resultDiv.innerHTML = `<p class="driver-result">Driver not found or never won a championship.</p>`;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching min races data:', error);
-                        document.getElementById('min-races-result').innerHTML = `<p class="driver-result">An error occurred.</p>`;
-                    });
-            }
-        });
-    </script>
 </body>
 </html>

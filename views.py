@@ -1,7 +1,7 @@
 from flask import (
     Blueprint, render_template
 )
-from .api import get_championship, all_championship_wins, highest_position, most_common_runner_up, championship_win_probability
+from .api import get_championship, all_championship_wins, highest_position, most_common_runner_up, championship_win_probability, min_races_to_win
 
 bp = Blueprint('views', __name__)
 
@@ -42,7 +42,9 @@ def head_to_head_page():
 
 @bp.route('/min_races_to_win')
 def min_races_to_win_page():
-    return render_template('min_races_to_win.html')
+    response = min_races_to_win()
+    data = response.get_json()
+    return render_template('min_races_to_win.html', data=data)
 
 @bp.route('/largest_championship_wins')
 def largest_championship_wins_page():

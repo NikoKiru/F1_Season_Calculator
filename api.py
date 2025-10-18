@@ -245,31 +245,24 @@ def head_to_head(driver1, driver2):
         d2: result['driver2_wins']
     })
 
-@bp.route('/min_races_to_win/<string:driver>', methods=['GET'])
-def min_races_to_win(driver):
+@bp.route('/min_races_to_win', methods=['GET'])
+def min_races_to_win():
     """
     Minimum Races Needed for a Driver to Win a Championship
     Calculates the smallest number of races a driver needed to win a championship.
     ---
-    parameters:
-      - name: driver
-        in: path
-        type: string
-        required: true
-        description: The driver's abbreviation.
     responses:
       200:
-        description: The minimum number of races for a championship win.
+        description: The minimum number of races for a championship win for each driver.
     """
     db = get_db()
 
-    query = "SELECT MIN(num_races) FROM championship_results WHERE winner = ?"
-    result = db.execute(query, (driver.upper(),)).fetchone()
+    query = "SELECT winner, MIN(num_races) as min_races FROM championship_results WHERE winner IS NOT NULL GROUP BY winner ORDER BY min_races ASC"
+    results = db.execute(query).fetchall()
 
-    return jsonify({
-        "driver": driver.upper(),
-        "min_races_for_win": result[0] if result else None
-    })
+    data = {row['winner']: row['min_races'] for row in results}
+    
+    return jsonify(data)
 
 @bp.route('/most_common_runner_up', methods=['GET'])
 def most_common_runner_up():
