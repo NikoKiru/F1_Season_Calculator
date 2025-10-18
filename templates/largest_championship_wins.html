@@ -34,9 +34,11 @@
                     .then(response => response.json())
                     .then(data => {
                         const resultDiv = document.getElementById('largest-wins-result');
-                        const ids = data[driver.toUpperCase()];
+                        const driverKey = driver.toUpperCase();
+                        const ids = data[driverKey];
                         if (ids && ids.length > 0) {
-                            resultDiv.innerHTML = `<p class="driver-result">Championship IDs: ${ids.join(', ')}</p>`;
+                            const links = ids.map(id => `<a href="/championship/${id}">${id}</a>`);
+                            resultDiv.innerHTML = `<p class="driver-result">Championship IDs: ${links.join(', ')}</p>`;
                         } else {
                             resultDiv.innerHTML = `<p class="driver-result">No matching championships found.</p>`;
                         }
