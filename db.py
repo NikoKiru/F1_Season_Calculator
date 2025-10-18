@@ -26,13 +26,15 @@ def init_db():
         num_races INTEGER,
         rounds TEXT,
         standings TEXT,
-        winner TEXT
+        winner TEXT,
+        points TEXT
     );
     """)
     # Create indexes to speed up queries
     db.execute("CREATE INDEX IF NOT EXISTS idx_winner ON championship_results (winner);")
     db.execute("CREATE INDEX IF NOT EXISTS idx_num_races ON championship_results (num_races);")
     db.execute("CREATE INDEX IF NOT EXISTS idx_winner_num_races ON championship_results (winner, num_races);")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_points ON championship_results (points);")
 
 @click.command('init-db')
 @with_appcontext

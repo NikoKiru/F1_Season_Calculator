@@ -28,8 +28,9 @@ def calculate_standings(drivers, scores, race_subset):
     # Sort drivers based on scores
     sorted_indices = np.argsort(-subset_scores) # Sort in descending order
     sorted_drivers = drivers[sorted_indices]
+    sorted_scores = subset_scores[sorted_indices]
     
-    return sorted_drivers
+    return sorted_drivers, sorted_scores
 
 # Step 4: Save to SQLite database
 def save_to_database(db, table_name, championship_data):
@@ -38,8 +39,8 @@ def save_to_database(db, table_name, championship_data):
         
     # Insert data in bulk
     db.executemany(f"""
-    INSERT INTO {table_name} (num_races, rounds, standings, winner)
-    VALUES (?, ?, ?, ?);
+    INSERT INTO {table_name} (num_races, rounds, standings, winner, points)
+    VALUES (?, ?, ?, ?, ?);
     """, championship_data)
     
     db.commit()
@@ -63,14 +64,15 @@ def process_data(batch_size=100000):
     # Step 3: Process each combination
     for i, race_subset in enumerate(race_combinations_generator):
         # Calculate standings using the optimized NumPy function
-        sorted_drivers = calculate_standings(drivers, scores, race_subset)
+        sorted_drivers, sorted_scores = calculate_standings(drivers, scores, race_subset)
         
         # Prepare data for database
         winner = sorted_drivers[0]
         standings_str = ','.join(sorted_drivers)
+        points_str = ','.join(map(str, sorted_scores))
         # Add 1 to race indices for rounds string to be 1-based
         rounds_str = ','.join(map(str, [r + 1 for r in race_subset]))
-        championship_data_batch.append((len(race_subset), rounds_str, standings_str, winner))
+        championship_data_batch.append((len(race_subset), rounds_str, standings_str, winner, points_str))
         
         # Step 4: Save to database in batches
         if (i + 1) % batch_size == 0:

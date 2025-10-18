@@ -23,6 +23,10 @@ def get_all_data():
             round_numbers = [int(r) for r in championship_data['rounds'].split(',')]
             round_names = [ROUND_NAMES_2025.get(r, 'Unknown') for r in round_numbers]
             championship_data['round_names'] = round_names
+        if championship_data.get('standings') and championship_data.get('points'):
+            drivers = championship_data['standings'].split(',')
+            points = [int(p) for p in championship_data['points'].split(',')]
+            championship_data['driver_points'] = dict(zip(drivers, points))
         data.append(championship_data)
     return data
 
@@ -67,6 +71,10 @@ def get_championship(id):
             round_numbers = [int(r) for r in championship_data['rounds'].split(',')]
             round_names = [ROUND_NAMES_2025.get(r, 'Unknown') for r in round_numbers]
             championship_data['round_names'] = round_names
+        if championship_data.get('standings') and championship_data.get('points'):
+            drivers = championship_data['standings'].split(',')
+            points = [int(p) for p in championship_data['points'].split(',')]
+            championship_data['driver_points'] = dict(zip(drivers, points))
         return jsonify(championship_data)
     else:
         return jsonify({"error": "Championship not found"}), 404

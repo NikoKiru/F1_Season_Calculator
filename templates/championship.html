@@ -19,7 +19,7 @@
                 <h3>Final Standings:</h3>
                 <ol class="driver-list">
                     {% for driver in data.standings.split(',') %}
-                        <li>{{ driver }}</li>
+                        <li>{{ driver }} ({{ data.driver_points[driver] }} points)</li>
                     {% endfor %}
                 </ol>
             {% else %}
