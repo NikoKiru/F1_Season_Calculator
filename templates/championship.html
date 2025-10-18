@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Championship {{ data.championship_id }} - F1 Scenarios</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Championship #{{ data.championship_id }}</h1>
+    </header>
+    <main>
+        <div class="data-container">
+            {% if data %}
+                <p><strong>Winner:</strong> {{ data.winner }}</p>
+                <p><strong>Number of Races:</strong> {{ data.num_races }}</p>
+                <p><strong>Rounds Included:</strong> {{ data.rounds }}</p>
+                <h3>Final Standings:</h3>
+                <ol class="driver-list">
+                    {% for driver in data.standings.split(',') %}
+                        <li>{{ driver }}</li>
+                    {% endfor %}
+                </ol>
+            {% else %}
+                <p>Championship not found.</p>
+            {% endif %}
+        </div>
+        <a href="/" class="back-link">Back to Home</a>
+    </main>
+    <footer>
+        <p>&copy; 2025 F1 Season Calculator</p>
+    </footer>
+</body>
+</html>

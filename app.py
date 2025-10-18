@@ -392,6 +392,13 @@ def most_common_runner_up():
     return jsonify(runner_up_counts)
 
 
+@app.route('/championship/<int:id>')
+def championship_page(id):
+    data = get_championship(id).get_json()
+    if "error" in data:
+        return render_template('championship.html', data=None), 404
+    return render_template('championship.html', data=data)
+
 @app.route('/all_championship_wins')
 def all_championship_wins_page():
     conn = sqlite3.connect('championships.db')
