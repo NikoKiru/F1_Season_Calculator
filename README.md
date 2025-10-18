@@ -125,14 +125,13 @@ An interactive Swagger UI is also available at `/apidocs/` when the server is ru
 |--------|--------------------------------------------------------|--------------------------------------------------------------------------|
 | `GET`  | `/api/data`                                            | Returns all championship data from the database.                         |
 | `GET`  | `/api/championship/<id>`                               | Returns data for a specific championship by its ID.                      |
-| `GET`  | `/api/driver_wins/<abbreviation>`                      | Returns the total number of championships won by a driver.               |
 | `GET`  | `/api/all_championship_wins`                           | Returns a summary of championship wins for all drivers.                  |
-| `GET`  | `/api/highest_rounds_won`                              | Returns the highest number of rounds in a winning championship for each driver. |
 | `GET`  | `/api/largest_championship_wins`                       | Returns championship IDs won by a driver with a specific number of races. |
 | `GET`  | `/api/highest_position`                                | Returns the highest championship position achieved by each driver, including the corresponding championship ID(s).       |
 | `GET`  | `/api/head_to_head/<driver1>/<driver2>`                | Compares two drivers to see who finished ahead more often.               |
-| `GET`  | `/api/min_races_to_win/<driver>`                       | Finds the minimum number of races a driver needed to win a championship. |
+| `GET`  | `/api/min_races_to_win`                                | Finds the minimum number of races a driver needed to win a championship. |
 | `GET`  | `/api/most_common_runner_up`                           | Counts how many times each driver finished in second place.              |
+| `GET`  | `/api/championship_win_probability`                    | Returns the win probability for each driver based on season length.      |
 
 ### Example Requests
 
@@ -141,14 +140,14 @@ An interactive Swagger UI is also available at `/apidocs/` when the server is ru
     curl http://127.0.0.1:5000/api/all_championship_wins
     ```
 
--   **Get wins for a specific driver:**
-    ```bash
-    curl http://127.0.0.1:5000/api/driver_wins/VER
-    ```
-
 -   **Head-to-head comparison:**
     ```bash
     curl http://127.0.0.1:5000/api/head_to_head/VER/NOR
+    ```
+
+-   **Get minimum races to win:**
+    ```bash
+    curl http://127.0.0.1:5000/api/min_races_to_win
     ```
 
 ## Database Schema
