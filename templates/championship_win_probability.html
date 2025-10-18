@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Championship Win Probability</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Championship Win Probability by Season Length</h1>
+    </header>
+        <div style="overflow-x:auto;">
+            <table class="standings-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        {% for length in data.season_lengths %}
+                            <th>{{ length }}</th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Possible Seasons</td>
+                        {% for seasons in data.possible_seasons %}
+                            <td>{{ seasons }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Total Titles</td>
+                        {% for length in data.season_lengths %}
+                            {% if length == 1 %}
+                                <td>No.</td>
+                            {% else %}
+                                <td>%</td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for driver in data.drivers_data %}
+                    <tr>
+                        <td>{{ data.driver_names[driver.driver] }}</td>
+                        {% for i in range(data.season_lengths|length) %}
+                            {% if data.season_lengths[i] == 1 %}
+                                <td>{{ driver.wins_per_length[i] }}</td>
+                            {% else %}
+                                <td>{{ "%.2f"|format(driver.percentages[i]) }}</td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <a href="{{ url_for('views.index') }}" class="back-link">Back to Home</a>
+    </main>
+    <footer>
+        <p>F1 Season Calculator</p>
+    </footer>
+</body>
+</html>

@@ -356,3 +356,58 @@ def most_common_runner_up():
     runner_up_counts = {row['runner_up']: row['second_place_finishes'] for row in rows if row['runner_up']}
 
     return jsonify(runner_up_counts)
+
+@bp.route('/championship_win_probability', methods=['GET'])
+def championship_win_probability():
+    """
+    Calculate the probability of winning a championship for each driver based on season length.
+    ---
+    responses:
+      200:
+        description: A JSON object with win probabilities for each driver.
+    """
+    db = get_db()
+    
+    # Get total wins for each driver
+    query_wins = "SELECT winner, COUNT(*) as wins FROM championship_results GROUP BY winner"
+    driver_total_wins = {row['winner']: row['wins'] for row in db.execute(query_wins).fetchall()}
+
+    # Get wins per season length for each driver
+    query_wins_per_length = "SELECT winner, num_races, COUNT(*) as wins FROM championship_results GROUP BY winner, num_races"
+    wins_per_length = {}
+    for row in db.execute(query_wins_per_length).fetchall():
+        if row['winner'] not in wins_per_length:
+            wins_per_length[row['winner']] = {}
+        wins_per_length[row['winner']][row['num_races']] = row['wins']
+
+    # Get total seasons per length
+    query_seasons_per_length = "SELECT num_races, COUNT(*) as total FROM championship_results GROUP BY num_races"
+    seasons_per_length = {row['num_races']: row['total'] for row in db.execute(query_seasons_per_length).fetchall()}
+    
+    season_lengths = sorted(seasons_per_length.keys())
+
+    drivers = sorted(driver_total_wins.keys(), key=lambda d: driver_total_wins[d], reverse=True)
+
+    driver_data = []
+    for driver in drivers:
+        data = {
+            "driver": driver,
+            "total_titles": driver_total_wins.get(driver, 0),
+            "wins_per_length": [wins_per_length.get(driver, {}).get(length, 0) for length in season_lengths],
+            "percentages": []
+        }
+        for length in season_lengths:
+            wins = wins_per_length.get(driver, {}).get(length, 0)
+            total_seasons = seasons_per_length.get(length, 1)
+            percentage = (wins / total_seasons) * 100 if total_seasons > 0 else 0
+            data["percentages"].append(round(percentage, 2))
+        driver_data.append(data)
+
+    response_data = {
+        "season_lengths": season_lengths,
+        "possible_seasons": [seasons_per_length.get(l, 0) for l in season_lengths],
+        "drivers_data": driver_data,
+        "driver_names": DRIVER_NAMES
+    }
+
+    return jsonify(response_data)
