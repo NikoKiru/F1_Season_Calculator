@@ -2,6 +2,7 @@ from flask import (
     Blueprint, jsonify, request
 )
 from .db import get_db
+from .rounds import ROUND_NAMES_2025
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -15,7 +16,14 @@ def get_all_data():
     rows = db.execute(f"SELECT * FROM {table_name}").fetchall()
 
     # Format data as a list of dictionaries
-    data = [dict(row) for row in rows]
+    data = []
+    for row in rows:
+        championship_data = dict(row)
+        if championship_data.get('rounds'):
+            round_numbers = [int(r) for r in championship_data['rounds'].split(',')]
+            round_names = [ROUND_NAMES_2025.get(r, 'Unknown') for r in round_numbers]
+            championship_data['round_names'] = round_names
+        data.append(championship_data)
     return data
 
 # Flask route to return all data as JSON
@@ -54,7 +62,12 @@ def get_championship(id):
     row = db.execute(f"SELECT * FROM championship_results WHERE championship_id = ?", (id,)).fetchone()
 
     if row:
-        return jsonify(dict(row))
+        championship_data = dict(row)
+        if championship_data.get('rounds'):
+            round_numbers = [int(r) for r in championship_data['rounds'].split(',')]
+            round_names = [ROUND_NAMES_2025.get(r, 'Unknown') for r in round_numbers]
+            championship_data['round_names'] = round_names
+        return jsonify(championship_data)
     else:
         return jsonify({"error": "Championship not found"}), 404
 

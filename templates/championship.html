@@ -15,7 +15,7 @@
             {% if data %}
                 <p><strong>Winner:</strong> {{ data.winner }}</p>
                 <p><strong>Number of Races:</strong> {{ data.num_races }}</p>
-                <p><strong>Rounds Included:</strong> {{ data.rounds }}</p>
+                <p><strong>Rounds Included:</strong> {{ data.round_names|join(', ') }}</p>
                 <h3>Final Standings:</h3>
                 <ol class="driver-list">
                     {% for driver in data.standings.split(',') %}
