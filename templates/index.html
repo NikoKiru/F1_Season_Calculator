@@ -19,6 +19,7 @@
         <p>Select an endpoint below to explore the championship data. For full API documentation, please see the <a href="/apidocs">Swagger UI</a>.</p>
         
         <div class="endpoint-list">
+            <a href="{{ url_for('views.championship_win_probability_page') }}" class="endpoint-link">Championship Win Probability</a>
             <a href="{{ url_for('views.all_championship_wins_page') }}" class="endpoint-link">All Championship Wins</a>
             <a href="{{ url_for('views.driver_wins_page') }}" class="endpoint-link">Championship Wins by Driver</a>
             <a href="{{ url_for('views.highest_rounds_won_page') }}" class="endpoint-link">Highest Rounds in a Winning Championship</a>
@@ -27,7 +28,6 @@
             <a href="{{ url_for('views.head_to_head_page') }}" class="endpoint-link">Head-to-Head Comparison</a>
             <a href="{{ url_for('views.min_races_to_win_page') }}" class="endpoint-link">Minimum Races to Win</a>
             <a href="{{ url_for('views.largest_championship_wins_page') }}" class="endpoint-link">Find Wins by Race Count</a>
-            <a href="{{ url_for('views.championship_win_probability_page') }}" class="endpoint-link">Championship Win Probability</a>
         </div>
     </main>
     <footer>
