@@ -10,6 +10,7 @@
     <header>
         <h1>Championship Win Probability by Season Length</h1>
     </header>
+    <main style="max-width: 95%;">
         <div style="overflow-x:auto;">
             <table class="standings-table">
                 <thead>
@@ -19,14 +20,16 @@
                             <th>{{ length }}</th>
                         {% endfor %}
                     </tr>
+                </thead>
+                <tbody>
                     <tr>
-                        <td>Possible Seasons</td>
+                        <th>Possible Seasons</th>
                         {% for seasons in data.possible_seasons %}
                             <td>{{ seasons }}</td>
                         {% endfor %}
                     </tr>
                     <tr>
-                        <td>Total Titles</td>
+                        <th>Total Titles</th>
                         {% for length in data.season_lengths %}
                             {% if length == 1 %}
                                 <td>No.</td>
@@ -35,11 +38,9 @@
                             {% endif %}
                         {% endfor %}
                     </tr>
-                </thead>
-                <tbody>
                     {% for driver in data.drivers_data %}
                     <tr>
-                        <td>{{ data.driver_names[driver.driver] }}</td>
+                        <th>{{ data.driver_names[driver.driver] }}</th>
                         {% for i in range(data.season_lengths|length) %}
                             {% if data.season_lengths[i] == 1 %}
                                 <td>{{ driver.wins_per_length[i] }}</td>
@@ -55,7 +56,7 @@
         <a href="{{ url_for('views.index') }}" class="back-link">Back to Home</a>
     </main>
     <footer>
-        <p>F1 Season Calculator</p>
+        <p>&copy; 2025 F1 Season Calculator</p>
     </footer>
 </body>
 </html>
