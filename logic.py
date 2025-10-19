@@ -38,3 +38,43 @@ def get_round_points_for_championship(drivers, round_numbers):
                 'total_points': total_points
             }
     return championship_points
+
+def calculate_championship_from_rounds(round_numbers):
+    """
+    Calculates championship standings from a given list of round numbers.
+
+    Args:
+        round_numbers (list): A list of round numbers (1-based).
+
+    Returns:
+        dict: A dictionary containing 'standings', 'points', and 'winner'.
+    """
+    csv_path = os.path.join(current_app.config['DATA_FOLDER'], "championships.csv")
+    if not os.path.exists(csv_path):
+        return {}
+
+    df = pd.read_csv(csv_path)
+    
+    round_cols = [str(r) for r in round_numbers]
+    
+    # Ensure all requested round columns exist
+    existing_round_cols = [col for col in round_cols if col in df.columns]
+    if not existing_round_cols:
+        return {}
+
+    # Sum points for selected rounds for each driver
+    df['total_points'] = df[existing_round_cols].sum(axis=1)
+    
+    # Sort by total points descending
+    standings_df = df.sort_values(by='total_points', ascending=False)
+    
+    # Get standings, points, and winner
+    standings = standings_df['Driver'].tolist()
+    points = standings_df['total_points'].astype(int).tolist()
+    winner = standings[0] if standings else None
+    
+    return {
+        'standings': standings,
+        'points': points,
+        'winner': winner
+    }

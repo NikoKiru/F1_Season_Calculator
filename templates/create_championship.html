@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Championship</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .race-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .race-block {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .race-block.selected {
+            background-color: #a0e0a0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Create Your Own Championship</h1>
+    <p>Select the races you want to include in your championship.</p>
+    <div class="race-grid" id="race-grid">
+        {% for number, name in rounds.items() %}
+            <div class="race-block" data-round-number="{{ number }}">{{ name }}</div>
+        {% endfor %}
+    </div>
+    <button id="generate-championship">Generate Championship</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const raceGrid = document.getElementById('race-grid');
+            const generateButton = document.getElementById('generate-championship');
+            const selectedRounds = new Set();
+
+            raceGrid.addEventListener('click', function(event) {
+                const target = event.target;
+                if (target.classList.contains('race-block')) {
+                    const roundNumber = target.dataset.roundNumber;
+                    if (selectedRounds.has(roundNumber)) {
+                        selectedRounds.delete(roundNumber);
+                        target.classList.remove('selected');
+                    } else {
+                        selectedRounds.add(roundNumber);
+                        target.classList.add('selected');
+                    }
+                }
+            });
+
+            generateButton.addEventListener('click', function() {
+                if (selectedRounds.size === 0) {
+                    alert('Please select at least one race.');
+                    return;
+                }
+                const roundsArray = Array.from(selectedRounds);
+                // Redirect to a URL that will be handled by a new API endpoint
+                window.location.href = `/api/create_championship?rounds=${roundsArray.join(',')}`;
+            });
+        });
+    </script>
+</body>
+</html>

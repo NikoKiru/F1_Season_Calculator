@@ -1,10 +1,10 @@
 from flask import (
-    Blueprint, jsonify, request
+    Blueprint, jsonify, request, redirect, url_for
 )
 from .db import get_db
 from .rounds import ROUND_NAMES_2025
 from .drivers import DRIVER_NAMES
-from .logic import get_round_points_for_championship
+from .logic import get_round_points_for_championship, calculate_championship_from_rounds
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -330,3 +330,36 @@ def championship_win_probability():
     }
 
     return jsonify(response_data)
+
+@bp.route('/create_championship', methods=['GET'])
+def create_championship():
+    """
+    Finds an existing championship from a list of rounds and redirects to it.
+    """
+    rounds_str = request.args.get('rounds')
+    if not rounds_str:
+        return jsonify({"error": "No rounds provided"}), 400
+
+    try:
+        # Sort the round numbers to match the database format
+        round_numbers = sorted([int(r) for r in rounds_str.split(',')])
+    except ValueError:
+        return jsonify({"error": "Invalid round numbers"}), 400
+
+    if not round_numbers:
+        return jsonify({"error": "No rounds provided"}), 400
+
+    sorted_rounds_str = ','.join(map(str, round_numbers))
+
+    db = get_db()
+    row = db.execute(
+        "SELECT championship_id FROM championship_results WHERE rounds = ?",
+        (sorted_rounds_str,),
+    ).fetchone()
+
+    if row:
+        championship_id = row['championship_id']
+        return redirect(url_for('views.championship_page', id=championship_id))
+    else:
+        # In a real scenario, you might want a more user-friendly error page.
+        return jsonify({"error": "Championship with this combination of rounds not found"}), 404

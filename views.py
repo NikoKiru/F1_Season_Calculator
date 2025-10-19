@@ -2,6 +2,7 @@ from flask import (
     Blueprint, render_template
 )
 from .api import get_championship, all_championship_wins, highest_position, driver_positions, championship_win_probability, min_races_to_win
+from .rounds import ROUND_NAMES_2025
 
 bp = Blueprint('views', __name__)
 
@@ -49,3 +50,7 @@ def championship_win_probability_page():
     response = championship_win_probability()
     data = response.get_json()
     return render_template('championship_win_probability.html', data=data)
+
+@bp.route('/create_championship')
+def create_championship_page():
+    return render_template('create_championship.html', rounds=ROUND_NAMES_2025)
