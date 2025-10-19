@@ -4,6 +4,7 @@ from flask import (
 from .db import get_db
 from .rounds import ROUND_NAMES_2025
 from .drivers import DRIVER_NAMES
+from .logic import get_round_points_for_championship
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -78,6 +79,13 @@ def get_championship(id):
             points = [int(p) for p in championship_data['points'].split(',')]
             championship_data['driver_points'] = dict(zip(drivers, points))
             championship_data['driver_names'] = {driver: DRIVER_NAMES.get(driver, 'Unknown') for driver in drivers}
+            
+            # Get round-by-round points
+            if championship_data.get('rounds'):
+                round_numbers = [int(r) for r in championship_data['rounds'].split(',')]
+                round_points_data = get_round_points_for_championship(drivers, round_numbers)
+                championship_data['round_points_data'] = round_points_data
+
         return jsonify(championship_data)
     else:
         return jsonify({"error": "Championship not found"}), 404

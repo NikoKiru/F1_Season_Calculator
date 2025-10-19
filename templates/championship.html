@@ -16,23 +16,35 @@
                 <p><strong>Winner:</strong> {{ data.winner }}</p>
                 <p><strong>Number of Races:</strong> {{ data.num_races }}</p>
                 <p><strong>Rounds Included:</strong> {{ data.round_names|join(', ') }}</p>
-                <h3>Final Standings:</h3>
-                <table class="standings-table">
-                    <thead>
-                        <tr>
-                            <th>Driver</th>
-                            <th>Points</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for driver in data.standings.split(',') %}
+                {% if data.round_points_data %}
+                <h3 style="margin-top: 20px;">Championship Points Table:</h3>
+                <div style="overflow-x:auto;">
+                    <table class="standings-table">
+                        <thead>
                             <tr>
-                                <td>{{ data.driver_names[driver] }}</td>
-                                <td>{{ data.driver_points[driver] }}</td>
+                                <th>Driver</th>
+                                {% for round_name in data.round_names %}
+                                    <th>{{ round_name }}</th>
+                                {% endfor %}
+                                <th>Total Points</th>
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {% for driver_code in data.standings.split(',') %}
+                                {% if data.round_points_data[driver_code] %}
+                                    <tr>
+                                        <td>{{ data.driver_names[driver_code] }}</td>
+                                        {% for point in data.round_points_data[driver_code].round_points %}
+                                            <td>{{ point }}</td>
+                                        {% endfor %}
+                                        <td><strong>{{ data.round_points_data[driver_code].total_points }}</strong></td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
             {% else %}
                 <p>Championship not found.</p>
             {% endif %}
