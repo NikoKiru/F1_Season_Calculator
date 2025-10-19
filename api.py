@@ -281,36 +281,46 @@ def min_races_to_win():
     
     return jsonify(data)
 
-@bp.route('/most_common_runner_up', methods=['GET'])
-def most_common_runner_up():
+@bp.route('/driver_positions', methods=['GET'])
+def driver_positions():
     """
-    Most Common Championship Runner-Up
-    Counts how many times each driver finished in second place across all scenarios.
+    Count Driver Finishes in a Specific Position
+    Counts how many times each driver finished in a given position.
     ---
+    parameters:
+      - name: position
+        in: query
+        type: integer
+        required: true
+        description: The championship position to count.
     responses:
       200:
-        description: A JSON object with drivers and their count of second-place finishes.
+        description: A JSON object with drivers and their count of finishes in the specified position.
     """
+    position = request.args.get('position', type=int)
+    if position is None or position < 1:
+        return jsonify({"error": "A valid 'position' parameter is required."}), 400
+
     db = get_db()
 
-    # This query extracts the second driver from the comma-separated standings string.
-    query = """
-        SELECT
-            SUBSTR(
-                SUBSTR(standings, INSTR(standings, ',') + 1),
-                1,
-                INSTR(SUBSTR(standings, INSTR(standings, ',') + 1), ',') - 1
-            ) as runner_up,
-            COUNT(*) as second_place_finishes
-        FROM championship_results
-        GROUP BY runner_up
-        ORDER BY second_place_finishes DESC;
-    """
+    # This query extracts the driver from the specified position in the comma-separated standings string.
+    # The logic to extract the Nth element is complex in SQL.
+    # We will fetch all standings and process them in Python.
+    query = "SELECT standings FROM championship_results"
     rows = db.execute(query).fetchall()
 
-    runner_up_counts = {row['runner_up']: row['second_place_finishes'] for row in rows if row['runner_up']}
-
-    return jsonify(runner_up_counts)
+    position_counts = {}
+    for row in rows:
+        standings = row['standings'].split(',')
+        if len(standings) >= position:
+            driver = standings[position - 1].strip()
+            if driver:
+                position_counts[driver] = position_counts.get(driver, 0) + 1
+    
+    # Sort by count descending
+    sorted_counts = sorted(position_counts.items(), key=lambda item: item[1], reverse=True)
+    
+    return jsonify(dict(sorted_counts))
 
 @bp.route('/championship_win_probability', methods=['GET'])
 def championship_win_probability():
