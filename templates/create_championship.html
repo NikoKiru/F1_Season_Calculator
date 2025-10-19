@@ -19,21 +19,42 @@
             cursor: pointer;
         }
         .race-block.selected {
-            background-color: #a0e0a0;
+            background-color: #d10000;
+            color: #fff;
         }
     </style>
 </head>
 <body>
-    <h1>Create Your Own Championship</h1>
-    <p>Select the races you want to include in your championship.</p>
-    <div class="race-grid" id="race-grid">
-        {% for number, name in rounds.items() %}
-            <div class="race-block" data-round-number="{{ number }}">{{ name }}</div>
-        {% endfor %}
-    </div>
-    <button id="generate-championship">Generate Championship</button>
+    <header>
+        <h1><a href="{{ url_for('views.index') }}" class="header-link">F1 Championship Scenario Explorer</a></h1>
+        <form action="" method="get" id="search-form">
+            <input type="search" id="search-input" name="championship_id" placeholder="Search for a Championship ID...">
+            <button type="submit">Search</button>
+        </form>
+    </header>
+    <main>
+        <h2>Create Your Own Championship</h2>
+        <p>Select the races you want to include in your championship.</p>
+        <div class="race-grid" id="race-grid">
+            {% for number, name in rounds.items() %}
+                <div class="race-block" data-round-number="{{ number }}">{{ name }}</div>
+            {% endfor %}
+        </div>
+        <button id="generate-championship">Generate Championship</button>
+    </main>
+    <footer>
+        <p>&copy; 2025 F1 Season Calculator</p>
+    </footer>
 
     <script>
+        document.getElementById('search-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const championshipId = document.getElementById('search-input').value;
+            if (championshipId) {
+                window.location.href = `{{ url_for('views.championship_page', id=0) }}`.replace('0', championshipId);
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', function() {
             const raceGrid = document.getElementById('race-grid');
             const generateButton = document.getElementById('generate-championship');
