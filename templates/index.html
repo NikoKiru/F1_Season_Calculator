@@ -16,7 +16,14 @@
     </header>
     <main>
         <h2>Explore the Data</h2>
-        <p>Select an endpoint below to explore the championship data. For full API documentation, please see the <a href="/apidocs">Swagger UI</a>.</p>
+        <p>
+            Welcome to the F1 Championship Scenario Explorer! This project explores the vast possibilities of an F1 season.
+            Think of each of the 24 possible races in the 2025 season as a card in a deck. This application shuffles that deck and deals out different sized hands, from 1 to 24 races, calculating the championship outcome for each unique combination.
+            This process generates a massive database of over 16.7 million possible F1 seasons.
+        </p>
+        <p>
+            Below, you can explore the fascinating statistics that emerge from this huge dataset. Who is the most likely champion? What's the most common outcome for your favorite driver? Let's find out!
+        </p>
         
         <div class="endpoint-list">
             <a href="{{ url_for('views.championship_win_probability_page') }}" class="endpoint-link">Championship Win Probability</a>
