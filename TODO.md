@@ -4,4 +4,4 @@
 - [x] Add points total to standings in views
 - [x] Add drivers names 
 - [x] Add graphs later on
-- [ ] Add table for individual standinggs 
+- [x] Add table for individual standinggs 
