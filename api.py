@@ -123,54 +123,8 @@ def all_championship_wins():
 
 
 
-@bp.route('/largest_championship_wins', methods=['GET'])
-def largest_championship_wins():
-    """
-    Find Championships Won by a Driver with a Specific Number of Races
-    This endpoint returns the IDs of championships won by a specific driver in seasons with a given number of races.
-    ---
-    parameters:
-      - name: driver
-        in: query
-        type: string
-        required: true
-        description: The abbreviation of the driver.
-      - name: num_races
-        in: query
-        type: integer
-        required: true
-        description: The number of races in the championship.
-    responses:
-      200:
-        description: A list of championship IDs matching the criteria.
-      400:
-        description: Missing required query parameters.
-    """
-    # Get query parameters
-    driver = request.args.get('driver')  # Driver abbreviation
-    num_races = request.args.get('num_races', type=int)  # Number of races
 
-    if not driver or not num_races:
-        return jsonify({"error": "Please provide both 'driver' and 'num_races' as query parameters"}), 400
 
-    db = get_db()
-
-    table_name = 'championship_results'
-    championship_id_column = 'championship_id'
-
-    # Query using the indexed 'winner' and 'num_races' columns
-    query = f"""
-        SELECT {championship_id_column}
-        FROM {table_name}
-        WHERE num_races = ? AND winner = ?
-    """
-    rows = db.execute(query, (num_races, driver.upper())).fetchall()
-
-    # Extract championship IDs
-    matching_championships = [row[championship_id_column] for row in rows]
-
-    # Return the matching championship IDs
-    return jsonify({driver: matching_championships})
 
 @bp.route('/highest_position', methods=['GET'])
 def highest_position():

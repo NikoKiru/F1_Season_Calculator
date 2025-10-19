@@ -44,10 +44,6 @@ def min_races_to_win_page():
     data = response.get_json()
     return render_template('min_races_to_win.html', data=data)
 
-@bp.route('/largest_championship_wins')
-def largest_championship_wins_page():
-    return render_template('largest_championship_wins.html')
-
 @bp.route('/championship_win_probability')
 def championship_win_probability_page():
     response = championship_win_probability()
