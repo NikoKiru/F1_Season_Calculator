@@ -14,12 +14,12 @@
         <div class="data-container">
             {% if data %}
                 <ul class="driver-list">
-                {% for driver, info in data.items() %}
+                {% for item in data %}
                     <li>
-                        <span class="driver-name">{{ driver }}</span>
+                        <span class="driver-name">{{ item.driver }}</span>
                         <span class="driver-wins">
-                            Position: {{ info.position }} (IDs: 
-                            {% for id in info.championship_ids %}
+                            Position: {{ item.position }} (IDs: 
+                            {% for id in item.championship_ids %}
                                 <a href="{{ url_for('views.championship_page', id=id) }}">{{ id }}</a>{% if not loop.last %}, {% endif %}
                             {% endfor %})
                         </span>

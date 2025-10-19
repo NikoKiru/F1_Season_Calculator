@@ -208,7 +208,16 @@ def highest_position():
                 if len(highest_positions[driver]["championship_ids"]) < 5:
                     highest_positions[driver]["championship_ids"].append(championship_id)
 
-    return jsonify(highest_positions)
+    # Sort the results by position
+    sorted_positions = sorted(highest_positions.items(), key=lambda item: item[1]['position'])
+
+    # Create a list of dictionaries to preserve order
+    ordered_highest_positions = [
+        {'driver': k, 'position': v['position'], 'championship_ids': v['championship_ids']}
+        for k, v in sorted_positions
+    ]
+
+    return jsonify(ordered_highest_positions)
 
 
 @bp.route('/head_to_head/<string:driver1>/<string:driver2>', methods=['GET'])
