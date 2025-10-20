@@ -70,8 +70,8 @@
                 }
 
                 let html = '<ul class="driver-list">';
-                for (const [driver, count] of Object.entries(data)) {
-                    html += `<li><span class="driver-name">${driver}</span> <span class="driver-wins">${count} times</span></li>`;
+                for (const item of data) {
+                    html += `<li><span class="driver-name">${item.driver}</span> <span class="driver-wins">${item.count} times (${item.percentage}%)</span></li>`;
                 }
                 html += '</ul>';
                 resultsDiv.innerHTML = html;

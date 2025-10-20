@@ -263,6 +263,7 @@ def driver_positions():
     query = "SELECT standings FROM championship_results"
     rows = db.execute(query).fetchall()
 
+    total_championships = len(rows)
     position_counts = {}
     for row in rows:
         standings = row['standings'].split(',')
@@ -273,8 +274,18 @@ def driver_positions():
     
     # Sort by count descending
     sorted_counts = sorted(position_counts.items(), key=lambda item: item[1], reverse=True)
+
+    # Format the data with percentages
+    result_data = []
+    for driver, count in sorted_counts:
+        percentage = (count / total_championships) * 100 if total_championships > 0 else 0
+        result_data.append({
+            "driver": driver,
+            "count": count,
+            "percentage": round(percentage, 2)
+        })
     
-    return jsonify(dict(sorted_counts))
+    return jsonify(result_data)
 
 @bp.route('/championship_win_probability', methods=['GET'])
 def championship_win_probability():
