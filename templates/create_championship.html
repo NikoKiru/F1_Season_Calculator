@@ -44,43 +44,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-    document.getElementById('search-form').addEventListener('submit', function(event) {
-        event.preventDefault();
-        const championshipId = document.getElementById('search-input').value;
-        if (championshipId) {
-            window.location.href = `{{ url_for('views.championship_page', id=0) }}`.replace('0', championshipId);
-        }
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const raceGrid = document.getElementById('race-grid');
-        const generateButton = document.getElementById('generate-championship');
-        const selectedRounds = new Set();
-
-        raceGrid.addEventListener('click', function(event) {
-            const target = event.target;
-            if (target.classList.contains('race-block')) {
-                const roundNumber = target.dataset.roundNumber;
-                if (selectedRounds.has(roundNumber)) {
-                    selectedRounds.delete(roundNumber);
-                    target.classList.remove('selected');
-                } else {
-                    selectedRounds.add(roundNumber);
-                    target.classList.add('selected');
-                }
-            }
-        });
-
-        generateButton.addEventListener('click', function() {
-            if (selectedRounds.size === 0) {
-                alert('Please select at least one race.');
-                return;
-            }
-            const roundsArray = Array.from(selectedRounds);
-            // Redirect to a URL that will be handled by a new API endpoint
-            window.location.href = `/api/create_championship?rounds=${roundsArray.join(',')}`;
-        });
-    });
-</script>
+<script src="{{ url_for('static', filename='js/create_championship.js') }}"></script>
 {% endblock %}
