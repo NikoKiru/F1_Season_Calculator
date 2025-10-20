@@ -18,28 +18,32 @@ A Python-based tool to analyze Formula 1 championship scenarios. It calculates s
 - **Database Storage**: Stores all generated championship standings in a SQLite database.
 - **REST API**: Exposes the championship data through a Flask API with interactive Swagger documentation.
 - **Web Interface**: A user-friendly frontend to visualize and interact with the API endpoints.
-- **Scalable Architecture**: Built using the Flask Application Factory pattern for better organization.
+- **Modular Architecture**: Built using the Flask Application Factory pattern and feature-based blueprints for better organization and scalability.
 - **Custom CLI Commands**: Provides commands for easy database initialization and data processing.
 
 ## Project Structure
 
-The project is organized into a scalable Flask application package:
+The project is organized into a scalable Flask application with a modular, feature-based structure.
 
 ```
 F1_Season_Calculator/
-├── data/                 # Contains the raw data files (e.g., championships.csv)
-├── F1_Season_Calculator/   # The main Flask application package
-│   ├── __init__.py       # Application factory
-│   ├── api.py            # Contains all REST API endpoints
-│   ├── commands.py       # Custom Flask CLI commands (e.g., process-data)
-│   ├── db.py             # Database initialization and management
-│   ├── static/           # CSS and JavaScript files
-│   ├── templates/        # HTML templates for the web interface
-│   └── views.py          # Routes for rendering web pages
-├── instance/             # Instance-specific data (e.g., the SQLite database)
-├── .flaskenv             # Environment variables for Flask
-├── README.md             # This file
-└── requirements.txt      # Python dependencies
+├── data/                   # Contains the raw data files (e.g., championships.csv)
+├── F1_Season_Calculator/     # The main Flask application package
+│   ├── championship/       # Feature module for all championship logic
+│   │   ├── __init__.py     # Marks the directory as a Python module
+│   │   ├── api.py          # Contains all REST API endpoints
+│   │   ├── commands.py     # Custom Flask CLI commands
+│   │   ├── logic.py        # Business logic for calculations
+│   │   ├── models.py       # Data models (e.g., driver and round names)
+│   │   └── views.py        # Routes for rendering web pages
+│   ├── static/             # CSS, JavaScript, and image files
+│   ├── templates/          # HTML templates, including a base template
+│   ├── __init__.py         # Application factory (create_app)
+│   └── db.py               # Database initialization and management
+├── instance/               # Instance-specific data (e.g., the SQLite database)
+├── .flaskenv               # Environment variables for Flask
+├── README.md               # This file
+└── requirements.txt        # Python dependencies
 ```
 
 ## Getting Started
@@ -115,23 +119,21 @@ F1_Season_Calculator/
 
 ## API Endpoints
 
-The API provides several endpoints to query the championship data. All endpoints return data in JSON format.
-
-An interactive Swagger UI is also available at `/apidocs/` when the server is running, which provides detailed documentation for all endpoints.
+The API provides several endpoints to query the championship data. All endpoints return data in JSON format. An interactive Swagger UI is also available at `/apidocs/` when the server is running.
 
 ### Endpoint Summary
 
-| Method | Endpoint                                               | Description                                                              |
-|--------|--------------------------------------------------------|--------------------------------------------------------------------------|
-| `GET`  | `/api/data`                                            | Returns all championship data from the database.                         |
-| `GET`  | `/api/championship/<id>`                               | Returns data for a specific championship by its ID.                      |
-| `GET`  | `/api/all_championship_wins`                           | Returns a summary of championship wins for all drivers.                  |
-| `GET`  | `/api/largest_championship_wins`                       | Returns championship IDs won by a driver with a specific number of races. |
-| `GET`  | `/api/highest_position`                                | Returns the highest championship position achieved by each driver, including the corresponding championship ID(s).       |
-| `GET`  | `/api/head_to_head/<driver1>/<driver2>`                | Compares two drivers to see who finished ahead more often.               |
-| `GET`  | `/api/min_races_to_win`                                | Finds the minimum number of races a driver needed to win a championship. |
-| `GET`  | `/api/most_common_runner_up`                           | Counts how many times each driver finished in second place.              |
-| `GET`  | `/api/championship_win_probability`                    | Returns the win probability for each driver based on season length.      |
+| Method | Endpoint                                | Description                                                              |
+|--------|-----------------------------------------|--------------------------------------------------------------------------|
+| `GET`  | `/api/data`                             | Returns paginated championship data from the database.                   |
+| `GET`  | `/api/championship/<id>`                | Returns data for a specific championship by its ID.                      |
+| `GET`  | `/api/all_championship_wins`            | Returns a summary of championship wins for all drivers.                  |
+| `GET`  | `/api/highest_position`                 | Returns the highest championship position achieved by each driver.       |
+| `GET`  | `/api/head_to_head/<driver1>/<driver2>` | Compares two drivers to see who finished ahead more often.               |
+| `GET`  | `/api/min_races_to_win`                 | Finds the minimum number of races a driver needed to win a championship. |
+| `GET`  | `/api/driver_positions`                 | Counts how many times each driver finished in a specific position.       |
+| `GET`  | `/api/championship_win_probability`     | Returns the win probability for each driver based on season length.      |
+| `GET`  | `/api/create_championship`              | Finds a championship from a list of rounds and redirects to its page.    |
 
 ### Example Requests
 
@@ -145,9 +147,9 @@ An interactive Swagger UI is also available at `/apidocs/` when the server is ru
     curl http://127.0.0.1:5000/api/head_to_head/VER/NOR
     ```
 
--   **Get minimum races to win:**
+-   **Get driver positions for 1st place:**
     ```bash
-    curl http://127.0.0.1:5000/api/min_races_to_win
+    curl "http://127.0.0.1:5000/api/driver_positions?position=1"
     ```
 
 ## Database Schema
@@ -157,17 +159,19 @@ The `championships.db` database contains a single table, `championship_results`,
 ```sql
 CREATE TABLE championship_results (
     championship_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    num_races INTEGER,
-    rounds TEXT,
-    standings TEXT,
-    winner TEXT
+    num_races INTEGER NOT NULL,
+    rounds TEXT NOT NULL,
+    standings TEXT NOT NULL,
+    winner TEXT,
+    points TEXT NOT NULL
 );
 ```
 -   `rounds`: A comma-separated string of the race numbers included in the championship.
 -   `standings`: A comma-separated string of driver abbreviations, ordered by their final rank.
 -   `winner`: The abbreviation of the driver who won the championship.
+-   `points`: A comma-separated string of the total points for each driver, in the same order as `standings`.
 
-Indexes are created on `winner` and `num_races` to improve query performance.
+Indexes are created on `winner`, `num_races`, and `rounds` to improve query performance.
 
 ## Contributing
 
