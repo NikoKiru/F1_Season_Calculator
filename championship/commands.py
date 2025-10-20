@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 import click
 from flask.cli import with_appcontext
-from .db import get_db
+from ..db import get_db
 import os
 from flask import current_app
 

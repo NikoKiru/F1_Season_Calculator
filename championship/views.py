@@ -2,9 +2,9 @@ from flask import (
     Blueprint, render_template
 )
 from .api import get_championship, all_championship_wins, highest_position, driver_positions, championship_win_probability, min_races_to_win
-from .rounds import ROUND_NAMES_2025
+from .models import ROUND_NAMES_2025
 
-bp = Blueprint('views', __name__)
+bp = Blueprint('views', __name__, template_folder='templates')
 
 @bp.route('/')
 def index():

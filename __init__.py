@@ -26,16 +26,13 @@ def create_app(test_config=None):
     from . import db
     db.init_app(app)
 
-    from . import commands
-    commands.init_app(app)
-
     from flasgger import Swagger
     swagger = Swagger(app)
 
-    # Register blueprints here
-    from . import views
+    # Register blueprints from the championship module
+    from .championship import api, commands, views
     app.register_blueprint(views.bp)
-    from . import api
     app.register_blueprint(api.bp)
+    commands.init_app(app)
 
     return app

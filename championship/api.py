@@ -1,9 +1,8 @@
 from flask import (
     Blueprint, jsonify, request, redirect, url_for
 )
-from .db import get_db
-from .rounds import ROUND_NAMES_2025
-from .drivers import DRIVER_NAMES
+from ..db import get_db
+from .models import ROUND_NAMES_2025, DRIVER_NAMES
 from .logic import get_round_points_for_championship, calculate_championship_from_rounds
 
 bp = Blueprint('api', __name__, url_prefix='/api')
