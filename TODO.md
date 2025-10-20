@@ -7,15 +7,9 @@
 - [x] Add table for individual standings
 - [ ] Create page for see each number of times a driver has a position finish
 
-3. Code Refactoring and Abstraction
-Problem: There is some code duplication, especially in the API endpoints where championship data is processed and formatted.
-Proposed Solution: I would create a helper function, something like format_championship_data(row), that takes a database row and returns a fully formatted dictionary. This function would handle splitting strings, looking up driver names, and calculating any other necessary fields.
-Benefits: This would reduce code duplication, make the API endpoints cleaner, and ensure that championship data is formatted consistently across the application.
+- [x] 3. Code Refactoring and Abstraction. Problem: There is some code duplication, especially in the API endpoints where championship data is processed and formatted.Proposed Solution: I would create a helper function, something like format_championship_data(row), that takes a database row and returns a fully formatted dictionary. This function would handle splitting strings, looking up driver names, and calculating any other necessary fields.Benefits: This would reduce code duplication, make the API endpoints cleaner, and ensure that championship data is formatted consistently across the application.
 
-4. Frontend Improvements
-Problem: The JavaScript code is currently embedded directly within the HTML templates.
-Proposed Solution: I would move all the JavaScript into separate .js files within the static directory. Each page that needs JavaScript would then include the relevant script file.
-Benefits: This is a standard best practice that improves code organization, makes the JavaScript easier to maintain and debug, and allows the browser to cache the scripts for better performance.
+- [x] Frontend ImprovementsProblem: The JavaScript code is currently embedded directly within the HTML templates.Proposed Solution: I would move all the JavaScript into separate .js files within the static directory. Each page that needs JavaScript would then include the relevant script file.Benefits: This is a standard best practice that improves code organization, makes the JavaScript easier to maintain and debug, and allows the browser to cache the scripts for better performance.
 
 5. Add Unit and Integration Tests
 Problem: The project currently lacks any automated tests.
