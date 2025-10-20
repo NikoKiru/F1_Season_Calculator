@@ -8,6 +8,31 @@ from .logic import get_round_points_for_championship, calculate_championship_fro
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
+def format_championship_data(row, with_round_points=False):
+    """Formats a championship row from the database into a dictionary."""
+    if not row:
+        return None
+
+    championship_data = dict(row)
+    
+    if championship_data.get('rounds'):
+        round_numbers = [int(r) for r in championship_data['rounds'].split(',')]
+        round_names = [ROUND_NAMES_2025.get(r, 'Unknown') for r in round_numbers]
+        championship_data['round_names'] = round_names
+
+    if championship_data.get('standings') and championship_data.get('points'):
+        drivers = championship_data['standings'].split(',')
+        points = [int(p) for p in championship_data['points'].split(',')]
+        championship_data['driver_points'] = dict(zip(drivers, points))
+        championship_data['driver_names'] = {driver: DRIVER_NAMES.get(driver, 'Unknown') for driver in drivers}
+
+        if with_round_points and championship_data.get('rounds'):
+            round_numbers = [int(r) for r in championship_data['rounds'].split(',')]
+            round_points_data = get_round_points_for_championship(drivers, round_numbers)
+            championship_data['round_points_data'] = round_points_data
+            
+    return championship_data
+
 # Function to query all data from the SQLite database
 def get_all_data(page=1, per_page=100):
     db = get_db()
@@ -22,20 +47,8 @@ def get_all_data(page=1, per_page=100):
     # Fetch paginated data from the table
     rows = db.execute(f"SELECT * FROM {table_name} LIMIT ? OFFSET ?", (per_page, offset)).fetchall()
 
-    # Format data as a list of dictionaries
-    data = []
-    for row in rows:
-        championship_data = dict(row)
-        if championship_data.get('rounds'):
-            round_numbers = [int(r) for r in championship_data['rounds'].split(',')]
-            round_names = [ROUND_NAMES_2025.get(r, 'Unknown') for r in round_numbers]
-            championship_data['round_names'] = round_names
-        if championship_data.get('standings') and championship_data.get('points'):
-            drivers = championship_data['standings'].split(',')
-            points = [int(p) for p in championship_data['points'].split(',')]
-            championship_data['driver_points'] = dict(zip(drivers, points))
-            championship_data['driver_names'] = {driver: DRIVER_NAMES.get(driver, 'Unknown') for driver in drivers}
-        data.append(championship_data)
+    # Format data using the helper function
+    data = [format_championship_data(row) for row in rows]
     
     return data, total_count
 
@@ -73,8 +86,8 @@ def get_data_route():
         "total_pages": total_pages,
         "current_page": page,
         "per_page": per_page,
-        "next_page": page + 1 if page < total_pages else None,
-        "prev_page": page - 1 if page > 1 else None,
+        "next_page": f"/api/data?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        "prev_page": f"/api/data?page={page - 1}&per_page={per_page}" if page > 1 else None,
         "results": data
     }
     
@@ -101,24 +114,9 @@ def get_championship(id):
     db = get_db()
     row = db.execute(f"SELECT * FROM championship_results WHERE championship_id = ?", (id,)).fetchone()
 
-    if row:
-        championship_data = dict(row)
-        if championship_data.get('rounds'):
-            round_numbers = [int(r) for r in championship_data['rounds'].split(',')]
-            round_names = [ROUND_NAMES_2025.get(r, 'Unknown') for r in round_numbers]
-            championship_data['round_names'] = round_names
-        if championship_data.get('standings') and championship_data.get('points'):
-            drivers = championship_data['standings'].split(',')
-            points = [int(p) for p in championship_data['points'].split(',')]
-            championship_data['driver_points'] = dict(zip(drivers, points))
-            championship_data['driver_names'] = {driver: DRIVER_NAMES.get(driver, 'Unknown') for driver in drivers}
-            
-            # Get round-by-round points
-            if championship_data.get('rounds'):
-                round_numbers = [int(r) for r in championship_data['rounds'].split(',')]
-                round_points_data = get_round_points_for_championship(drivers, round_numbers)
-                championship_data['round_points_data'] = round_points_data
+    championship_data = format_championship_data(row, with_round_points=True)
 
+    if championship_data:
         return jsonify(championship_data)
     else:
         return jsonify({"error": "Championship not found"}), 404
