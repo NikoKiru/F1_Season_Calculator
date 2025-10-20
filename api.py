@@ -9,13 +9,18 @@ from .logic import get_round_points_for_championship, calculate_championship_fro
 bp = Blueprint('api', __name__, url_prefix='/api')
 
 # Function to query all data from the SQLite database
-def get_all_data():
+def get_all_data(page=1, per_page=100):
     db = get_db()
-    # Replace `table_name` with the actual name of your table
     table_name = 'championship_results'
 
-    # Fetch all data from the table
-    rows = db.execute(f"SELECT * FROM {table_name}").fetchall()
+    # Get total count for pagination metadata
+    total_count = db.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+
+    # Calculate offset
+    offset = (page - 1) * per_page
+
+    # Fetch paginated data from the table
+    rows = db.execute(f"SELECT * FROM {table_name} LIMIT ? OFFSET ?", (per_page, offset)).fetchall()
 
     # Format data as a list of dictionaries
     data = []
@@ -31,7 +36,8 @@ def get_all_data():
             championship_data['driver_points'] = dict(zip(drivers, points))
             championship_data['driver_names'] = {driver: DRIVER_NAMES.get(driver, 'Unknown') for driver in drivers}
         data.append(championship_data)
-    return data
+    
+    return data, total_count
 
 # Flask route to return all data as JSON
 @bp.route('/data', methods=['GET'])
@@ -40,12 +46,39 @@ def get_data_route():
     Fetch All Championship Data
     This endpoint retrieves all championship results stored in the database.
     ---
+    parameters:
+      - name: page
+        in: query
+        type: integer
+        default: 1
+        description: The page number to retrieve.
+      - name: per_page
+        in: query
+        type: integer
+        default: 100
+        description: The number of results to retrieve per page.
     responses:
       200:
-        description: A list of all championship results.
+        description: A paginated list of all championship results.
     """
-    data = get_all_data()
-    return jsonify(data)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 100, type=int)
+    
+    data, total_count = get_all_data(page, per_page)
+    
+    total_pages = (total_count + per_page - 1) // per_page
+    
+    response = {
+        "total_results": total_count,
+        "total_pages": total_pages,
+        "current_page": page,
+        "per_page": per_page,
+        "next_page": page + 1 if page < total_pages else None,
+        "prev_page": page - 1 if page > 1 else None,
+        "results": data
+    }
+    
+    return jsonify(response)
 
 @bp.route('/championship/<int:id>', methods=['GET'])
 def get_championship(id):
