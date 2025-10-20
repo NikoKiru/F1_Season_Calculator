@@ -7,19 +7,31 @@
 {% block content %}
 <div class="data-container">
     {% if data %}
-        <ul class="driver-list">
-        {% for item in data %}
-            <li>
-                <span class="driver-name">{{ item.driver }}</span>
-                <span class="driver-wins">
-                    Position: {{ item.position }} (IDs: 
-                    {% for id in item.championship_ids %}
-                        <a href="{{ url_for('views.championship_page', id=id) }}">{{ id }}</a>{% if not loop.last %}, {% endif %}
-                    {% endfor %})
-                </span>
-            </li>
-        {% endfor %}
-        </ul>
+        <table class="standings-table">
+            <thead>
+                <tr>
+                    <th>Driver</th>
+                    <th>Highest Position</th>
+                    <th>Championships</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data %}
+                    <tr>
+                        <td>{{ item.driver }}</td>
+                        <td>{{ item.position }}</td>
+                        <td>
+                            {% for id in item.championship_ids[:5] %}
+                                <a href="{{ url_for('views.championship_page', id=id) }}">{{ id }}</a>{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                            {% if item.championship_ids|length > 5 %}
+                                ...
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     {% else %}
         <p>No data available.</p>
     {% endif %}
