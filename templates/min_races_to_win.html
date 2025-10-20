@@ -1,31 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Min Races to Win - F1 Scenarios</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-</head>
-<body>
-    <header>
-        <h1>Minimum Races to Win a Championship</h1>
-    </header>
-    <main>
-        <div class="data-container">
-            <ul class="driver-list">
-                {% for driver, min_races in data.items() %}
-                <li>
-                    <span class="driver-name">{{ driver }}</span>
-                    <span>{{ min_races }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        <a href="{{ url_for('views.index') }}" class="back-link">Back to Home</a>
-    </main>
-    <footer>
-        <p>&copy; 2025 F1 Season Calculator</p>
-    </footer>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Min Races to Win{% endblock %}
+
+{% block page_title %}Minimum Races to Win a Championship{% endblock %}
+
+{% block content %}
+<div class="data-container">
+    <ul class="driver-list">
+        {% for driver, min_races in data.items() %}
+        <li>
+            <span class="driver-name">{{ driver }}</span>
+            <span>{{ min_races }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+<a href="{{ url_for('views.index') }}" class="back-link">Back to Home</a>
+{% endblock %}

@@ -1,40 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Highest Position - F1 Scenarios</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-</head>
-<body>
-    <header>
-        <h1>Highest Championship Position</h1>
-    </header>
-    <main>
-        <div class="data-container">
-            {% if data %}
-                <ul class="driver-list">
-                {% for item in data %}
-                    <li>
-                        <span class="driver-name">{{ item.driver }}</span>
-                        <span class="driver-wins">
-                            Position: {{ item.position }} (IDs: 
-                            {% for id in item.championship_ids %}
-                                <a href="{{ url_for('views.championship_page', id=id) }}">{{ id }}</a>{% if not loop.last %}, {% endif %}
-                            {% endfor %})
-                        </span>
-                    </li>
-                {% endfor %}
-                </ul>
-            {% else %}
-                <p>No data available.</p>
-            {% endif %}
-        </div>
-        <a href="/" class="back-link">Back to Home</a>
-    </main>
-    <footer>
-        <p>&copy; 2025 F1 Season Calculator</p>
-    </footer>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Highest Position{% endblock %}
+
+{% block page_title %}Highest Championship Position{% endblock %}
+
+{% block content %}
+<div class="data-container">
+    {% if data %}
+        <ul class="driver-list">
+        {% for item in data %}
+            <li>
+                <span class="driver-name">{{ item.driver }}</span>
+                <span class="driver-wins">
+                    Position: {{ item.position }} (IDs: 
+                    {% for id in item.championship_ids %}
+                        <a href="{{ url_for('views.championship_page', id=id) }}">{{ id }}</a>{% if not loop.last %}, {% endif %}
+                    {% endfor %})
+                </span>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No data available.</p>
+    {% endif %}
+</div>
+<a href="/" class="back-link">Back to Home</a>
+{% endblock %}

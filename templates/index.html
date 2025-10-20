@@ -1,52 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F1 Championship Scenarios</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-</head>
-<body>
-    <header>
-        <h1>F1 Championship Scenario Explorer</h1>
-        <form action="" method="get" id="search-form">
-            <input type="search" id="search-input" name="championship_id" placeholder="Search for a Championship ID...">
-            <button type="submit">Search</button>
-        </form>
-    </header>
-    <main>
-        <h2>Explore the Data</h2>
-        <p>
-            Welcome to the F1 Championship Scenario Explorer! This project explores the vast possibilities of an F1 season.
-            Think of each of the 24 possible races in the 2025 season as a card in a deck. This application shuffles that deck and deals out different sized hands, from 1 to 24 races, calculating the championship outcome for each unique combination.
-            This process generates a massive database of over 16.7 million possible F1 seasons.
-        </p>
-        <p>
-            Below, you can explore the fascinating statistics that emerge from this huge dataset. Who is the most likely champion? What's the most common outcome for your favorite driver? Let's find out!
-        </p>
-        
-        <div class="endpoint-list">
-            <a href="{{ url_for('views.create_championship_page') }}" class="endpoint-link">Create Your Own Championship</a>
-            <a href="{{ url_for('views.championship_win_probability_page') }}" class="endpoint-link">Championship Win Probability</a>
-            <a href="{{ url_for('views.all_championship_wins_page') }}" class="endpoint-link">All Championship Wins</a>
-            <a href="{{ url_for('views.highest_position_page') }}" class="endpoint-link">Highest Position per Driver</a>
-            <a href="{{ url_for('views.driver_positions_page') }}" class="endpoint-link">Driver Positions</a>
-            <a href="{{ url_for('views.head_to_head_page') }}" class="endpoint-link">Head-to-Head Comparison</a>
-            <a href="{{ url_for('views.min_races_to_win_page') }}" class="endpoint-link">Minimum Races to Win</a>
-        </div>
-    </main>
-    <footer>
-        <p>&copy; 2025 F1 Season Calculator</p>
-    </footer>
-    <script>
-        document.getElementById('search-form').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const championshipId = document.getElementById('search-input').value;
-            if (championshipId) {
-                window.location.href = `{{ url_for('views.championship_page', id=0) }}`.replace('0', championshipId);
-            }
-        });
-    </script>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}F1 Championship Scenarios{% endblock %}
+
+{% block page_title %}F1 Championship Scenario Explorer{% endblock %}
+
+{% block header %}
+<h1>F1 Championship Scenario Explorer</h1>
+<form action="" method="get" id="search-form">
+    <input type="search" id="search-input" name="championship_id" placeholder="Search for a Championship ID...">
+    <button type="submit">Search</button>
+</form>
+{% endblock %}
+
+{% block content %}
+<h2>Explore the Data</h2>
+<p>
+    Welcome to the F1 Championship Scenario Explorer! This project explores the vast possibilities of an F1 season.
+    Think of each of the 24 possible races in the 2025 season as a card in a deck. This application shuffles that deck and deals out different sized hands, from 1 to 24 races, calculating the championship outcome for each unique combination.
+    This process generates a massive database of over 16.7 million possible F1 seasons.
+</p>
+<p>
+    Below, you can explore the fascinating statistics that emerge from this huge dataset. Who is the most likely champion? What's the most common outcome for your favorite driver? Let's find out!
+</p>
+
+<div class="endpoint-list">
+    <a href="{{ url_for('views.create_championship_page') }}" class="endpoint-link">Create Your Own Championship</a>
+    <a href="{{ url_for('views.championship_win_probability_page') }}" class="endpoint-link">Championship Win Probability</a>
+    <a href="{{ url_for('views.all_championship_wins_page') }}" class="endpoint-link">All Championship Wins</a>
+    <a href="{{ url_for('views.highest_position_page') }}" class="endpoint-link">Highest Position per Driver</a>
+    <a href="{{ url_for('views.driver_positions_page') }}" class="endpoint-link">Driver Positions</a>
+    <a href="{{ url_for('views.head_to_head_page') }}" class="endpoint-link">Head-to-Head Comparison</a>
+    <a href="{{ url_for('views.min_races_to_win_page') }}" class="endpoint-link">Minimum Races to Win</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('search-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const championshipId = document.getElementById('search-input').value;
+        if (championshipId) {
+            window.location.href = `{{ url_for('views.championship_page', id=0) }}`.replace('0', championshipId);
+        }
+    });
+</script>
+{% endblock %}

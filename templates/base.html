@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %} - F1 Scenarios</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header>
+        {% block header %}
+            <h1><a href="{{ url_for('views.index') }}" style="text-decoration: none; color: white;">{% block page_title %}{% endblock %}</a></h1>
+        {% endblock %}
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        <p>&copy; 2025 F1 Season Calculator</p>
+    </footer>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
