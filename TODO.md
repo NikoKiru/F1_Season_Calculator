@@ -5,7 +5,7 @@
 - [x] Add drivers names 
 - [x] Add graphs later on
 - [x] Add table for individual standings
-- [ ] Create page for see each number of times a driver has a position finish
+- [x] Create page for see each number of times a driver has a position finish
 
 - [x] 3. Code Refactoring and Abstraction. Problem: There is some code duplication, especially in the API endpoints where championship data is processed and formatted.Proposed Solution: I would create a helper function, something like format_championship_data(row), that takes a database row and returns a fully formatted dictionary. This function would handle splitting strings, looking up driver names, and calculating any other necessary fields.Benefits: This would reduce code duplication, make the API endpoints cleaner, and ensure that championship data is formatted consistently across the application.
 

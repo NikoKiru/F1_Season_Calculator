@@ -346,7 +346,7 @@ def championship_win_probability():
     
     season_lengths = sorted(seasons_per_length.keys())
 
-    drivers = sorted(driver_total_wins.keys(), key=lambda d: driver_total_wins[d], reverse=True)
+    drivers = sorted(driver_total_wins.keys())
 
     driver_data = []
     for driver in drivers:
@@ -362,6 +362,10 @@ def championship_win_probability():
             percentage = (wins / total_seasons) * 100 if total_seasons > 0 else 0
             data["percentages"].append(round(percentage, 2))
         driver_data.append(data)
+
+    # Sort driver_data based on the percentage in the last season length column
+    if driver_data and season_lengths:
+        driver_data.sort(key=lambda x: x['percentages'][-1] if x['percentages'] else 0, reverse=True)
 
     response_data = {
         "season_lengths": season_lengths,
