@@ -6,33 +6,62 @@
 
 {% block head %}
 <style>
-    .position-selector {
+    .slider-container {
+        width: 80%;
+        max-width: 600px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+    #position-slider {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 8px;
+        background: #ddd;
+        outline: none;
+        opacity: 0.7;
+        -webkit-transition: .2s;
+        transition: opacity .2s;
+        border-radius: 5px;
+    }
+    #position-slider:hover {
+        opacity: 1;
+    }
+    #position-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        background: #d10000;
+        cursor: pointer;
+        border-radius: 50%;
+    }
+    #position-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background: #d10000;
+        cursor: pointer;
+        border-radius: 50%;
+    }
+    .slider-labels {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 20px;
-    }
-    .position-selector input {
-        width: 60px;
-        text-align: center;
-        margin: 0 10px;
-    }
-    .position-selector button {
-        font-size: 1.2em;
-        padding: 5px 10px;
+        justify-content: space-between;
+        margin-top: 10px;
+        font-weight: bold;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="position-selector">
-    <button id="decrease-pos">-</button>
-    <input type="number" id="position-input" value="2" min="1" max="20">
-    <button id="increase-pos">+</button>
+<div class="slider-container">
+    <input type="range" id="position-slider" value="10" min="1" max="20">
+    <div class="slider-labels">
+        <span>1</span>
+        <span>20</span>
+    </div>
 </div>
 
 <div class="data-container">
-    <h2 id="position-header">Position: 2</h2>
+    <h2 id="position-header">Position: 10</h2>
     <div id="results">
         <p>Loading...</p>
     </div>
