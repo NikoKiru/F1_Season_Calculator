@@ -119,10 +119,6 @@ def get_championship(id):
         return jsonify(championship_data)
     else:
         return jsonify({"error": "Championship not found"}), 404
-
-
-
-@bp.route('/all_championship_wins', methods=['GET'])
 def all_championship_wins():
     """
     Get All Championship Wins for All Drivers
@@ -226,9 +222,11 @@ def head_to_head(driver1, driver2):
         description: A JSON object showing the win count for each driver in the head-to-head comparison.
     """
     db = get_db()
+    d1_upper = driver1.upper()
+    d2_upper = driver2.upper()
 
-    d1 = driver1.upper()
-    d2 = driver2.upper()
+    if d1_upper not in DRIVER_NAMES or d2_upper not in DRIVER_NAMES:
+        return jsonify({"error": "Invalid driver abbreviation"}), 400
 
     # This query is complex. It adds commas to the start and end of the standings string
     # to safely find the position of a driver's abbreviation.
@@ -239,11 +237,11 @@ def head_to_head(driver1, driver2):
         FROM championship_results
         WHERE INSTR(standings, ?) > 0 AND INSTR(standings, ?) > 0;
     """
-    result = db.execute(query, (d1, d2, d1, d2, d1, d2)).fetchone()
+    result = db.execute(query, (d1_upper, d2_upper, d1_upper, d2_upper, d1_upper, d2_upper)).fetchone()
     
     return jsonify({
-        d1: result['driver1_wins'],
-        d2: result['driver2_wins']
+        d1_upper: result['driver1_wins'],
+        d2_upper: result['driver2_wins']
     })
 
 @bp.route('/min_races_to_win', methods=['GET'])
@@ -379,7 +377,7 @@ def championship_win_probability():
 @bp.route('/create_championship', methods=['GET'])
 def create_championship():
     """
-    Finds an existing championship from a list of rounds and redirects to it.
+    Finds an existing championship from a list of rounds and returns its URL.
     """
     rounds_str = request.args.get('rounds')
     if not rounds_str:
@@ -388,7 +386,7 @@ def create_championship():
     try:
         # Sort the round numbers to match the database format
         round_numbers = sorted([int(r) for r in rounds_str.split(',')])
-    except ValueError:
+    except (ValueError, TypeError):
         return jsonify({"error": "Invalid round numbers"}), 400
 
     if not round_numbers:
@@ -404,7 +402,7 @@ def create_championship():
 
     if row:
         championship_id = row['championship_id']
-        return redirect(url_for('views.championship_page', id=championship_id))
+        return jsonify({'url': url_for('views.championship_page', id=championship_id)})
     else:
         # In a real scenario, you might want a more user-friendly error page.
         return jsonify({"error": "Championship with this combination of rounds not found"}), 404

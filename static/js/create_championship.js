@@ -32,7 +32,26 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         const roundsArray = Array.from(selectedRounds);
-        window.location.href = `/api/create_championship?rounds=${roundsArray.join(',')}`;
+        
+        const url = `/api/create_championship?rounds=${roundsArray.join(',')}`;
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.error || 'Server error'); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.url) {
+                    window.location.href = data.url;
+                } else {
+                    alert('Could not find championship.');
+                }
+            })
+            .catch(error => {
+                alert(`Error: ${error.message}`);
+            });
     });
 
     randomButton.addEventListener('click', function() {

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %}Internal Server Error{% endblock %}
+
+{% block page_title %}Internal Server Error{% endblock %}
+
+{% block content %}
+<p>An unexpected error occurred on our end. We're working to fix it.</p>
+<a href="{{ url_for('views.index') }}" class="back-link">Go back to the homepage</a>
+{% endblock %}

@@ -13,9 +13,14 @@ def index():
 @bp.route('/championship/<int:id>')
 def championship_page(id):
     response = get_championship(id)
-    data = response.get_json()
     if response.status_code != 200:
-        return render_template('championship.html', data=None), 404
+        data = None
+    else:
+        data = response.get_json()
+    
+    if not data:
+        return render_template('championship.html', data=None, error="Championship not found"), 404
+        
     return render_template('championship.html', data=data)
 
 @bp.route('/all_championship_wins')

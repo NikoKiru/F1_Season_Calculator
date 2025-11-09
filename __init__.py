@@ -30,9 +30,10 @@ def create_app(test_config=None):
     swagger = Swagger(app)
 
     # Register blueprints from the championship module
-    from .championship import api, commands, views
+    from .championship import api, commands, views, errors
     app.register_blueprint(views.bp)
     app.register_blueprint(api.bp)
+    errors.init_app(app)
     commands.init_app(app)
 
     return app
