@@ -9,6 +9,7 @@ document.getElementById('search-form').addEventListener('submit', function(event
 document.addEventListener('DOMContentLoaded', function() {
     const raceGrid = document.getElementById('race-grid');
     const generateButton = document.getElementById('generate-championship');
+    const randomButton = document.getElementById('random-races');
     const selectedRounds = new Set();
 
     raceGrid.addEventListener('click', function(event) {
@@ -32,5 +33,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         const roundsArray = Array.from(selectedRounds);
         window.location.href = `/api/create_championship?rounds=${roundsArray.join(',')}`;
+    });
+
+    randomButton.addEventListener('click', function() {
+        // Clear existing selections
+        selectedRounds.clear();
+        const allRaces = raceGrid.querySelectorAll('.race-block');
+        allRaces.forEach(race => {
+            race.classList.remove('selected');
+            if (Math.random() < 0.5) {
+                const roundNumber = race.dataset.roundNumber;
+                selectedRounds.add(roundNumber);
+                race.classList.add('selected');
+            }
+        });
+
+        // Ensure at least one race is selected
+        if (selectedRounds.size === 0 && allRaces.length > 0) {
+            const randomIndex = Math.floor(Math.random() * allRaces.length);
+            const randomRace = allRaces[randomIndex];
+            const roundNumber = randomRace.dataset.roundNumber;
+            selectedRounds.add(roundNumber);
+            randomRace.classList.add('selected');
+        }
     });
 });

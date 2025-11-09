@@ -161,3 +161,9 @@ footer {
 .standings-table th {
     background-color: #f2f2f2;
 }
+
+.button-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
