@@ -1,4 +1,4 @@
-# F1 Season Calculator
+# F1 Season Calculator 🏎
 
 ![Python](https://img.shields.io/badge/python-3.6+-blue.svg)
 ![Flask](https://img.shields.io/badge/flask-%23000.svg?style=for-the-badge&logo=flask&logoColor=white)
