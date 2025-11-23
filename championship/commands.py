@@ -6,12 +6,21 @@ from flask.cli import with_appcontext
 from ..db import get_db
 import os
 from flask import current_app
+from typing import Tuple, List
 
 # Step 1: Read the CSV file and convert to NumPy for performance
-def read_csv(file_path):
-    data = pd.read_csv(file_path)
-    drivers = data.iloc[:, 0].to_numpy()  # Driver names as NumPy array
-    scores = data.iloc[:, 1:].to_numpy()  # Scores as NumPy array
+def read_csv(file_path: str) -> Tuple[np.ndarray, np.ndarray]:
+    """Read championship CSV and return drivers and numeric score array.
+
+    Ensures driver abbreviations are strings (uppercased, stripped) and
+    score columns are numeric integers (NaN -> 0).
+    """
+    df = pd.read_csv(file_path)
+    # Driver column (first column)
+    drivers = df.iloc[:, 0].astype(str).str.strip().str.upper().to_numpy()
+    # Scores: coerce non-numeric to NaN, then fill with 0 and cast to int
+    scores_df = df.iloc[:, 1:].apply(pd.to_numeric, errors='coerce').fillna(0).astype(int)
+    scores = scores_df.to_numpy()
     return drivers, scores
 
 # Step 2: Generate subsets of races
@@ -33,16 +42,21 @@ def calculate_standings(drivers, scores, race_subset):
     return sorted_drivers, sorted_scores
 
 # Step 4: Save to SQLite database
-def save_to_database(db, table_name, championship_data):
+def save_to_database(db, table_name: str, championship_data: List[tuple]):
+    """Insert a batch of championship rows into the database.
+
+    Uses a single executemany call for efficiency.
+    """
     if not championship_data:
         return
-        
-    # Insert data in bulk
-    db.executemany(f"""
+
+    db.executemany(
+        f"""
     INSERT INTO {table_name} (num_races, rounds, standings, winner, points)
     VALUES (?, ?, ?, ?, ?);
-    """, championship_data)
-    
+    """,
+        championship_data,
+    )
     db.commit()
 
 # Main function
@@ -51,6 +65,9 @@ def process_data(batch_size=100000):
     db = get_db()
     table_name = "championship_results"
     csv_path = os.path.join(current_app.config['DATA_FOLDER'], "championships.csv")
+    if not os.path.exists(csv_path):
+        click.echo(f"CSV file not found: {csv_path}")
+        return
 
     # Step 1: Read input CSV into NumPy arrays
     drivers, scores = read_csv(csv_path)
@@ -73,19 +90,19 @@ def process_data(batch_size=100000):
         # Add 1 to race indices for rounds string to be 1-based
         rounds_str = ','.join(map(str, [r + 1 for r in race_subset]))
         championship_data_batch.append((len(race_subset), rounds_str, standings_str, winner, points_str))
-        
+
         # Step 4: Save to database in batches
         if (i + 1) % batch_size == 0:
             save_to_database(db, table_name, championship_data_batch)
-            print(f"Processed and saved {i + 1} combinations...")
+            click.echo(f"Processed and saved {i + 1} combinations...")
             championship_data_batch = []
     
     # Save any remaining data
     if championship_data_batch:
         save_to_database(db, table_name, championship_data_batch)
-        print(f"Processed and saved final batch of {len(championship_data_batch)} combinations.")
+        click.echo(f"Processed and saved final batch of {len(championship_data_batch)} combinations.")
 
-    print(f"All data saved to database, table: {table_name}")
+    click.echo(f"All data saved to database, table: {table_name}")
 
 @click.command('process-data')
 @with_appcontext

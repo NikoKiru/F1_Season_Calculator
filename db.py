@@ -1,18 +1,24 @@
 import sqlite3
+from typing import Optional
 import click
 from flask import current_app, g
 from flask.cli import with_appcontext
 
-def get_db():
+def get_db() -> sqlite3.Connection:
+    """Return a SQLite connection for the current Flask application context.
+
+    The connection is stored in `flask.g` for reuse within the request.
+    """
     if 'db' not in g:
         g.db = sqlite3.connect(
             current_app.config['DATABASE'],
-            detect_types=sqlite3.PARSE_DECLTYPES
+            detect_types=sqlite3.PARSE_DECLTYPES,
         )
         g.db.row_factory = sqlite3.Row
     return g.db
 
-def close_db(e=None):
+def close_db(e: Optional[Exception] = None) -> None:
+    """Close the database connection if present in the Flask `g` object."""
     db = g.pop('db', None)
     if db is not None:
         db.close()

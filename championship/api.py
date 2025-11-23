@@ -148,6 +148,14 @@ def all_championship_wins():
     return jsonify(championship_wins)
 
 
+@bp.route('/all_championship_wins', methods=['GET'])
+def all_championship_wins_route():
+    """
+    API route wrapper for all_championship_wins to expose it at `/api/all_championship_wins`.
+    """
+    return all_championship_wins()
+
+
 
 
 
@@ -224,6 +232,9 @@ def head_to_head(driver1, driver2):
     db = get_db()
     d1_upper = driver1.upper()
     d2_upper = driver2.upper()
+
+    if d1_upper == d2_upper:
+        return jsonify({"error": "Provide two different driver abbreviations"}), 400
 
     if d1_upper not in DRIVER_NAMES or d2_upper not in DRIVER_NAMES:
         return jsonify({"error": "Invalid driver abbreviation"}), 400
