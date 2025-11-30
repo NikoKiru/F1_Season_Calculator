@@ -57,7 +57,7 @@ def save_to_database(db, table_name: str, championship_data: List[tuple]):
     """,
         championship_data,
     )
-    db.commit()
+    # Commit handled by caller for larger transactional control
 
 # Main function
 def process_data(batch_size=100000):
@@ -77,6 +77,11 @@ def process_data(batch_size=100000):
     race_combinations_generator = generate_race_combinations(num_races)
 
     championship_data_batch = []
+
+    # Speed up bulk load: relax durability during import, wrap in a single transaction
+    db.execute("PRAGMA synchronous=OFF;")
+    db.execute("PRAGMA journal_mode=WAL;")
+    db.execute("BEGIN IMMEDIATE;")
     
     # Step 3: Process each combination
     for i, race_subset in enumerate(race_combinations_generator):
@@ -94,14 +99,17 @@ def process_data(batch_size=100000):
         # Step 4: Save to database in batches
         if (i + 1) % batch_size == 0:
             save_to_database(db, table_name, championship_data_batch)
-            click.echo(f"Processed and saved {i + 1} combinations...")
+            click.echo(f"Processed batch through combination {i + 1}...")
             championship_data_batch = []
     
     # Save any remaining data
     if championship_data_batch:
         save_to_database(db, table_name, championship_data_batch)
-        click.echo(f"Processed and saved final batch of {len(championship_data_batch)} combinations.")
+        click.echo(f"Processed final batch of {len(championship_data_batch)} combinations.")
 
+    # Commit the entire import and restore safer settings
+    db.commit()
+    db.execute("PRAGMA synchronous=NORMAL;")
     click.echo(f"All data saved to database, table: {table_name}")
 
 @click.command('process-data')

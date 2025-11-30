@@ -63,13 +63,13 @@ F1_Season_Calculator/
 
 2.  **Create a virtual environment (recommended):**
     ```powershell
-    # For Windows (PowerShell)
+    # Windows PowerShell
     python -m venv .venv
     .venv\Scripts\Activate.ps1
     ```
 
 3.  **Install the dependencies:**
-    ```bash
+    ```powershell
     pip install -r requirements.txt
     ```
 
@@ -92,26 +92,27 @@ F1_Season_Calculator/
     ```
 
 2.  **Set the Flask Environment Variable:**
-    The `.flaskenv` file should handle this automatically. If not, you can set it manually:
+    The `.flaskenv` file should handle this automatically. If not, you can set it manually (PowerShell):
     ```powershell
-    # For Windows (PowerShell)
     $env:FLASK_APP = "F1_Season_Calculator"
     ```
 
 3.  **Initialize the Database:**
-    This command creates the `championships.db` file in the `instance` folder with the correct schema.
-    ```bash
+    Creates `instance\championships.db`, applies PRAGMAs (WAL, cache tuning), and creates indexes.
+    ```powershell
     flask init-db
     ```
 
-4.  **Process the Data:**
-    This command reads the data from `data/championships.csv` and populates the database.
-    ```bash
+4.  **Process the Data (optimized bulk import):**
+    Reads `data/championships.csv`, generates all championship combinations, and bulk-inserts in a single transaction for speed.
+    ```powershell
     flask process-data
     ```
+    - During import, durability is relaxed (`synchronous=OFF`) and restored after commit.
+    - You can optionally increase throughput by raising the batch size: `flask process-data --batch-size 200000`.
 
 5.  **Run the Application:**
-    ```bash
+    ```powershell
     flask run
     ```
     -   **Web Interface**: Access the application at `http://127.0.0.1:5000`
@@ -171,7 +172,13 @@ CREATE TABLE championship_results (
 -   `winner`: The abbreviation of the driver who won the championship.
 -   `points`: A comma-separated string of the total points for each driver, in the same order as `standings`.
 
-Indexes are created on `winner`, `num_races`, and `rounds` to improve query performance.
+Indexes are created on `winner`, `num_races`, `winner,num_races`, `rounds`, and `points` to improve query performance. WAL mode and tuned PRAGMAs are applied during initialization for faster reads and writes.
+
+### Performance Notes
+- SQLite is configured in WAL mode (`journal_mode=WAL`) with `synchronous=NORMAL`, in-memory temp store, and a larger cache.
+- The data import runs inside a single transaction and commits once, significantly reducing IO.
+- Exact round-combination lookups (`/api/create_championship`) are accelerated by an index on `rounds`.
+- Heavy endpoints like `/api/driver_positions` may benefit from a future derived table (`standings_positions`) for SQL-native aggregation; current Python aggregation works but can be optimized further.
 
 ## Contributing
 

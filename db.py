@@ -25,6 +25,12 @@ def close_db(e: Optional[Exception] = None) -> None:
 
 def init_db():
     db = get_db()
+    # Performance-related PRAGMAs: safe defaults for general use
+    # WAL improves concurrency; normal synchronous keeps durability while faster than FULL
+    db.execute("PRAGMA journal_mode=WAL;")
+    db.execute("PRAGMA synchronous=NORMAL;")
+    db.execute("PRAGMA temp_store=MEMORY;")
+    db.execute("PRAGMA cache_size=-50000;")  # roughly ~50MB cache
     # Create table with a dedicated 'winner' column
     db.execute("""
     CREATE TABLE IF NOT EXISTS championship_results (
@@ -41,6 +47,7 @@ def init_db():
     db.execute("CREATE INDEX IF NOT EXISTS idx_num_races ON championship_results (num_races);")
     db.execute("CREATE INDEX IF NOT EXISTS idx_winner_num_races ON championship_results (winner, num_races);")
     db.execute("CREATE INDEX IF NOT EXISTS idx_points ON championship_results (points);")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_rounds ON championship_results (rounds);")
 
 @click.command('init-db')
 @with_appcontext
