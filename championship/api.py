@@ -496,9 +496,10 @@ def championship_win_probability():
             data["percentages"].append(round(percentage, 2))
         driver_data.append(data)
 
-    # Sort driver_data based on the percentage in the last season length column
+    # Sort driver_data based on percentages from right to left (last column first, then second-to-last, etc.)
+    # This creates a tuple of percentages in reverse order for sorting
     if driver_data and season_lengths:
-        driver_data.sort(key=lambda x: x['percentages'][-1] if x['percentages'] else 0, reverse=True)
+        driver_data.sort(key=lambda x: tuple(reversed(x['percentages'])) if x['percentages'] else tuple(), reverse=True)
 
     response_data = {
         "season_lengths": season_lengths,
