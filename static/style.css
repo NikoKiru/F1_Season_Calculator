@@ -277,12 +277,13 @@ footer {
 /* RESPONSIVE TABLE SOLUTION - Consistent across all pages */
 .table-wrapper {
     position: relative;
-    overflow-x: auto;
+    overflow-x: auto; /* Always allow horizontal scroll */
     overflow-y: visible;
     margin: 20px 0;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
     max-width: 100%;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 
     /* Custom scrollbar */
     scrollbar-width: thin;
@@ -331,11 +332,10 @@ footer {
 }
 
 .standings-table {
-    width: 100%;
+    width: max-content; /* Allow table to be as wide as it needs */
+    min-width: 100%; /* At least full width */
     border-collapse: separate;
     border-spacing: 0;
-    min-width: 100%; /* Allow table to shrink as needed */
-    max-width: 100%; /* Prevent overflow */
     background: var(--surface);
     table-layout: auto;
 }
@@ -397,6 +397,11 @@ footer {
     z-index: 5;
     box-shadow: 2px 0 4px rgba(0,0,0,0.1);
     font-size: 0.65em;
+}
+
+/* When scrolling, add shadow to sticky column */
+.table-wrapper.is-scrolled .standings-table tbody th {
+    box-shadow: 4px 0 8px rgba(0,0,0,0.15);
 }
 
 .standings-table tbody tr {
