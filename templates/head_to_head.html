@@ -5,13 +5,15 @@
 {% block page_title %}Head-to-Head Comparison{% endblock %}
 
 {% block content %}
-<form id="h2h-form">
-    <input type="text" id="driver1" placeholder="Driver 1 (e.g., VER)">
-    <input type="text" id="driver2" placeholder="Driver 2 (e.g., NOR)">
-    <button type="submit">Compare</button>
-</form>
-<div id="h2h-result" class="data-container" style="margin-top: 20px;">
-    <!-- Results will be displayed here -->
+<div class="data-container">
+    <form id="h2h-form">
+        <input type="text" id="driver1" placeholder="Driver 1 (e.g., VER)">
+        <input type="text" id="driver2" placeholder="Driver 2 (e.g., NOR)">
+        <button type="submit">Compare</button>
+    </form>
+    <div id="h2h-result" style="margin-top: 20px;">
+        <!-- Results will be displayed here -->
+    </div>
 </div>
 <a href="{{ url_for('views.index') }}" class="back-link">Back to Home</a>
 {% endblock %}

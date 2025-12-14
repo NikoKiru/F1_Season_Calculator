@@ -59,3 +59,10 @@ def championship_win_probability_page():
 @bp.route('/create_championship')
 def create_championship_page():
     return render_template('create_championship.html', rounds=ROUND_NAMES_2025)
+
+@bp.route('/tipping_points')
+def tipping_points_page():
+    from .api import tipping_points
+    response = tipping_points()
+    data = response.get_json()
+    return render_template('tipping_points.html', data=data)

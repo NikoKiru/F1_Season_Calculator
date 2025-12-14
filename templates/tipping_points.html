@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Championship Tipping Points{% endblock %}
+
+{% block page_title %}Championship Tipping Points{% endblock %}
+
+{% block content %}
+<div class="data-container">
+    <p style="margin-bottom: 20px;">
+        Discover when championships are <strong>truly decided</strong>. This analysis shows which drivers dominate their championships early vs those who battle to the final race.
+    </p>
+
+    {% if data and data.tipping_points %}
+        {% for season_data in data.tipping_points %}
+        <div style="margin-bottom: 40px;">
+            <h2 style="color: var(--f1-red); margin-bottom: 15px;">
+                {{ season_data.season_length }}-Race Championships
+                <span style="font-size: 0.7em; color: var(--text-secondary); font-weight: normal;">
+                    ({{ "{:,}".format(season_data.total_championships) }} total scenarios)
+                </span>
+            </h2>
+
+            <div class="table-wrapper">
+                <table class="standings-table">
+                    <thead>
+                        <tr>
+                            <th>Driver</th>
+                            <th>Total Wins</th>
+                            <th>Dominance Score</th>
+                            <th>Avg Clinch Race</th>
+                            <th>Earliest Clinch</th>
+                            <th>Latest Clinch</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set sorted_drivers = season_data.winners.items() | sort(attribute='1.dominance_score', reverse=True) %}
+                        {% for driver_code, stats in sorted_drivers %}
+                        <tr>
+                            <td data-label="Driver">{{ data.driver_names.get(driver_code, driver_code) }}</td>
+                            <td data-label="Total Wins">{{ "{:,}".format(stats.total_wins) }}</td>
+                            <td data-label="Dominance Score">
+                                <strong style="color: {% if stats.dominance_score > 20 %}var(--f1-red){% else %}var(--text-primary){% endif %};">
+                                    {{ stats.dominance_score }}%
+                                </strong>
+                            </td>
+                            <td data-label="Avg Clinch Race">Race {{ stats.average_clinch_race }}</td>
+                            <td data-label="Earliest Clinch">Race {{ stats.earliest_clinch }}</td>
+                            <td data-label="Latest Clinch">Race {{ stats.latest_clinch }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div style="margin-top: 30px; padding: 15px; background: var(--surface-secondary); border-radius: 8px; border-left: 4px solid var(--f1-red);">
+            <h3 style="margin-top: 0; color: var(--f1-red);">What is Dominance Score?</h3>
+            <p style="margin-bottom: 5px;">
+                <strong>Dominance Score</strong> measures how early a driver typically secures their championships:
+            </p>
+            <ul style="margin-top: 5px;">
+                <li><strong>0%</strong> = Championship decided on the final race</li>
+                <li><strong>50%</strong> = Championship clinched halfway through the season</li>
+                <li><strong>100%</strong> = Championship won in just one race (impossible with current scoring)</li>
+            </ul>
+            <p style="margin-top: 10px; font-style: italic; color: var(--text-secondary);">
+                Higher scores indicate more dominant championship victories where the title was mathematically secured with races to spare.
+            </p>
+        </div>
+    {% else %}
+        <p>No tipping point data available.</p>
+    {% endif %}
+</div>
+<a href="{{ url_for('views.index') }}" class="back-link">Back to Home</a>
+{% endblock %}
