@@ -1,2 +1,2 @@
-FLASK_APP=__init__:create_app
+FLASK_APP=app:app
 FLASK_ENV=development

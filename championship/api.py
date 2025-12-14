@@ -1,9 +1,19 @@
 from flask import (
     Blueprint, jsonify, request, redirect, url_for
 )
-from ..db import get_db
-from .models import ROUND_NAMES_2025, DRIVER_NAMES
-from .logic import get_round_points_for_championship, calculate_championship_from_rounds
+# Import db module - works with both package and standalone setup
+try:
+    from ..db import get_db
+except ImportError:
+    import db
+    get_db = db.get_db
+
+try:
+    from .models import ROUND_NAMES_2025, DRIVER_NAMES
+    from .logic import get_round_points_for_championship, calculate_championship_from_rounds
+except ImportError:
+    from championship.models import ROUND_NAMES_2025, DRIVER_NAMES
+    from championship.logic import get_round_points_for_championship, calculate_championship_from_rounds
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 

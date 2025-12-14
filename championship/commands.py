@@ -3,7 +3,12 @@ import itertools
 import numpy as np
 import click
 from flask.cli import with_appcontext
-from ..db import get_db
+# Import db module - works with both package and standalone setup
+try:
+    from ..db import get_db
+except ImportError:
+    import db
+    get_db = db.get_db
 import os
 from flask import current_app
 from typing import Tuple, List
