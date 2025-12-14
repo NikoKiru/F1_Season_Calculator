@@ -13,7 +13,8 @@
       "Bash(git add:*)",
       "Bash(git reset:*)",
       "Bash(flask run:*)",
-      "Bash(timeout 5 flask run:*)"
+      "Bash(timeout 5 flask run:*)",
+      "Bash(ls:*)"
     ]
   }
 }
