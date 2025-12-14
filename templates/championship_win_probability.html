@@ -4,16 +4,8 @@
 
 {% block page_title %}Championship Win Probability by Season Length{% endblock %}
 
-{% block head %}
-<style>
-    main {
-        max-width: 95%;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div>
+<div class="table-wrapper">
     <table class="standings-table">
         <thead>
             <tr>
@@ -26,28 +18,28 @@
         <tbody>
             <tr>
                 <th>Possible Seasons</th>
-                {% for seasons in data.possible_seasons %}
-                    <td>{{ seasons }}</td>
+                {% for length in data.season_lengths %}
+                    <td data-label="{{ length }}">{{ data.possible_seasons[loop.index0] }}</td>
                 {% endfor %}
             </tr>
             <tr>
                 <th>Total Titles</th>
                 {% for length in data.season_lengths %}
                     {% if length == 1 %}
-                        <td>No.</td>
+                        <td data-label="{{ length }}">No.</td>
                     {% else %}
-                        <td>%</td>
+                        <td data-label="{{ length }}">%</td>
                     {% endif %}
                 {% endfor %}
             </tr>
             {% for driver in data.drivers_data %}
             <tr>
-                <th>{{ data.driver_names[driver.driver] }}</th>
+                <th data-label="Driver">{{ data.driver_names[driver.driver] }}</th>
                 {% for i in range(data.season_lengths|length) %}
                     {% if data.season_lengths[i] == 1 %}
-                        <td>{{ driver.wins_per_length[i] }}</td>
+                        <td data-label="{{ data.season_lengths[i] }}">{{ driver.wins_per_length[i] }}</td>
                     {% else %}
-                        <td>{{ "%.2f"|format(driver.percentages[i]) }}</td>
+                        <td data-label="{{ data.season_lengths[i] }}">{{ "%.2f"|format(driver.percentages[i]) }}</td>
                     {% endif %}
                 {% endfor %}
             </tr>

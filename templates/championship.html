@@ -12,7 +12,7 @@
         <p><strong>Rounds Included:</strong> {{ data.round_names|join(', ') }}</p>
         {% if data.round_points_data %}
         <h3 style="margin-top: 20px;">Championship Points Table:</h3>
-        <div style="overflow-x:auto;">
+        <div class="table-wrapper">
             <table class="standings-table">
                 <thead>
                     <tr>
@@ -27,11 +27,11 @@
                     {% for driver_code in data.standings.split(',') %}
                         {% if data.round_points_data[driver_code] %}
                             <tr>
-                                <td>{{ data.driver_names[driver_code] }}</td>
+                                <td data-label="Driver">{{ data.driver_names[driver_code] }}</td>
                                 {% for point in data.round_points_data[driver_code].round_points %}
-                                    <td>{{ point }}</td>
+                                    <td data-label="{{ data.round_names[loop.index0] }}">{{ point }}</td>
                                 {% endfor %}
-                                <td><strong>{{ data.round_points_data[driver_code].total_points }}</strong></td>
+                                <td data-label="Total Points"><strong>{{ data.round_points_data[driver_code].total_points }}</strong></td>
                             </tr>
                         {% endif %}
                     {% endfor %}

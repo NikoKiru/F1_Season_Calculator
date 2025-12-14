@@ -5,6 +5,7 @@
     --f1-red-light: #ff1e00;
     --background: #f4f4f4;
     --surface: #ffffff;
+    --surface-secondary: #f9f9f9;
     --text-primary: #333;
     --text-secondary: #666;
     --border-color: #ddd;
@@ -13,6 +14,8 @@
     --shadow-lg: 0 8px 16px rgba(0,0,0,0.15);
     --border-radius: 12px;
     --transition-speed: 0.3s;
+    --input-background: #ffffff;
+    --input-border: #ccc;
 }
 
 /* Dark mode support */
@@ -20,9 +23,12 @@
     :root {
         --background: #1a1a1a;
         --surface: #2a2a2a;
+        --surface-secondary: #333333;
         --text-primary: #f0f0f0;
         --text-secondary: #b0b0b0;
         --border-color: #444;
+        --input-background: #2a2a2a;
+        --input-border: #555;
     }
 }
 
@@ -55,9 +61,14 @@ header {
     z-index: 100;
 }
 
+header h1 a {
+    text-decoration: none;
+    color: white;
+}
+
 #search-form {
     display: flex;
-    width: 50%;
+    width: 90%;
     max-width: 400px;
 }
 
@@ -69,6 +80,8 @@ header {
     font-size: 1rem;
     outline: none;
     transition: all var(--transition-speed);
+    background: var(--input-background);
+    color: var(--text-primary);
 }
 
 #search-input:focus {
@@ -100,6 +113,7 @@ main {
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-md);
     transition: all var(--transition-speed);
+    overflow-x: hidden; /* Prevent content from extending beyond container */
 }
 
 @media (max-width: 768px) {
@@ -109,10 +123,14 @@ main {
         padding: 15px;
         border-radius: 8px;
     }
+
+    #search-form {
+        width: 95%;
+    }
 }
 
 a {
-    color: #d10000;
+    color: var(--f1-red);
     text-decoration: none;
 }
 
@@ -128,7 +146,7 @@ a:hover {
 }
 
 .endpoint-link {
-    background: #e10600;
+    background: var(--f1-red);
     color: #fff;
     padding: 15px;
     text-align: center;
@@ -138,12 +156,12 @@ a:hover {
 }
 
 .endpoint-link:hover {
-    background: #b80000;
+    background: var(--f1-red-dark);
     text-decoration: none;
 }
 
 .data-container {
-    background: #f9f9f9;
+    background: var(--surface-secondary);
     padding: 20px;
     border-radius: 8px;
 }
@@ -205,27 +223,36 @@ a:hover {
 form {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
 input[type="text"] {
     flex-grow: 1;
     padding: 10px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--input-border);
     border-radius: 5px;
+    background: var(--input-background);
+    color: var(--text-primary);
+    min-width: 200px;
 }
 
 button {
     padding: 10px 20px;
-    background: #d10000;
+    background: var(--f1-red);
     color: #fff;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     transition: background 0.3s;
+    font-weight: 600;
 }
 
 button:hover {
-    background: #b80000;
+    background: var(--f1-red-dark);
+}
+
+button:active {
+    transform: scale(0.98);
 }
 
 .back-link {
@@ -236,6 +263,7 @@ button:hover {
 .driver-result {
     font-size: 1.2em;
     font-weight: bold;
+    color: var(--text-primary);
 }
 
 footer {
@@ -243,10 +271,10 @@ footer {
     padding: 20px;
     margin-top: 20px;
     font-size: 0.9em;
-    color: #666;
+    color: var(--text-secondary);
 }
 
-/* GENIUS TABLE SOLUTION - Responsive with scroll indicators */
+/* RESPONSIVE TABLE SOLUTION - Consistent across all pages */
 .table-wrapper {
     position: relative;
     overflow-x: auto;
@@ -254,6 +282,7 @@ footer {
     margin: 20px 0;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
+    max-width: 100%;
 
     /* Custom scrollbar */
     scrollbar-width: thin;
@@ -306,20 +335,30 @@ footer {
     border-collapse: separate;
     border-spacing: 0;
     min-width: 600px; /* Ensures table doesn't get too cramped */
+    max-width: 100%; /* Prevent overflow */
     background: var(--surface);
+    table-layout: auto;
 }
 
-.standings-table th {
+.standings-table th,
+.standings-table thead th {
     background: linear-gradient(135deg, var(--f1-red) 0%, var(--f1-red-dark) 100%);
     color: white;
-    padding: 16px 20px;
-    text-align: left;
+    padding: 12px 16px;
+    text-align: center;
     font-weight: 600;
     position: sticky;
     top: 0;
     z-index: 10;
     border-bottom: 3px solid var(--f1-red-dark);
     white-space: nowrap;
+    font-size: 0.9em;
+}
+
+/* First column header should be left-aligned */
+.standings-table th:first-child,
+.standings-table thead th:first-child {
+    text-align: left;
 }
 
 .standings-table th:first-child {
@@ -331,10 +370,33 @@ footer {
 }
 
 .standings-table td {
-    padding: 14px 20px;
+    padding: 10px 12px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    transition: background var(--transition-speed);
+    color: var(--text-primary);
+    font-size: 0.9em;
+}
+
+/* First column cells should be left-aligned */
+.standings-table td:first-child {
+    text-align: left;
+}
+
+/* Row headers in tbody (like driver names in probability table) */
+.standings-table tbody th {
+    padding: 10px 16px;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
     transition: background var(--transition-speed);
+    background: var(--surface-secondary);
+    font-weight: 700;
+    white-space: nowrap;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+    font-size: 0.9em;
 }
 
 .standings-table tbody tr {
@@ -347,11 +409,18 @@ footer {
     box-shadow: var(--shadow-sm);
 }
 
-.standings-table tbody tr:last-child td:first-child {
+.standings-table tbody tr:last-child td,
+.standings-table tbody tr:last-child th {
+    border-bottom: none;
+}
+
+.standings-table tbody tr:last-child td:first-child,
+.standings-table tbody tr:last-child th:first-child {
     border-radius: 0 0 0 var(--border-radius);
 }
 
-.standings-table tbody tr:last-child td:last-child {
+.standings-table tbody tr:last-child td:last-child,
+.standings-table tbody tr:last-child th:last-child {
     border-radius: 0 0 var(--border-radius) 0;
 }
 
@@ -364,6 +433,7 @@ footer {
     border-radius: 6px;
     font-size: 0.9em;
     transition: all 0.2s;
+    color: var(--f1-red);
 }
 
 .standings-table td a:hover {
@@ -439,9 +509,129 @@ footer {
     }
 }
 
+/* Button container */
 .button-container {
     display: flex;
     gap: 10px;
     align-items: center;
     flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+/* Slider styles - moved from inline styles */
+.slider-container {
+    width: 80%;
+    max-width: 600px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+#position-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 8px;
+    background: var(--border-color);
+    outline: none;
+    opacity: 0.7;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+    border-radius: 5px;
+}
+
+#position-slider:hover {
+    opacity: 1;
+}
+
+#position-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--f1-red);
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+#position-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--f1-red);
+    cursor: pointer;
+    border-radius: 50%;
+    border: none;
+}
+
+.slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+/* Race grid styles - moved from inline styles */
+.race-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.race-block {
+    border: 2px solid var(--border-color);
+    padding: 15px 10px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-primary);
+    transition: all var(--transition-speed);
+    font-weight: 500;
+}
+
+.race-block:hover {
+    border-color: var(--f1-red);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.race-block.selected {
+    background-color: var(--f1-red);
+    color: #fff;
+    border-color: var(--f1-red-dark);
+    box-shadow: var(--shadow-md);
+}
+
+/* Header link styling */
+.header-link {
+    text-decoration: none;
+    color: white;
+}
+
+.header-link:hover {
+    text-decoration: none;
+}
+
+/* Responsive adjustments for race grid */
+@media (max-width: 768px) {
+    .race-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 8px;
+    }
+
+    .race-block {
+        padding: 12px 8px;
+        font-size: 0.9em;
+    }
+
+    .slider-container {
+        width: 95%;
+        padding: 0 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .race-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
 }

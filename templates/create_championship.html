@@ -4,27 +4,6 @@
 
 {% block page_title %}Create Your Own Championship{% endblock %}
 
-{% block head %}
-<style>
-    .race-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-    .race-block {
-        border: 1px solid #ccc;
-        padding: 10px;
-        text-align: center;
-        cursor: pointer;
-    }
-    .race-block.selected {
-        background-color: #d10000;
-        color: #fff;
-    }
-</style>
-{% endblock %}
-
 {% block header %}
 <h1><a href="{{ url_for('views.index') }}" class="header-link">F1 Championship Scenario Explorer</a></h1>
 <form action="" method="get" id="search-form">
