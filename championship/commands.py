@@ -113,11 +113,30 @@ def process_data(batch_size=100000):
     click.echo(f"All data saved to database, table: {table_name}")
 
 @click.command('process-data')
+@click.option('--batch-size', default=100000, type=int, help='Number of records to process per batch')
 @with_appcontext
-def process_data_command():
-    """Processes championship data and saves it to the database."""
-    process_data()
-    click.echo('Processed and saved data to database.')
+def process_data_command(batch_size):
+    """Processes championship data and saves it to the database.
+
+    Reads championships.csv from the data folder and generates all possible
+    championship combinations, saving them to the database.
+    """
+    # Validate that CSV exists
+    csv_path = os.path.join(current_app.config['DATA_FOLDER'], "championships.csv")
+    if not os.path.exists(csv_path):
+        click.echo(f"[ERROR] CSV file not found at {csv_path}", err=True)
+        click.echo("\nPlease run 'flask setup' first to create the necessary folders.", err=True)
+        return
+
+    click.echo(f"Processing data from: {csv_path}")
+    click.echo(f"Batch size: {batch_size:,}")
+
+    try:
+        process_data(batch_size=batch_size)
+        click.echo('[OK] Successfully processed and saved data to database.')
+    except Exception as e:
+        click.echo(f'[ERROR] Error processing data: {e}', err=True)
+        raise
 
 def init_app(app):
     app.cli.add_command(process_data_command)

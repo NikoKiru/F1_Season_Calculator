@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(test:*)",
+      "Bash(flask setup:*)",
+      "Bash(echo:*)",
+      "Bash(source .venv/Scripts/activate)",
+      "Bash(pip install:*)",
+      "Bash(cat:*)",
+      "Bash(flask process-data:*)",
+      "Bash(flask init-db:*)",
+      "Bash(python -c:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)"
+    ]
+  }
+}

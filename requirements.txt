@@ -2,3 +2,4 @@ pandas
 Flask
 flasgger
 numpy
+python-dotenv

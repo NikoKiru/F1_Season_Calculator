@@ -4,8 +4,14 @@ championships.db
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,flask
 
 ### Flask ###
+# Ignore instance folder contents except .gitkeep
 instance/*
-!instance/.gitignore
+!instance/.gitkeep
+# Ignore data folder CSV files except sample and README
+data/championships.csv
+data/*.csv
+!data/championships_sample.csv
+!data/README.md
 .webassets-cache
 .env
 
