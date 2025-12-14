@@ -7,31 +7,33 @@
 {% block content %}
 <div class="data-container">
     {% if data %}
-        <table class="standings-table">
-            <thead>
-                <tr>
-                    <th>Driver</th>
-                    <th>Highest Position</th>
-                    <th>Championships</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in data %}
+        <div class="table-wrapper">
+            <table class="standings-table">
+                <thead>
                     <tr>
-                        <td>{{ item.driver }}</td>
-                        <td>{{ item.position }}</td>
-                        <td>
-                            {% for id in item.championship_ids[:5] %}
-                                <a href="{{ url_for('views.championship_page', id=id) }}">{{ id }}</a>{% if not loop.last %}, {% endif %}
-                            {% endfor %}
-                            {% if item.championship_ids|length > 5 %}
-                                ...
-                            {% endif %}
-                        </td>
+                        <th>Driver</th>
+                        <th>Highest Position</th>
+                        <th>Championships</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for item in data %}
+                        <tr>
+                            <td data-label="Driver">{{ item.driver }}</td>
+                            <td data-label="Highest Position">{{ item.position }}</td>
+                            <td data-label="Championships">
+                                {% for id in item.championship_ids[:5] %}
+                                    <a href="{{ url_for('views.championship_page', id=id) }}">{{ id }}</a>{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                                {% if item.championship_ids|length > 5 %}
+                                    ...
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     {% else %}
         <p>No data available.</p>
     {% endif %}
