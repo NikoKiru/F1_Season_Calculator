@@ -344,7 +344,7 @@ footer {
 .standings-table thead th {
     background: linear-gradient(135deg, var(--f1-red) 0%, var(--f1-red-dark) 100%);
     color: white;
-    padding: 8px 10px;
+    padding: 6px 8px;
     text-align: center;
     font-weight: 600;
     position: sticky;
@@ -352,7 +352,7 @@ footer {
     z-index: 10;
     border-bottom: 3px solid var(--f1-red-dark);
     white-space: nowrap;
-    font-size: 0.75em;
+    font-size: 0.65em;
 }
 
 /* First column header should be left-aligned */
@@ -361,21 +361,21 @@ footer {
     text-align: left;
 }
 
-.standings-table th:first-child {
-    border-radius: var(--border-radius) 0 0 0;
+.standings-table thead tr:first-child th:first-child {
+    border-top-left-radius: var(--border-radius);
 }
 
-.standings-table th:last-child {
-    border-radius: 0 var(--border-radius) 0 0;
+.standings-table thead tr:first-child th:last-child {
+    border-top-right-radius: var(--border-radius);
 }
 
 .standings-table td {
-    padding: 8px 10px;
+    padding: 6px 8px;
     text-align: center;
     border-bottom: 1px solid var(--border-color);
     transition: background var(--transition-speed);
     color: var(--text-primary);
-    font-size: 0.75em;
+    font-size: 0.65em;
 }
 
 /* First column cells should be left-aligned */
@@ -385,7 +385,7 @@ footer {
 
 /* Row headers in tbody (like driver names in probability table) */
 .standings-table tbody th {
-    padding: 8px 12px;
+    padding: 6px 10px;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
     transition: background var(--transition-speed);
@@ -396,7 +396,7 @@ footer {
     left: 0;
     z-index: 5;
     box-shadow: 2px 0 4px rgba(0,0,0,0.1);
-    font-size: 0.75em;
+    font-size: 0.65em;
 }
 
 .standings-table tbody tr {
@@ -414,14 +414,11 @@ footer {
     border-bottom: none;
 }
 
-.standings-table tbody tr:last-child td:first-child,
-.standings-table tbody tr:last-child th:only-child,
-.standings-table tbody tr:last-child > :first-child {
+.standings-table tbody tr:last-child > *:first-child {
     border-bottom-left-radius: var(--border-radius);
 }
 
-.standings-table tbody tr:last-child td:last-child,
-.standings-table tbody tr:last-child > :last-child {
+.standings-table tbody tr:last-child > *:last-child {
     border-bottom-right-radius: var(--border-radius);
 }
 
