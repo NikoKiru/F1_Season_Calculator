@@ -553,7 +553,12 @@ def tipping_points():
       200:
         description: A JSON object with tipping point data for each season length.
     """
+    from .logic import get_round_points_for_championship
+
     db = get_db()
+
+    # Standard F1 points per position
+    POINTS_PER_POSITION = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]
 
     # Get all season lengths
     season_lengths = db.execute(
@@ -570,7 +575,7 @@ def tipping_points():
 
         # Get all championships of this length
         championships = db.execute(
-            "SELECT championship_id, winner, rounds FROM championship_results WHERE num_races = ?",
+            "SELECT championship_id, winner, rounds, standings FROM championship_results WHERE num_races = ?",
             (length,)
         ).fetchall()
 
@@ -578,23 +583,53 @@ def tipping_points():
             winner = champ['winner']
             champ_id = champ['championship_id']
             rounds = [int(r) for r in champ['rounds'].split(',')]
+            all_drivers = champ['standings'].split(',')
 
-            # Calculate tipping point: the earliest race where winner was guaranteed
-            # This requires analyzing point progression - for now, we'll use num_races as clinch point
-            # In a full implementation, you'd simulate removing races from the end
+            # Get round-by-round points for all drivers
+            round_points_data = get_round_points_for_championship(all_drivers, rounds)
+
+            # Calculate clinch point: work backwards from final race
+            clinch_race = length  # Start assuming full season needed
+
+            # Build cumulative points race by race
+            cumulative_points = {driver: 0 for driver in all_drivers}
+
+            for race_idx in range(len(rounds)):
+                # Add points from this race
+                for driver in all_drivers:
+                    if driver in round_points_data:
+                        cumulative_points[driver] += round_points_data[driver]['round_points'][race_idx]
+
+                # After this race, check if winner has mathematically secured championship
+                races_remaining = length - (race_idx + 1)
+                max_points_remaining = races_remaining * POINTS_PER_POSITION[0]  # 25 per race
+
+                winner_points = cumulative_points[winner]
+
+                # Check if any other driver can still catch the winner
+                can_be_caught = False
+                for driver in all_drivers:
+                    if driver != winner:
+                        driver_points = cumulative_points[driver]
+                        # Can this driver catch the winner?
+                        if driver_points + max_points_remaining >= winner_points:
+                            can_be_caught = True
+                            break
+
+                # If winner cannot be caught, this is the clinch race
+                if not can_be_caught:
+                    clinch_race = race_idx + 1  # +1 because we're 0-indexed
+                    break
 
             if winner not in winner_data:
                 winner_data[winner] = {
                     'total_wins': 0,
-                    'earliest_clinch': length,  # Start with full season
+                    'earliest_clinch': length,
                     'average_clinch': [],
                     'latest_clinch': 0
                 }
 
             winner_data[winner]['total_wins'] += 1
-            # For simplicity, we'll estimate clinch point as num_races
-            # (A proper implementation would calculate when mathematically secured)
-            clinch_race = length  # Placeholder - would need point-by-point analysis
             winner_data[winner]['average_clinch'].append(clinch_race)
 
             if clinch_race < winner_data[winner]['earliest_clinch']:
