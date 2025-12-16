@@ -281,7 +281,6 @@ footer {
     overflow-y: visible;
     margin: 20px 0;
     border-radius: var(--border-radius);
-    box-shadow: var(--shadow-sm);
     max-width: 100%;
     -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 
@@ -395,13 +394,7 @@ footer {
     position: sticky;
     left: 0;
     z-index: 5;
-    box-shadow: 2px 0 4px rgba(0,0,0,0.1);
     font-size: 0.65em;
-}
-
-/* When scrolling, add shadow to sticky column */
-.table-wrapper.is-scrolled .standings-table tbody th {
-    box-shadow: 4px 0 8px rgba(0,0,0,0.15);
 }
 
 .standings-table tbody tr {
@@ -410,8 +403,6 @@ footer {
 
 .standings-table tbody tr:hover {
     background: rgba(209, 0, 0, 0.05);
-    transform: scale(1.01);
-    box-shadow: var(--shadow-sm);
 }
 
 .standings-table tbody tr:last-child td,
@@ -479,14 +470,13 @@ footer {
     .standings-table tbody tr {
         margin-bottom: 15px;
         border-radius: var(--border-radius);
-        box-shadow: var(--shadow-sm);
         overflow: hidden;
         background: var(--surface);
         transform: none !important;
     }
 
     .standings-table tbody tr:hover {
-        box-shadow: var(--shadow-md);
+        background: rgba(209, 0, 0, 0.05);
     }
 
     .standings-table td {
