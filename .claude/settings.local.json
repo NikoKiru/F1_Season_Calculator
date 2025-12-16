@@ -17,7 +17,9 @@
       "Bash(ls:*)",
       "Bash(curl:*)",
       "Bash(.venvScriptspython -m pytest tests/ -v --tb=short)",
-      "Bash(python -m pytest:*)"
+      "Bash(python -m pytest:*)",
+      "Bash(git push:*)",
+      "Bash(git branch:*)"
     ]
   }
 }
