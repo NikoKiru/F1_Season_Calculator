@@ -182,13 +182,11 @@ a:hover {
     background: var(--surface);
     border-radius: 10px;
     border-left: 4px solid var(--f1-red);
-    box-shadow: var(--shadow-sm);
     transition: all var(--transition-speed);
 }
 
 .driver-list li:hover {
     transform: translateX(5px);
-    box-shadow: var(--shadow-md);
     border-left-width: 6px;
 }
 
@@ -307,28 +305,6 @@ footer {
     background: var(--f1-red-dark);
 }
 
-/* Scroll shadow indicators */
-.table-wrapper::before,
-.table-wrapper::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 20px;
-    pointer-events: none;
-    z-index: 2;
-    transition: opacity var(--transition-speed);
-}
-
-.table-wrapper::before {
-    left: 0;
-    background: linear-gradient(to right, var(--surface), transparent);
-}
-
-.table-wrapper::after {
-    right: 0;
-    background: linear-gradient(to left, var(--surface), transparent);
-}
 
 .standings-table {
     width: max-content; /* Allow table to be as wide as it needs */
@@ -435,19 +411,12 @@ footer {
     color: white;
     text-decoration: none;
     transform: translateY(-2px);
-    box-shadow: 0 2px 4px rgba(209, 0, 0, 0.3);
 }
 
 /* Mobile: Card-based layout */
 @media (max-width: 768px) {
     .table-wrapper {
         overflow-x: visible;
-        box-shadow: none;
-    }
-
-    .table-wrapper::before,
-    .table-wrapper::after {
-        display: none;
     }
 
     .standings-table,
