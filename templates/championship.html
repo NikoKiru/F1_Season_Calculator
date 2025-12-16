@@ -7,7 +7,12 @@
 {% block content %}
 <div class="data-container">
     {% if data %}
-        <p><strong>Winner:</strong> {{ data.winner }}</p>
+        <p><strong>Winner:</strong>
+            <span class="driver-with-color">
+                <span class="color-bar" style="background-color: {{ drivers[data.winner].color if data.winner in drivers else '#666' }};"></span>
+                {{ drivers[data.winner].name if data.winner in drivers else data.winner }}
+            </span>
+        </p>
         <p><strong>Number of Races:</strong> {{ data.num_races }}</p>
         <p><strong>Rounds Included:</strong> {{ data.round_names|join(', ') }}</p>
         {% if data.round_points_data %}
@@ -27,7 +32,10 @@
                     {% for driver_code in data.standings.split(',') %}
                         {% if data.round_points_data[driver_code] %}
                             <tr>
-                                <td data-label="Driver">{{ data.driver_names[driver_code] }}</td>
+                                <td class="driver-cell" data-label="Driver">
+                                    <span class="color-bar" style="background-color: {{ drivers[driver_code].color if driver_code in drivers else '#666' }};"></span>
+                                    {{ data.driver_names[driver_code] }}
+                                </td>
                                 {% for point in data.round_points_data[driver_code].round_points %}
                                     <td data-label="{{ data.round_names[loop.index0] }}">{{ point }}</td>
                                 {% endfor %}

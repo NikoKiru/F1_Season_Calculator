@@ -19,5 +19,8 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+    const DRIVERS = {{ drivers | tojson | safe }};
+</script>
 <script src="{{ url_for('static', filename='js/head_to_head.js') }}"></script>
 {% endblock %}

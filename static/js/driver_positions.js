@@ -40,7 +40,18 @@ async function fetchData(position) {
 
         let html = '<ul class="driver-list">';
         for (const item of data) {
-            html += `<li><span class="driver-name">${item.driver}</span> <span class="driver-wins">${item.count} times (${item.percentage}%)</span></li>`;
+            const driverData = DRIVERS[item.driver] || {};
+            const color = driverData.color || '#666';
+            const name = driverData.name || item.driver;
+            const team = driverData.team || '';
+            html += `<li>
+                <span class="team-color-stripe" style="background-color: ${color};"></span>
+                <div class="driver-info">
+                    <span class="driver-name">${name}</span>
+                    <span class="driver-team">${team}</span>
+                </div>
+                <span class="driver-wins">${item.count} times (${item.percentage}%)</span>
+            </li>`;
         }
         html += '</ul>';
         resultsDiv.innerHTML = html;

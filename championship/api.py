@@ -9,10 +9,10 @@ except ImportError:
     get_db = db.get_db
 
 try:
-    from .models import ROUND_NAMES_2025, DRIVER_NAMES
+    from .models import ROUND_NAMES_2025, DRIVER_NAMES, DRIVERS
     from .logic import get_round_points_for_championship, calculate_championship_from_rounds
 except ImportError:
-    from championship.models import ROUND_NAMES_2025, DRIVER_NAMES
+    from championship.models import ROUND_NAMES_2025, DRIVER_NAMES, DRIVERS
     from championship.logic import get_round_points_for_championship, calculate_championship_from_rounds
 
 bp = Blueprint('api', __name__, url_prefix='/api')

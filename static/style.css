@@ -597,3 +597,88 @@ footer {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     }
 }
+
+/* Team color bar styles - F1 official look */
+.driver-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.team-color-bar {
+    width: 4px;
+    height: 100%;
+    min-height: 20px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+/* Table cell with team color */
+.standings-table td.driver-cell,
+.standings-table th.driver-cell {
+    padding-left: 0;
+}
+
+.standings-table .driver-cell .team-color-bar {
+    margin-left: 8px;
+}
+
+/* Driver name with color bar in tables */
+.driver-with-color {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.driver-with-color .color-bar {
+    width: 4px;
+    height: 18px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.driver-with-color .driver-abbr {
+    font-weight: 600;
+}
+
+/* For tbody th (sticky driver column) */
+.standings-table tbody th.driver-cell {
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
+.standings-table tbody th .color-bar {
+    width: 4px;
+    height: 100%;
+    min-height: 24px;
+    border-radius: 0;
+    margin-right: 10px;
+}
+
+/* Driver list with team colors */
+.driver-list li {
+    border-left: none;
+    padding-left: 0;
+    overflow: hidden;
+}
+
+.driver-list li .team-color-stripe {
+    width: 5px;
+    align-self: stretch;
+    margin-right: 15px;
+    border-radius: 0;
+    flex-shrink: 0;
+}
+
+.driver-list .driver-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.driver-list .driver-team {
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    font-weight: 400;
+}

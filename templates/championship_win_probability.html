@@ -34,7 +34,10 @@
             </tr>
             {% for driver in data.drivers_data %}
             <tr>
-                <th data-label="Driver">{{ data.driver_names[driver.driver] }}</th>
+                <th class="driver-cell" data-label="Driver">
+                    <span class="color-bar" style="background-color: {{ drivers[driver.driver].color if driver.driver in drivers else '#666' }};"></span>
+                    {{ data.driver_names[driver.driver] }}
+                </th>
                 {% for i in range(data.season_lengths|length) %}
                     {% if data.season_lengths[i] == 1 %}
                         <td data-label="{{ data.season_lengths[i] }}">{{ driver.wins_per_length[i] }}</td>

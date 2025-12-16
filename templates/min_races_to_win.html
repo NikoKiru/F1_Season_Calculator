@@ -9,8 +9,12 @@
     <ul class="driver-list">
         {% for driver, min_races in data.items() %}
         <li>
-            <span class="driver-name">{{ driver }}</span>
-            <span>{{ min_races }}</span>
+            <span class="team-color-stripe" style="background-color: {{ drivers[driver].color if driver in drivers else '#666' }};"></span>
+            <div class="driver-info">
+                <span class="driver-name">{{ drivers[driver].name if driver in drivers else driver }}</span>
+                <span class="driver-team">{{ drivers[driver].team if driver in drivers else '' }}</span>
+            </div>
+            <span class="driver-wins">{{ min_races }} races</span>
         </li>
         {% endfor %}
     </ul>

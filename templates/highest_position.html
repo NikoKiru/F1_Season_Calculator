@@ -19,7 +19,10 @@
                 <tbody>
                     {% for item in data %}
                         <tr>
-                            <td data-label="Driver">{{ item.driver }}</td>
+                            <td class="driver-cell" data-label="Driver">
+                                <span class="color-bar" style="background-color: {{ drivers[item.driver].color if item.driver in drivers else '#666' }};"></span>
+                                {{ drivers[item.driver].name if item.driver in drivers else item.driver }}
+                            </td>
                             <td data-label="Highest Position">{{ item.position }}</td>
                             <td data-label="Championships">
                                 {% for id in item.championship_ids[:5] %}

@@ -8,9 +8,13 @@
 <div class="data-container">
     {% if data %}
         <ul class="driver-list">
-        {% for driver, wins in data.items() %}
+        {% for driver, wins in data|dictsort(by='value', reverse=true) %}
             <li>
-                <span class="driver-name">{{ driver }}</span>
+                <span class="team-color-stripe" style="background-color: {{ drivers[driver].color if driver in drivers else '#666' }};"></span>
+                <div class="driver-info">
+                    <span class="driver-name">{{ drivers[driver].name if driver in drivers else driver }}</span>
+                    <span class="driver-team">{{ drivers[driver].team if driver in drivers else '' }}</span>
+                </div>
                 <span class="driver-wins">{{ wins }} win(s)</span>
             </li>
         {% endfor %}

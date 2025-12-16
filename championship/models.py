@@ -1,25 +1,43 @@
-DRIVERS = {
-    "PIA": {"name": "Oscar Piastri", "team": "McLaren", "color": "#FF8700", "number": 81, "flag": "🇦🇺"},
-    "NOR": {"name": "Lando Norris", "team": "McLaren", "color": "#FF8700", "number": 4, "flag": "🇬🇧"},
-    "VER": {"name": "Max Verstappen", "team": "Red Bull Racing", "color": "#3671C6", "number": 1, "flag": "🇳🇱"},
-    "RUS": {"name": "George Russell", "team": "Mercedes", "color": "#27F4D2", "number": 63, "flag": "🇬🇧"},
-    "LEC": {"name": "Charles Leclerc", "team": "Ferrari", "color": "#E8002D", "number": 16, "flag": "🇲🇨"},
-    "HAM": {"name": "Lewis Hamilton", "team": "Ferrari", "color": "#E8002D", "number": 44, "flag": "🇬🇧"},
-    "ANT": {"name": "Andrea Kimi Antonelli", "team": "Mercedes", "color": "#27F4D2", "number": 12, "flag": "🇮🇹"},
-    "ALB": {"name": "Alex Albon", "team": "Williams", "color": "#64C4FF", "number": 23, "flag": "🇹🇭"},
-    "HAD": {"name": "Isack Hadjar", "team": "RB", "color": "#6692FF", "number": 37, "flag": "🇫🇷"},
-    "HUL": {"name": "Nico Hülkenberg", "team": "Sauber", "color": "#52E252", "number": 27, "flag": "🇩🇪"},
-    "STR": {"name": "Lance Stroll", "team": "Aston Martin", "color": "#229971", "number": 18, "flag": "🇨🇦"},
-    "SAI": {"name": "Carlos Sainz", "team": "Williams", "color": "#64C4FF", "number": 55, "flag": "🇪🇸"},
-    "LAW": {"name": "Liam Lawson", "team": "RB", "color": "#6692FF", "number": 30, "flag": "🇳🇿"},
-    "ALO": {"name": "Fernando Alonso", "team": "Aston Martin", "color": "#229971", "number": 14, "flag": "🇪🇸"},
-    "OCO": {"name": "Esteban Ocon", "team": "Alpine", "color": "#FF87BC", "number": 31, "flag": "🇫🇷"},
-    "GAS": {"name": "Pierre Gasly", "team": "Alpine", "color": "#FF87BC", "number": 10, "flag": "🇫🇷"},
-    "TSU": {"name": "Yuki Tsunoda", "team": "RB", "color": "#6692FF", "number": 22, "flag": "🇯🇵"},
-    "BOR": {"name": "Gabriel Bortoleto", "team": "Sauber", "color": "#52E252", "number": 8, "flag": "🇧🇷"},
-    "BEA": {"name": "Oliver Bearman", "team": "Haas", "color": "#B6B6B8", "number": 50, "flag": "🇬🇧"},
-    "COL": {"name": "Franco Colapinto", "team": "Williams", "color": "#64C4FF", "number": 43, "flag": "🇦🇷"},
+# Official team colors from OpenF1 API (2025 season)
+TEAM_COLORS = {
+    "McLaren": "#F47600",
+    "Red Bull Racing": "#4781D7",
+    "Mercedes": "#00D7B6",
+    "Ferrari": "#ED1131",
+    "Aston Martin": "#229971",
+    "Williams": "#1868DB",
+    "RB": "#6C98FF",
+    "Sauber": "#01C00E",
+    "Haas": "#9C9FA2",
+    "Alpine": "#00A1E8",
 }
+
+DRIVERS = {
+    "PIA": {"name": "Oscar Piastri", "team": "McLaren", "number": 81, "flag": "🇦🇺"},
+    "NOR": {"name": "Lando Norris", "team": "McLaren", "number": 4, "flag": "🇬🇧"},
+    "VER": {"name": "Max Verstappen", "team": "Red Bull Racing", "number": 1, "flag": "🇳🇱"},
+    "RUS": {"name": "George Russell", "team": "Mercedes", "number": 63, "flag": "🇬🇧"},
+    "LEC": {"name": "Charles Leclerc", "team": "Ferrari", "number": 16, "flag": "🇲🇨"},
+    "HAM": {"name": "Lewis Hamilton", "team": "Ferrari", "number": 44, "flag": "🇬🇧"},
+    "ANT": {"name": "Andrea Kimi Antonelli", "team": "Mercedes", "number": 12, "flag": "🇮🇹"},
+    "ALB": {"name": "Alex Albon", "team": "Williams", "number": 23, "flag": "🇹🇭"},
+    "HAD": {"name": "Isack Hadjar", "team": "RB", "number": 37, "flag": "🇫🇷"},
+    "HUL": {"name": "Nico Hülkenberg", "team": "Sauber", "number": 27, "flag": "🇩🇪"},
+    "STR": {"name": "Lance Stroll", "team": "Aston Martin", "number": 18, "flag": "🇨🇦"},
+    "SAI": {"name": "Carlos Sainz", "team": "Williams", "number": 55, "flag": "🇪🇸"},
+    "LAW": {"name": "Liam Lawson", "team": "RB", "number": 30, "flag": "🇳🇿"},
+    "ALO": {"name": "Fernando Alonso", "team": "Aston Martin", "number": 14, "flag": "🇪🇸"},
+    "OCO": {"name": "Esteban Ocon", "team": "Haas", "number": 31, "flag": "🇫🇷"},
+    "GAS": {"name": "Pierre Gasly", "team": "Alpine", "number": 10, "flag": "🇫🇷"},
+    "TSU": {"name": "Yuki Tsunoda", "team": "Red Bull Racing", "number": 22, "flag": "🇯🇵"},
+    "BOR": {"name": "Gabriel Bortoleto", "team": "Sauber", "number": 8, "flag": "🇧🇷"},
+    "BEA": {"name": "Oliver Bearman", "team": "Haas", "number": 50, "flag": "🇬🇧"},
+    "COL": {"name": "Franco Colapinto", "team": "Alpine", "number": 43, "flag": "🇦🇷"},
+}
+
+# Add color to each driver based on their team
+for driver_code, driver_data in DRIVERS.items():
+    driver_data["color"] = TEAM_COLORS.get(driver_data["team"], "#FFFFFF")
 
 DRIVER_NAMES = {k: v['name'] for k, v in DRIVERS.items()}
 

@@ -23,5 +23,8 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+    const DRIVERS = {{ drivers | tojson | safe }};
+</script>
 <script src="{{ url_for('static', filename='js/driver_positions.js') }}"></script>
 {% endblock %}
