@@ -1,0 +1,15 @@
+.git
+.gitignore
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.db
+.env
+.env.*
+*.md
+.github
+tests
+.pre-commit-config.yaml
+.flake8
+instance

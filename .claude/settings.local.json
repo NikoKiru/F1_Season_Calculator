@@ -15,7 +15,9 @@
       "Bash(flask run:*)",
       "Bash(timeout 5 flask run:*)",
       "Bash(ls:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(.venvScriptspython -m pytest tests/ -v --tb=short)",
+      "Bash(python -m pytest:*)"
     ]
   }
 }
