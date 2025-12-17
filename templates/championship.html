@@ -23,7 +23,7 @@
                     <tr>
                         <th>Driver</th>
                         {% for round_name in data.round_names %}
-                            <th>{{ round_name }}</th>
+                            <th>{{ round_name }}<br><span class="round-flag">{{ round_flags.get(round_name, '') }}</span></th>
                         {% endfor %}
                         <th>Total Points</th>
                     </tr>
