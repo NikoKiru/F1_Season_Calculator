@@ -116,6 +116,15 @@ main {
     overflow-x: auto; /* Allow horizontal scroll for wide tables */
 }
 
+/* Full-width main container for pages with wide tables */
+main.full-width {
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    border-radius: 0;
+    padding: 20px 10px;
+}
+
 @media (max-width: 768px) {
     main {
         max-width: 100%;
@@ -313,6 +322,32 @@ footer {
     border-spacing: 0;
     background: var(--surface);
     table-layout: auto;
+}
+
+/* Compact table for many columns - fits full width without scrolling */
+.standings-table.compact-table {
+    width: 100%;
+    min-width: 100%;
+    table-layout: auto;
+}
+
+.standings-table.compact-table th,
+.standings-table.compact-table thead th {
+    padding: 8px 6px;
+    font-size: 0.85em;
+    white-space: nowrap;
+}
+
+.standings-table.compact-table td {
+    padding: 8px 6px;
+    font-size: 0.85em;
+}
+
+.standings-table.compact-table tbody th {
+    padding: 8px 10px;
+    font-size: 0.85em;
+    min-width: 120px;
+    max-width: 150px;
 }
 
 .standings-table th,
