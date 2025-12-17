@@ -172,6 +172,7 @@ def all_championship_wins_route():
 
 # Cache for expensive queries
 _highest_position_cache = None
+_head_to_head_cache = {}
 
 @bp.route('/highest_position', methods=['GET'])
 def highest_position():
@@ -327,8 +328,9 @@ def clear_cache():
       200:
         description: Cache cleared successfully
     """
-    global _highest_position_cache
+    global _highest_position_cache, _head_to_head_cache
     _highest_position_cache = None
+    _head_to_head_cache = {}
     return jsonify({"message": "Cache cleared successfully"})
 
 
@@ -337,6 +339,7 @@ def head_to_head(driver1, driver2):
     """
     Head-to-Head Driver Comparison
     Compares two drivers to see who finished ahead more often across all championship scenarios.
+    Cached for performance.
     ---
     parameters:
       - name: driver1
@@ -353,7 +356,8 @@ def head_to_head(driver1, driver2):
       200:
         description: A JSON object showing the win count for each driver in the head-to-head comparison.
     """
-    db = get_db()
+    global _head_to_head_cache
+
     d1_upper = driver1.upper()
     d2_upper = driver2.upper()
 
@@ -362,6 +366,20 @@ def head_to_head(driver1, driver2):
 
     if d1_upper not in DRIVER_NAMES or d2_upper not in DRIVER_NAMES:
         return jsonify({"error": "Invalid driver abbreviation"}), 400
+
+    # Create a cache key (normalize order so VER-NOR == NOR-VER)
+    cache_key = tuple(sorted([d1_upper, d2_upper]))
+
+    # Check cache first
+    if cache_key in _head_to_head_cache:
+        cached_data = _head_to_head_cache[cache_key]
+        # Return in the order requested
+        return jsonify({
+            d1_upper: cached_data[d1_upper],
+            d2_upper: cached_data[d2_upper]
+        })
+
+    db = get_db()
 
     # This query is complex. It adds commas to the start and end of the standings string
     # to safely find the position of a driver's abbreviation.
@@ -373,11 +391,16 @@ def head_to_head(driver1, driver2):
         WHERE INSTR(standings, ?) > 0 AND INSTR(standings, ?) > 0;
     """
     result = db.execute(query, (d1_upper, d2_upper, d1_upper, d2_upper, d1_upper, d2_upper)).fetchone()
-    
-    return jsonify({
+
+    response_data = {
         d1_upper: result['driver1_wins'],
         d2_upper: result['driver2_wins']
-    })
+    }
+
+    # Cache the result
+    _head_to_head_cache[cache_key] = response_data
+
+    return jsonify(response_data)
 
 @bp.route('/min_races_to_win', methods=['GET'])
 def min_races_to_win():

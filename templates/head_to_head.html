@@ -11,7 +11,11 @@
         <input type="text" id="driver2" placeholder="Driver 2 (e.g., NOR)">
         <button type="submit">Compare</button>
     </form>
-    <div id="h2h-result" style="margin-top: 20px;">
+    <div id="loading-indicator" style="display: none; text-align: center; margin-top: 20px;">
+        <div class="spinner"></div>
+        <p>Loading comparison...</p>
+    </div>
+    <div id="h2h-result" style="margin-top: 20px; display: flex; flex-direction: column; align-items: center;">
         <!-- Results will be displayed here -->
     </div>
 </div>
@@ -19,6 +23,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
     const DRIVERS = {{ drivers | tojson | safe }};
 </script>
