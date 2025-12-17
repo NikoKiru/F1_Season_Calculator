@@ -439,7 +439,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🎯 Roadmap
 
-- [ ] Add more championship metrics
 - [ ] Implement real-time F1 API integration
 - [ ] Add user accounts and saved analyses
 - [ ] Create data visualization dashboard
