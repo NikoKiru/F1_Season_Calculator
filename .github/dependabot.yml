@@ -1,16 +1,41 @@
 version: 2
 updates:
+  # Python dependencies
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Copenhagen"
     open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
     commit-message:
       prefix: "deps"
+      include: "scope"
+    groups:
+      # Group minor and patch updates together
+      python-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
+  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Copenhagen"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "github-actions"
     commit-message:
       prefix: "ci"
+      include: "scope"

@@ -1,0 +1,154 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version.outputs.new_version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get current version
+        id: current
+        run: |
+          # Get latest tag or default to v0.0.0
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Current version: $LATEST_TAG"
+
+      - name: Calculate new version
+        id: version
+        run: |
+          CURRENT="${{ steps.current.outputs.latest_tag }}"
+          # Remove 'v' prefix for calculation
+          VERSION=${CURRENT#v}
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+          case "${{ github.event.inputs.version_bump }}" in
+            major)
+              NEW_VERSION="v$((MAJOR + 1)).0.0"
+              ;;
+            minor)
+              NEW_VERSION="v${MAJOR}.$((MINOR + 1)).0"
+              ;;
+            patch)
+              NEW_VERSION="v${MAJOR}.${MINOR}.$((PATCH + 1))"
+              ;;
+          esac
+
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREVIOUS_TAG="${{ steps.current.outputs.latest_tag }}"
+          NEW_VERSION="${{ steps.version.outputs.new_version }}"
+
+          echo "Generating changelog from $PREVIOUS_TAG to HEAD..."
+
+          # Create changelog file
+          {
+            echo "## What's Changed in $NEW_VERSION"
+            echo ""
+
+            # Features
+            FEATURES=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s" --grep="^feat" --grep="^feature" -i 2>/dev/null || true)
+            if [ -n "$FEATURES" ]; then
+              echo "### Features"
+              echo "$FEATURES"
+              echo ""
+            fi
+
+            # Bug fixes
+            FIXES=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s" --grep="^fix" -i 2>/dev/null || true)
+            if [ -n "$FIXES" ]; then
+              echo "### Bug Fixes"
+              echo "$FIXES"
+              echo ""
+            fi
+
+            # Other changes
+            OTHER=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s" --invert-grep --grep="^feat" --grep="^fix" --grep="^chore" --grep="^docs" --grep="^style" --grep="^refactor" --grep="^test" -i 2>/dev/null | head -20 || true)
+            if [ -n "$OTHER" ]; then
+              echo "### Other Changes"
+              echo "$OTHER"
+              echo ""
+            fi
+
+            # Contributors
+            echo "### Contributors"
+            git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- @%an" | sort -u
+            echo ""
+
+            echo "---"
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${NEW_VERSION}"
+          } > CHANGELOG_ENTRY.md
+
+          cat CHANGELOG_ENTRY.md
+
+          # Store for later use
+          echo "changelog_file=CHANGELOG_ENTRY.md" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          NEW_VERSION="${{ steps.version.outputs.new_version }}"
+
+          git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION"
+          git push origin "$NEW_VERSION"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.new_version }}
+          name: Release ${{ steps.version.outputs.new_version }}
+          body_path: CHANGELOG_ENTRY.md
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease }}
+          generate_release_notes: true
+
+      - name: Create release summary
+        run: |
+          echo "## Release Created Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | ${{ steps.version.outputs.new_version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Type | ${{ github.event.inputs.version_bump }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pre-release | ${{ github.event.inputs.prerelease }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Created by | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Review the release at: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "2. Deploy to production using the CD - Production workflow" >> $GITHUB_STEP_SUMMARY

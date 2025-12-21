@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  MIN_COVERAGE: 30  # Minimum code coverage percentage required
+
 jobs:
   lint:
     name: Lint
@@ -51,15 +54,19 @@ jobs:
         run: pip-audit --strict
 
   test:
-    name: Test
+    name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
       - name: Install dependencies
@@ -68,13 +75,25 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-cov
 
-      - name: Run tests
-        run: pytest tests/ -v --cov=championship --cov-report=term-missing
-        continue-on-error: true
+      - name: Run tests with coverage
+        run: |
+          pytest tests/ -v \
+            --cov=championship \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=${{ env.MIN_COVERAGE }}
+
+      - name: Upload coverage report
+        if: matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v6
+        with:
+          name: coverage-report
+          path: coverage.xml
 
   app-validation:
     name: App Startup Validation
     runs-on: ubuntu-latest
+    needs: [lint, test]
     steps:
       - uses: actions/checkout@v6
 
@@ -90,13 +109,53 @@ jobs:
           pip install -r requirements.txt
 
       - name: Setup application
-        run: |
-          flask setup
+        run: flask setup
 
       - name: Validate Flask app starts
         run: |
-          timeout 5 flask run &
+          flask run &
           sleep 3
           curl -f http://127.0.0.1:5000/ || exit 1
+          curl -f http://127.0.0.1:5000/apidocs/ || exit 1
         env:
           FLASK_APP: app.py
+
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    needs: [lint, security, test]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Create build info
+        run: |
+          echo "BUILD_SHA=${{ github.sha }}" > build-info.txt
+          echo "BUILD_REF=${{ github.ref }}" >> build-info.txt
+          echo "BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> build-info.txt
+
+      - name: Create deployment package
+        run: |
+          mkdir -p dist
+          tar -czvf dist/app-${{ github.sha }}.tar.gz \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='.pytest_cache' \
+            --exclude='instance' \
+            --exclude='.venv' \
+            --exclude='dist' \
+            .
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: app-package
+          path: dist/app-${{ github.sha }}.tar.gz
+          retention-days: 30
