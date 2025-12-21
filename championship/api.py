@@ -634,15 +634,12 @@ def driver_stats(driver_code):
         try:
             driver_pos = standings.index(driver_code)
             position = driver_pos + 1
-            
             # Count position
             position_counts[position] = position_counts.get(position, 0) + 1
-            
             # Track best position
             if position < highest_pos:
                 highest_pos = position
                 highest_pos_championship = row['championship_id']
-            
             # Head-to-head against all opponents
             for opponent_code in h2h_records.keys():
                 try:
