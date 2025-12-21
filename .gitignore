@@ -270,3 +270,4 @@ pyrightconfig.json
 # Custom additions for Claude
 claude/
 claude-tempfiles/
+.claude
