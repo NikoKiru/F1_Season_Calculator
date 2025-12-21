@@ -365,13 +365,6 @@ footer {
     font-size: 0.95em;
 }
 
-/* Round flag under round name in header */
-.round-flag {
-    font-size: 1.2em;
-    display: block;
-    margin-top: 2px;
-}
-
 /* First column header should be left-aligned */
 .standings-table th:first-child,
 .standings-table thead th:first-child {

@@ -2,7 +2,7 @@ from flask import (
     Blueprint, render_template
 )
 from .api import get_championship, all_championship_wins, highest_position, driver_positions, championship_win_probability, min_races_to_win
-from .models import ROUND_NAMES_2025, DRIVERS, ROUND_FLAGS
+from .models import ROUND_NAMES_2025, DRIVERS
 
 bp = Blueprint('views', __name__, template_folder='templates')
 
@@ -21,7 +21,7 @@ def championship_page(id):
     if not data:
         return render_template('championship.html', data=None, error="Championship not found", drivers=DRIVERS), 404
 
-    return render_template('championship.html', data=data, drivers=DRIVERS, round_flags=ROUND_FLAGS)
+    return render_template('championship.html', data=data, drivers=DRIVERS)
 
 @bp.route('/all_championship_wins')
 def all_championship_wins_page():
