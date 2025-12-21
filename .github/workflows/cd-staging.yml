@@ -25,9 +25,10 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.4.1
         with:
           ref: ${{ github.sha }}
-          check-name: 'Build Package'
+          running-workflow-name: 'Wait for CI'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
+          allowed-conclusions: success
 
   deploy-staging:
     name: Deploy to Staging
