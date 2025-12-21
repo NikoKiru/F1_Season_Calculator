@@ -760,3 +760,139 @@ footer {
         rgba(255, 255, 255, 0.3) 10px
     );
 }
+
+/* Position Selector - Podium Style */
+.position-selector {
+    margin-bottom: 30px;
+}
+
+.podium-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 20px 0;
+}
+
+.podium-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.3s ease;
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.podium-block:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+.podium-block.active {
+    box-shadow: 0 0 0 4px white, 0 8px 20px rgba(0,0,0,0.3);
+}
+
+.podium-1 {
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    width: 100px;
+    height: 120px;
+    order: 2;
+}
+
+.podium-2 {
+    background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);
+    width: 90px;
+    height: 100px;
+    order: 1;
+}
+
+.podium-3 {
+    background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%);
+    width: 90px;
+    height: 80px;
+    order: 3;
+}
+
+.podium-number {
+    font-size: 2em;
+    line-height: 1;
+    text-align: center;
+}
+
+.podium-label {
+    font-size: 0.85em;
+    opacity: 0.9;
+    margin-top: 4px;
+    text-align: center;
+}
+
+.position-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.position-btn {
+    width: 50px;
+    height: 50px;
+    border: 2px solid var(--border-color);
+    background: var(--surface);
+    color: var(--text-primary);
+    font-size: 1.1em;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.position-btn:hover {
+    border-color: var(--f1-red);
+    background: rgba(209, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.position-btn.active {
+    background: var(--f1-red);
+    color: white;
+    border-color: var(--f1-red-dark);
+    box-shadow: 0 4px 12px rgba(209, 0, 0, 0.4);
+}
+
+@media (max-width: 480px) {
+    .podium-1 {
+        width: 80px;
+        height: 100px;
+    }
+
+    .podium-2 {
+        width: 70px;
+        height: 80px;
+    }
+
+    .podium-3 {
+        width: 70px;
+        height: 65px;
+    }
+
+    .podium-number {
+        font-size: 1.5em;
+    }
+
+    .position-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 1em;
+    }
+}

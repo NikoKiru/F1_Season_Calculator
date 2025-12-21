@@ -173,6 +173,7 @@ def all_championship_wins_route():
 # Cache for expensive queries
 _highest_position_cache = None
 _head_to_head_cache = {}
+_driver_positions_cache = {}
 
 @bp.route('/highest_position', methods=['GET'])
 def highest_position():
@@ -328,9 +329,10 @@ def clear_cache():
       200:
         description: Cache cleared successfully
     """
-    global _highest_position_cache, _head_to_head_cache
+    global _highest_position_cache, _head_to_head_cache, _driver_positions_cache
     _highest_position_cache = None
     _head_to_head_cache = {}
+    _driver_positions_cache = {}
     return jsonify({"message": "Cache cleared successfully"})
 
 
@@ -426,6 +428,7 @@ def driver_positions():
     """
     Count Driver Finishes in a Specific Position
     Counts how many times each driver finished in a given position.
+    Cached for performance.
     ---
     parameters:
       - name: position
@@ -437,9 +440,15 @@ def driver_positions():
       200:
         description: A JSON object with drivers and their count of finishes in the specified position.
     """
+    global _driver_positions_cache
+
     position = request.args.get('position', type=int)
     if position is None or position < 1:
         return jsonify({"error": "A valid 'position' parameter is required."}), 400
+
+    # Check cache first
+    if position in _driver_positions_cache:
+        return jsonify(_driver_positions_cache[position])
 
     db = get_db()
 
@@ -457,7 +466,7 @@ def driver_positions():
             driver = standings[position - 1].strip()
             if driver:
                 position_counts[driver] = position_counts.get(driver, 0) + 1
-    
+
     # Sort by count descending
     sorted_counts = sorted(position_counts.items(), key=lambda item: item[1], reverse=True)
 
@@ -470,7 +479,10 @@ def driver_positions():
             "count": count,
             "percentage": round(percentage, 2)
         })
-    
+
+    # Cache the result
+    _driver_positions_cache[position] = result_data
+
     return jsonify(result_data)
 
 @bp.route('/championship_win_probability', methods=['GET'])

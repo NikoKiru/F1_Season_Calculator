@@ -5,18 +5,36 @@
 {% block page_title %}Driver Finishes by Position{% endblock %}
 
 {% block content %}
-<div class="slider-container">
-    <input type="range" id="position-slider" value="10" min="1" max="20">
-    <div class="slider-labels">
-        <span>1</span>
-        <span>20</span>
+<div class="position-selector">
+    <div class="podium-container">
+        <div class="podium-block podium-2" data-position="2">
+            <span class="podium-number">2</span>
+            <span class="podium-label">2nd</span>
+        </div>
+        <div class="podium-block podium-1" data-position="1">
+            <span class="podium-number">1</span>
+            <span class="podium-label">1st</span>
+        </div>
+        <div class="podium-block podium-3" data-position="3">
+            <span class="podium-number">3</span>
+            <span class="podium-label">3rd</span>
+        </div>
+    </div>
+    <div class="position-grid">
+        {% for pos in range(4, 21) %}
+        <button class="position-btn" data-position="{{ pos }}">{{ pos }}</button>
+        {% endfor %}
     </div>
 </div>
 
 <div class="data-container">
-    <h2 id="position-header">Position: 10</h2>
+    <h2 id="position-header">Select a Position</h2>
+    <div id="loading-indicator" style="display: none; text-align: center; margin-top: 20px;">
+        <div class="spinner"></div>
+        <p>Loading data...</p>
+    </div>
     <div id="results">
-        <p>Loading...</p>
+        <p>Click a position above to see driver statistics.</p>
     </div>
 </div>
 <a href="{{ url_for('views.index') }}" class="back-link">Back to Home</a>
