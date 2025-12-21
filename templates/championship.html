@@ -4,6 +4,10 @@
 
 {% block page_title %}Championship #{{ data.championship_id }}{% endblock %}
 
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="data-container">
     {% if data %}
@@ -46,10 +50,148 @@
                 </tbody>
             </table>
         </div>
+
+        <h3 style="margin-top: 30px;">Season Progression</h3>
+        <div class="chart-container">
+            <canvas id="progression-chart"></canvas>
+        </div>
         {% endif %}
     {% else %}
         <p>Championship not found.</p>
     {% endif %}
 </div>
 <a href="{{ url_for('views.index') }}" class="back-link">Back to Home</a>
+{% endblock %}
+
+{% block scripts %}
+{% if data and data.round_points_data %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Data from template
+    const roundNames = {{ data.round_names | tojson }};
+    const standings = {{ data.standings.split(',') | tojson }};
+    const roundPointsData = {{ data.round_points_data | tojson }};
+    const driversInfo = {{ drivers | tojson }};
+
+    // Get top 5 drivers
+    const top5Drivers = standings.slice(0, 5);
+
+    // Build datasets for each driver
+    const datasets = [];
+
+    // Group drivers by team to identify teammates
+    const teamDrivers = {};
+    top5Drivers.forEach(code => {
+        const team = driversInfo[code]?.team || 'Unknown';
+        if (!teamDrivers[team]) teamDrivers[team] = [];
+        teamDrivers[team].push(code);
+    });
+
+    // Determine which driver in each team should be dashed (lower total points)
+    const dashedDrivers = new Set();
+    Object.values(teamDrivers).forEach(codes => {
+        if (codes.length > 1) {
+            // Find the teammate with lower total points
+            let lowestPoints = Infinity;
+            let lowestDriver = null;
+            codes.forEach(code => {
+                const total = roundPointsData[code]?.total_points || 0;
+                if (total < lowestPoints) {
+                    lowestPoints = total;
+                    lowestDriver = code;
+                }
+            });
+            if (lowestDriver) dashedDrivers.add(lowestDriver);
+        }
+    });
+
+    // Create datasets
+    top5Drivers.forEach(driverCode => {
+        const driverData = roundPointsData[driverCode];
+        if (!driverData) return;
+
+        // Calculate cumulative points
+        const cumulativePoints = [];
+        let runningTotal = 0;
+        driverData.round_points.forEach(points => {
+            runningTotal += points;
+            cumulativePoints.push(runningTotal);
+        });
+
+        const color = driversInfo[driverCode]?.color || '#666';
+        const driverName = driversInfo[driverCode]?.name || driverCode;
+        const isDashed = dashedDrivers.has(driverCode);
+
+        datasets.push({
+            label: driverName,
+            data: cumulativePoints,
+            borderColor: color,
+            backgroundColor: color,
+            borderWidth: 2,
+            borderDash: isDashed ? [5, 5] : [],
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            tension: 0.1,
+            fill: false
+        });
+    });
+
+    // Create chart
+    const ctx = document.getElementById('progression-chart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: roundNames,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.raw} pts`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Cumulative Points'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Round'
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            }
+        }
+    });
+});
+</script>
+{% endif %}
 {% endblock %}

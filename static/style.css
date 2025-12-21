@@ -726,6 +726,15 @@ footer {
     margin: 20px auto;
 }
 
+/* Line Chart Container (wider for progression charts) */
+.data-container .chart-container {
+    max-width: 100%;
+    background: var(--surface);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+}
+
 .chart-legend {
     display: flex;
     flex-direction: column;
