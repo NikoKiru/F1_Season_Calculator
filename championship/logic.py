@@ -2,6 +2,7 @@ import pandas as pd
 import os
 from flask import current_app
 
+
 def get_round_points_for_championship(drivers, round_numbers):
     """
     Gets the points for each driver for each round in a given championship.
@@ -39,6 +40,7 @@ def get_round_points_for_championship(drivers, round_numbers):
             }
     return championship_points
 
+
 def calculate_championship_from_rounds(round_numbers):
     """
     Calculates championship standings from a given list of round numbers.
@@ -54,9 +56,9 @@ def calculate_championship_from_rounds(round_numbers):
         return {}
 
     df = pd.read_csv(csv_path)
-    
+
     round_cols = [str(r) for r in round_numbers]
-    
+
     # Ensure all requested round columns exist
     existing_round_cols = [col for col in round_cols if col in df.columns]
     if not existing_round_cols:
@@ -64,15 +66,15 @@ def calculate_championship_from_rounds(round_numbers):
 
     # Sum points for selected rounds for each driver
     df['total_points'] = df[existing_round_cols].sum(axis=1)
-    
+
     # Sort by total points descending
     standings_df = df.sort_values(by='total_points', ascending=False)
-    
+
     # Get standings, points, and winner
     standings = standings_df['Driver'].tolist()
     points = standings_df['total_points'].astype(int).tolist()
     winner = standings[0] if standings else None
-    
+
     return {
         'standings': standings,
         'points': points,

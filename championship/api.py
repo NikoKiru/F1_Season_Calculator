@@ -1,5 +1,5 @@
 from flask import (
-    Blueprint, jsonify, request, redirect, url_for
+    Blueprint, jsonify, request, url_for
 )
 # Import db module - works with both package and standalone setup
 try:
@@ -10,12 +10,13 @@ except ImportError:
 
 try:
     from .models import ROUND_NAMES_2025, DRIVER_NAMES, DRIVERS
-    from .logic import get_round_points_for_championship, calculate_championship_from_rounds
+    from .logic import get_round_points_for_championship
 except ImportError:
     from championship.models import ROUND_NAMES_2025, DRIVER_NAMES, DRIVERS
-    from championship.logic import get_round_points_for_championship, calculate_championship_from_rounds
+    from championship.logic import get_round_points_for_championship
 
 bp = Blueprint('api', __name__, url_prefix='/api')
+
 
 def format_championship_data(row, with_round_points=False):
     """Formats a championship row from the database into a dictionary."""
@@ -23,7 +24,7 @@ def format_championship_data(row, with_round_points=False):
         return None
 
     championship_data = dict(row)
-    
+
     if championship_data.get('rounds'):
         round_numbers = [int(r) for r in championship_data['rounds'].split(',')]
         round_names = [ROUND_NAMES_2025.get(r, 'Unknown') for r in round_numbers]
@@ -39,8 +40,9 @@ def format_championship_data(row, with_round_points=False):
             round_numbers = [int(r) for r in championship_data['rounds'].split(',')]
             round_points_data = get_round_points_for_championship(drivers, round_numbers)
             championship_data['round_points_data'] = round_points_data
-            
+
     return championship_data
+
 
 # Function to query all data from the SQLite database
 def get_all_data(page=1, per_page=100):
@@ -58,8 +60,9 @@ def get_all_data(page=1, per_page=100):
 
     # Format data using the helper function
     data = [format_championship_data(row) for row in rows]
-    
+
     return data, total_count
+
 
 # Flask route to return all data as JSON
 @bp.route('/data', methods=['GET'])
@@ -85,11 +88,11 @@ def get_data_route():
     """
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 100, type=int)
-    
+
     data, total_count = get_all_data(page, per_page)
-    
+
     total_pages = (total_count + per_page - 1) // per_page
-    
+
     response = {
         "total_results": total_count,
         "total_pages": total_pages,
@@ -99,8 +102,9 @@ def get_data_route():
         "prev_page": f"/api/data?page={page - 1}&per_page={per_page}" if page > 1 else None,
         "results": data
     }
-    
+
     return jsonify(response)
+
 
 @bp.route('/championship/<int:id>', methods=['GET'])
 def get_championship(id):
@@ -121,7 +125,10 @@ def get_championship(id):
         description: Championship not found.
     """
     db = get_db()
-    row = db.execute(f"SELECT * FROM championship_results WHERE championship_id = ?", (id,)).fetchone()
+    row = db.execute(
+        "SELECT * FROM championship_results WHERE championship_id = ?",
+        (id,)
+    ).fetchone()
 
     championship_data = format_championship_data(row, with_round_points=True)
 
@@ -129,6 +136,8 @@ def get_championship(id):
         return jsonify(championship_data)
     else:
         return jsonify({"error": "Championship not found"}), 404
+
+
 def all_championship_wins():
     """
     Get All Championship Wins for All Drivers
@@ -136,20 +145,20 @@ def all_championship_wins():
     ---
     responses:
       200:
-        description: A JSON object where keys are driver abbreviations and values are their total wins.
+        description: >
+          A JSON object where keys are driver abbreviations
+          and values are their total wins.
     """
     db = get_db()
 
-    table_name = 'championship_results'
-
     # Query to group by the indexed 'winner' column
-    query = f"""
+    query = """
         SELECT winner, COUNT(*) as wins
-        FROM {table_name}
+        FROM championship_results
         GROUP BY winner
         ORDER BY wins DESC
     """
-    
+
     rows = db.execute(query).fetchall()
 
     # Format as a dictionary
@@ -166,20 +175,18 @@ def all_championship_wins_route():
     return all_championship_wins()
 
 
-
-
-
-
 # Cache for expensive queries
 _highest_position_cache = None
 _head_to_head_cache = {}
 _driver_positions_cache = {}
 
+
 @bp.route('/highest_position', methods=['GET'])
 def highest_position():
     """
     Get the Highest Championship Position for Each Driver
-    This endpoint returns the best final championship ranking for every driver, including up to the 5 largest championship IDs where this rank was achieved.
+    This endpoint returns the best final championship ranking for every driver,
+    including up to the 5 largest championship IDs where this rank was achieved.
 
     ULTRA-OPTIMIZED: Uses smart heuristics and caching.
     Key insight: Best positions occur in championships with MORE races.
@@ -192,7 +199,10 @@ def highest_position():
         description: Set to true to bypass cache and recalculate
     responses:
       200:
-        description: A JSON object where keys are driver abbreviations and values are objects containing their highest rank and a list of up to 5 corresponding championship IDs.
+        description: >
+          A JSON object where keys are driver abbreviations and values are
+          objects containing their highest rank and a list of up to 5
+          corresponding championship IDs.
     """
     global _highest_position_cache
 
@@ -383,14 +393,21 @@ def head_to_head(driver1, driver2):
 
     # This query is complex. It adds commas to the start and end of the standings string
     # to safely find the position of a driver's abbreviation.
-    query = f"""
+    query = """
         SELECT
-            SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',') < INSTR(',' || standings || ',', ',' || ? || ',') THEN 1 ELSE 0 END) as driver1_wins,
-            SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',') > INSTR(',' || standings || ',', ',' || ? || ',') THEN 1 ELSE 0 END) as driver2_wins
+            SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',')
+                < INSTR(',' || standings || ',', ',' || ? || ',')
+                THEN 1 ELSE 0 END) as driver1_wins,
+            SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',')
+                > INSTR(',' || standings || ',', ',' || ? || ',')
+                THEN 1 ELSE 0 END) as driver2_wins
         FROM championship_results
         WHERE INSTR(standings, ?) > 0 AND INSTR(standings, ?) > 0;
     """
-    result = db.execute(query, (d1_upper, d2_upper, d1_upper, d2_upper, d1_upper, d2_upper)).fetchone()
+    result = db.execute(
+        query,
+        (d1_upper, d2_upper, d1_upper, d2_upper, d1_upper, d2_upper)
+    ).fetchone()
 
     response_data = {
         d1_upper: result['driver1_wins'],
@@ -401,6 +418,7 @@ def head_to_head(driver1, driver2):
     _head_to_head_cache[cache_key] = response_data
 
     return jsonify(response_data)
+
 
 @bp.route('/min_races_to_win', methods=['GET'])
 def min_races_to_win():
@@ -414,12 +432,19 @@ def min_races_to_win():
     """
     db = get_db()
 
-    query = "SELECT winner, MIN(num_races) as min_races FROM championship_results WHERE winner IS NOT NULL GROUP BY winner ORDER BY min_races ASC"
+    query = """
+        SELECT winner, MIN(num_races) as min_races
+        FROM championship_results
+        WHERE winner IS NOT NULL
+        GROUP BY winner
+        ORDER BY min_races ASC
+    """
     results = db.execute(query).fetchall()
 
     data = {row['winner']: row['min_races'] for row in results}
-    
+
     return jsonify(data)
+
 
 @bp.route('/driver_positions', methods=['GET'])
 def driver_positions():
@@ -481,6 +506,7 @@ def driver_positions():
 
     return jsonify(result_data)
 
+
 @bp.route('/championship_win_probability', methods=['GET'])
 def championship_win_probability():
     """
@@ -491,7 +517,7 @@ def championship_win_probability():
         description: A JSON object with win probabilities for each driver.
     """
     db = get_db()
-    
+
     # Get total wins for each driver
     query_wins = "SELECT winner, COUNT(*) as wins FROM championship_results GROUP BY winner"
     driver_total_wins = {row['winner']: row['wins'] for row in db.execute(query_wins).fetchall()}
@@ -507,7 +533,7 @@ def championship_win_probability():
     # Get total seasons per length
     query_seasons_per_length = "SELECT num_races, COUNT(*) as total FROM championship_results GROUP BY num_races"
     seasons_per_length = {row['num_races']: row['total'] for row in db.execute(query_seasons_per_length).fetchall()}
-    
+
     season_lengths = sorted(seasons_per_length.keys())
 
     drivers = sorted(driver_total_wins.keys())
@@ -534,12 +560,13 @@ def championship_win_probability():
 
     response_data = {
         "season_lengths": season_lengths,
-        "possible_seasons": [seasons_per_length.get(l, 0) for l in season_lengths],
+        "possible_seasons": [seasons_per_length.get(length, 0) for length in season_lengths],
         "drivers_data": driver_data,
         "driver_names": DRIVER_NAMES
     }
 
     return jsonify(response_data)
+
 
 @bp.route('/driver/<string:driver_code>/stats', methods=['GET'])
 def driver_stats(driver_code):
@@ -639,12 +666,20 @@ def driver_stats(driver_code):
             # Calculate H2H
             query = """
                 SELECT
-                    SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',') < INSTR(',' || standings || ',', ',' || ? || ',') THEN 1 ELSE 0 END) as driver_wins,
-                    SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',') > INSTR(',' || standings || ',', ',' || ? || ',') THEN 1 ELSE 0 END) as opponent_wins
+                    SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',')
+                        < INSTR(',' || standings || ',', ',' || ? || ',')
+                        THEN 1 ELSE 0 END) as driver_wins,
+                    SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',')
+                        > INSTR(',' || standings || ',', ',' || ? || ',')
+                        THEN 1 ELSE 0 END) as opponent_wins
                 FROM championship_results
                 WHERE INSTR(standings, ?) > 0 AND INSTR(standings, ?) > 0;
             """
-            result = db.execute(query, (driver_code, opponent_code, driver_code, opponent_code, driver_code, opponent_code)).fetchone()
+            result = db.execute(
+                query,
+                (driver_code, opponent_code, driver_code, opponent_code,
+                 driver_code, opponent_code)
+            ).fetchone()
 
             driver_wins = result['driver_wins'] or 0
             opponent_wins = result['opponent_wins'] or 0
@@ -727,4 +762,3 @@ def create_championship():
     else:
         # In a real scenario, you might want a more user-friendly error page.
         return jsonify({"error": "Championship with this combination of rounds not found"}), 404
-

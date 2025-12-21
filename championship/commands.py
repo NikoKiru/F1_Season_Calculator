@@ -13,6 +13,7 @@ import os
 from flask import current_app
 from typing import Tuple, List
 
+
 # Step 1: Read the CSV file and convert to NumPy for performance
 def read_csv(file_path: str) -> Tuple[np.ndarray, np.ndarray]:
     """Read championship CSV and return drivers and numeric score array.
@@ -28,23 +29,26 @@ def read_csv(file_path: str) -> Tuple[np.ndarray, np.ndarray]:
     scores = scores_df.to_numpy()
     return drivers, scores
 
+
 # Step 2: Generate subsets of races
 def generate_race_combinations(num_races):
     for r in range(1, num_races + 1):
-        for combination in itertools.combinations(range(num_races), r): # Use 0-based index
+        for combination in itertools.combinations(range(num_races), r):  # Use 0-based index
             yield combination
+
 
 # Step 3: Calculate championship standings using NumPy
 def calculate_standings(drivers, scores, race_subset):
     # Sum scores for the given subset of races. This is much faster in NumPy.
     subset_scores = scores[:, race_subset].sum(axis=1)
-    
+
     # Sort drivers based on scores
-    sorted_indices = np.argsort(-subset_scores) # Sort in descending order
+    sorted_indices = np.argsort(-subset_scores)  # Sort in descending order
     sorted_drivers = drivers[sorted_indices]
     sorted_scores = subset_scores[sorted_indices]
-    
+
     return sorted_drivers, sorted_scores
+
 
 # Step 4: Save to SQLite database
 def save_to_database(db, table_name: str, championship_data: List[tuple]):
@@ -63,6 +67,7 @@ def save_to_database(db, table_name: str, championship_data: List[tuple]):
         championship_data,
     )
     # Commit handled by caller for larger transactional control
+
 
 # Main function
 def process_data(batch_size=100000):
@@ -87,12 +92,12 @@ def process_data(batch_size=100000):
     db.execute("PRAGMA synchronous=OFF;")
     db.execute("PRAGMA journal_mode=WAL;")
     db.execute("BEGIN IMMEDIATE;")
-    
+
     # Step 3: Process each combination
     for i, race_subset in enumerate(race_combinations_generator):
         # Calculate standings using the optimized NumPy function
         sorted_drivers, sorted_scores = calculate_standings(drivers, scores, race_subset)
-        
+
         # Prepare data for database
         winner = sorted_drivers[0]
         standings_str = ','.join(sorted_drivers)
@@ -106,7 +111,7 @@ def process_data(batch_size=100000):
             save_to_database(db, table_name, championship_data_batch)
             click.echo(f"Processed batch through combination {i + 1}...")
             championship_data_batch = []
-    
+
     # Save any remaining data
     if championship_data_batch:
         save_to_database(db, table_name, championship_data_batch)
@@ -116,6 +121,7 @@ def process_data(batch_size=100000):
     db.commit()
     db.execute("PRAGMA synchronous=NORMAL;")
     click.echo(f"All data saved to database, table: {table_name}")
+
 
 @click.command('process-data')
 @click.option('--batch-size', default=100000, type=int, help='Number of records to process per batch')
@@ -142,6 +148,7 @@ def process_data_command(batch_size):
     except Exception as e:
         click.echo(f'[ERROR] Error processing data: {e}', err=True)
         raise
+
 
 def init_app(app):
     app.cli.add_command(process_data_command)

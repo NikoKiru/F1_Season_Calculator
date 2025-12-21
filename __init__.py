@@ -55,7 +55,7 @@ def create_app(test_config=None):
     db.init_app(app)
 
     from flasgger import Swagger
-    swagger = Swagger(app)
+    Swagger(app)
 
     # Register blueprints from the championship module
     try:
