@@ -4,7 +4,13 @@ Flask application entry point.
 This file creates the Flask app instance and makes it importable
 for the Flask CLI and WSGI servers.
 """
-# Import create_app from the __init__ module in the current directory
+import sys
+import os
+
+# Add the current directory to path if needed
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Import create_app from __init__.py
 from __init__ import create_app
 
 app = create_app()
