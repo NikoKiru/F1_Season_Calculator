@@ -79,9 +79,18 @@ function renderPositionChart(positionData) {
     // Create labels and data for positions 1-20
     const labels = [];
     const values = [];
+    
+    // Calculate total for percentage
+    let total = 0;
+    for (let i = 1; i <= 20; i++) {
+        total += positionData[i] || 0;
+    }
+    
     for (let i = 1; i <= 20; i++) {
         labels.push(getOrdinal(i));
-        values.push(positionData[i] || 0);
+        const count = positionData[i] || 0;
+        const percentage = total > 0 ? (count / total) * 100 : 0;
+        values.push(percentage);
     }
 
     new Chart(ctx, {
@@ -89,7 +98,7 @@ function renderPositionChart(positionData) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Times Finished',
+                label: 'Position %',
                 data: values,
                 backgroundColor: TEAM_COLOR,
                 borderColor: TEAM_COLOR,
@@ -108,7 +117,7 @@ function renderPositionChart(positionData) {
                     callbacks: {
                         label: function(context) {
                             const value = context.raw;
-                            return `${formatNumber(value)} times`;
+                            return `${value.toFixed(1)}% of scenarios`;
                         }
                     }
                 }
@@ -118,7 +127,7 @@ function renderPositionChart(positionData) {
                     beginAtZero: true,
                     ticks: {
                         callback: function(value) {
-                            return formatNumber(value);
+                            return value.toFixed(0) + '%';
                         }
                     }
                 },
@@ -193,11 +202,13 @@ function renderH2HGrid(h2hData) {
     const grid = document.getElementById('h2h-grid');
     grid.innerHTML = '';
 
-    // Sort opponents by win margin (wins - losses) descending
+    // Sort opponents by win percentage descending
     const opponents = Object.keys(h2hData).sort((a, b) => {
-        const marginA = h2hData[a].wins - h2hData[a].losses;
-        const marginB = h2hData[b].wins - h2hData[b].losses;
-        return marginB - marginA;
+        const totalA = h2hData[a].wins + h2hData[a].losses;
+        const totalB = h2hData[b].wins + h2hData[b].losses;
+        const pctA = totalA > 0 ? h2hData[a].wins / totalA : 0;
+        const pctB = totalB > 0 ? h2hData[b].wins / totalB : 0;
+        return pctB - pctA;
     });
 
     opponents.forEach(opponentCode => {
@@ -208,6 +219,11 @@ function renderH2HGrid(h2hData) {
 
         const wins = record.wins;
         const losses = record.losses;
+        const total = wins + losses;
+        
+        // Calculate percentages
+        const winPct = total > 0 ? ((wins / total) * 100).toFixed(0) : 0;
+        const lossPct = total > 0 ? ((losses / total) * 100).toFixed(0) : 0;
 
         let statusClass = 'tied';
         if (wins > losses) statusClass = 'winning';
@@ -218,8 +234,8 @@ function renderH2HGrid(h2hData) {
         card.innerHTML = `
             <span class="h2h-opponent">${opponent.flag} ${opponent.name.split(' ').pop()}</span>
             <span class="h2h-record">
-                <span class="wins">${formatNumber(wins)}</span> -
-                <span class="losses">${formatNumber(losses)}</span>
+                <span class="wins">${winPct}%</span> -
+                <span class="losses">${lossPct}%</span>
             </span>
         `;
 

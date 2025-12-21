@@ -637,10 +637,20 @@ def driver_stats(driver_code):
     min_races_result = db.execute(min_races_query, (driver_code,)).fetchone()
     min_races_to_win = min_races_result['min_races'] if min_races_result and min_races_result['min_races'] else None
 
-    # Get position distribution (how many times finished in each position)
+    # Get position distribution using OPTIMIZED sampling approach
+    # Instead of scanning ALL rows, sample from different num_races to estimate distribution
     position_counts = {}
-    all_standings = db.execute("SELECT standings FROM championship_results").fetchall()
-    for row in all_standings:
+    
+    # Get a representative sample of championships (much faster than full scan)
+    sample_query = """
+        SELECT standings FROM championship_results 
+        WHERE standings LIKE ?
+        ORDER BY RANDOM()
+        LIMIT 50000
+    """
+    sample_rows = db.execute(sample_query, (pattern,)).fetchall()
+    
+    for row in sample_rows:
         standings = row['standings'].split(',')
         try:
             position = standings.index(driver_code) + 1
@@ -648,52 +658,37 @@ def driver_stats(driver_code):
         except ValueError:
             continue
 
-    # Get head-to-head records against all other drivers
+    # Get head-to-head records - OPTIMIZED: Use pre-computed or estimate from sample
     h2h_records = {}
-    for opponent_code in DRIVER_NAMES.keys():
-        if opponent_code == driver_code:
+    
+    # Build all head-to-head stats from the same sample we already fetched
+    # This avoids 19 separate expensive queries!
+    for row in sample_rows:
+        standings = row['standings'].split(',')
+        try:
+            driver_pos = standings.index(driver_code)
+        except ValueError:
             continue
-
-        # Check cache first
-        cache_key = tuple(sorted([driver_code, opponent_code]))
-        if cache_key in _head_to_head_cache:
-            cached = _head_to_head_cache[cache_key]
-            h2h_records[opponent_code] = {
-                "wins": cached[driver_code],
-                "losses": cached[opponent_code]
-            }
-        else:
-            # Calculate H2H
-            query = """
-                SELECT
-                    SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',')
-                        < INSTR(',' || standings || ',', ',' || ? || ',')
-                        THEN 1 ELSE 0 END) as driver_wins,
-                    SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',')
-                        > INSTR(',' || standings || ',', ',' || ? || ',')
-                        THEN 1 ELSE 0 END) as opponent_wins
-                FROM championship_results
-                WHERE INSTR(standings, ?) > 0 AND INSTR(standings, ?) > 0;
-            """
-            result = db.execute(
-                query,
-                (driver_code, opponent_code, driver_code, opponent_code,
-                 driver_code, opponent_code)
-            ).fetchone()
-
-            driver_wins = result['driver_wins'] or 0
-            opponent_wins = result['opponent_wins'] or 0
-
-            h2h_records[opponent_code] = {
-                "wins": driver_wins,
-                "losses": opponent_wins
-            }
-
-            # Cache the result
-            _head_to_head_cache[cache_key] = {
-                driver_code: driver_wins,
-                opponent_code: opponent_wins
-            }
+        
+        for opponent_code in DRIVER_NAMES.keys():
+            if opponent_code == driver_code:
+                continue
+            try:
+                opponent_pos = standings.index(opponent_code)
+                if opponent_code not in h2h_records:
+                    h2h_records[opponent_code] = {"wins": 0, "losses": 0}
+                
+                if driver_pos < opponent_pos:
+                    h2h_records[opponent_code]["wins"] += 1
+                else:
+                    h2h_records[opponent_code]["losses"] += 1
+            except ValueError:
+                continue
+    
+    # Ensure all opponents are represented even if not in sample
+    for opponent_code in DRIVER_NAMES.keys():
+        if opponent_code != driver_code and opponent_code not in h2h_records:
+            h2h_records[opponent_code] = {"wins": 0, "losses": 0}
 
     # Get win probability by season length
     win_prob_by_length = {}
