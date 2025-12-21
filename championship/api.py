@@ -589,7 +589,6 @@ def driver_stats(driver_code):
       404:
         description: Driver not found
     """
-    global _driver_stats_cache
     driver_code = driver_code.upper()
 
     if driver_code not in DRIVER_NAMES:
