@@ -17,6 +17,7 @@
 - 🌐 **RESTful API** - Full-featured API with interactive Swagger documentation
 - 📱 **Responsive UI** - Modern, mobile-first design with dark mode support
 - 📊 **Rich Visualizations** - Driver standings, head-to-head comparisons, probability charts
+- 👤 **Individual Driver Profiles** - Detailed stats, charts, and head-to-head records for each driver
 - 🎯 **Smart Queries** - Find minimum races needed to win, highest positions, win probabilities
 - 🔧 **Easy Setup** - One-command installation with automated configuration
 - 🚀 **Production Ready** - Optimized SQLite with WAL mode, indexes, and memory-mapped I/O
@@ -191,6 +192,7 @@ The application provides a comprehensive REST API with the following endpoints:
 | `/api/min_races_to_win` | GET | Minimum races needed to win |
 | `/api/driver_positions?position=N` | GET | How many times each driver finished in position N |
 | `/api/championship_win_probability` | GET | Win probability based on number of races |
+| `/api/driver/<code>/stats` | GET | Aggregated statistics for a specific driver |
 | `/api/create_championship` | POST | Find championship by specific rounds |
 | `/api/clear-cache` | POST | Clear API caches |
 
@@ -430,10 +432,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📊 Project Stats
 
-- **Lines of Code:** ~3,500
+- **Lines of Code:** ~4,000
 - **Championships Analyzed:** 16,777,215 (24 races)
-- **API Endpoints:** 10
-- **Web Pages:** 12
+- **API Endpoints:** 11
+- **Web Pages:** 14
 - **Response Time:** <1 second (cached)
 - **Database Size:** ~1.5 GB (24 races)
 

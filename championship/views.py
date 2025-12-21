@@ -60,3 +60,15 @@ def championship_win_probability_page():
 def create_championship_page():
     return render_template('create_championship.html', rounds=ROUND_NAMES_2025, drivers=DRIVERS)
 
+@bp.route('/drivers')
+def drivers_page():
+    return render_template('drivers.html', drivers=DRIVERS)
+
+@bp.route('/driver/<string:driver_code>')
+def driver_page(driver_code):
+    driver_code = driver_code.upper()
+    if driver_code not in DRIVERS:
+        return render_template('404.html'), 404
+    driver = DRIVERS[driver_code]
+    return render_template('driver.html', driver_code=driver_code, driver=driver, drivers=DRIVERS)
+

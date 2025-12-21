@@ -545,6 +545,160 @@ def championship_win_probability():
 
     return jsonify(response_data)
 
+@bp.route('/driver/<string:driver_code>/stats', methods=['GET'])
+def driver_stats(driver_code):
+    """
+    Get aggregated statistics for a specific driver.
+    Combines data from multiple endpoints for the driver profile page.
+    ---
+    parameters:
+      - name: driver_code
+        in: path
+        type: string
+        required: true
+        description: The driver abbreviation (e.g., VER, NOR, HAM)
+    responses:
+      200:
+        description: Aggregated driver statistics
+      404:
+        description: Driver not found
+    """
+    driver_code = driver_code.upper()
+
+    if driver_code not in DRIVER_NAMES:
+        return jsonify({"error": "Driver not found"}), 404
+
+    db = get_db()
+
+    # Get total championship wins
+    wins_query = "SELECT COUNT(*) as wins FROM championship_results WHERE winner = ?"
+    wins_result = db.execute(wins_query, (driver_code,)).fetchone()
+    total_wins = wins_result['wins'] if wins_result else 0
+
+    # Get total championships count for percentage
+    total_query = "SELECT COUNT(*) as total FROM championship_results"
+    total_result = db.execute(total_query).fetchone()
+    total_championships = total_result['total'] if total_result else 1
+
+    win_percentage = round((total_wins / total_championships) * 100, 2) if total_championships > 0 else 0
+
+    # Get highest position
+    highest_pos = 20
+    highest_pos_championship = None
+
+    # Query championships ordered by num_races desc to find best positions in longer seasons
+    query = """
+        SELECT championship_id, standings
+        FROM championship_results
+        WHERE standings LIKE ?
+        ORDER BY num_races DESC
+        LIMIT 10000
+    """
+    pattern = f"%{driver_code}%"
+    rows = db.execute(query, (pattern,)).fetchall()
+
+    for row in rows:
+        standings = row['standings'].split(',')
+        try:
+            position = standings.index(driver_code) + 1
+            if position < highest_pos:
+                highest_pos = position
+                highest_pos_championship = row['championship_id']
+                if position == 1:
+                    break
+        except ValueError:
+            continue
+
+    # Get minimum races to win
+    min_races_query = "SELECT MIN(num_races) as min_races FROM championship_results WHERE winner = ?"
+    min_races_result = db.execute(min_races_query, (driver_code,)).fetchone()
+    min_races_to_win = min_races_result['min_races'] if min_races_result and min_races_result['min_races'] else None
+
+    # Get position distribution (how many times finished in each position)
+    position_counts = {}
+    all_standings = db.execute("SELECT standings FROM championship_results").fetchall()
+    for row in all_standings:
+        standings = row['standings'].split(',')
+        try:
+            position = standings.index(driver_code) + 1
+            position_counts[position] = position_counts.get(position, 0) + 1
+        except ValueError:
+            continue
+
+    # Get head-to-head records against all other drivers
+    h2h_records = {}
+    for opponent_code in DRIVER_NAMES.keys():
+        if opponent_code == driver_code:
+            continue
+
+        # Check cache first
+        cache_key = tuple(sorted([driver_code, opponent_code]))
+        if cache_key in _head_to_head_cache:
+            cached = _head_to_head_cache[cache_key]
+            h2h_records[opponent_code] = {
+                "wins": cached[driver_code],
+                "losses": cached[opponent_code]
+            }
+        else:
+            # Calculate H2H
+            query = """
+                SELECT
+                    SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',') < INSTR(',' || standings || ',', ',' || ? || ',') THEN 1 ELSE 0 END) as driver_wins,
+                    SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',') > INSTR(',' || standings || ',', ',' || ? || ',') THEN 1 ELSE 0 END) as opponent_wins
+                FROM championship_results
+                WHERE INSTR(standings, ?) > 0 AND INSTR(standings, ?) > 0;
+            """
+            result = db.execute(query, (driver_code, opponent_code, driver_code, opponent_code, driver_code, opponent_code)).fetchone()
+
+            driver_wins = result['driver_wins'] or 0
+            opponent_wins = result['opponent_wins'] or 0
+
+            h2h_records[opponent_code] = {
+                "wins": driver_wins,
+                "losses": opponent_wins
+            }
+
+            # Cache the result
+            _head_to_head_cache[cache_key] = {
+                driver_code: driver_wins,
+                opponent_code: opponent_wins
+            }
+
+    # Get win probability by season length
+    win_prob_by_length = {}
+    query = "SELECT num_races, COUNT(*) as wins FROM championship_results WHERE winner = ? GROUP BY num_races"
+    for row in db.execute(query, (driver_code,)).fetchall():
+        win_prob_by_length[row['num_races']] = row['wins']
+
+    # Get total seasons per length for percentage calculation
+    seasons_per_length = {}
+    for row in db.execute("SELECT num_races, COUNT(*) as total FROM championship_results GROUP BY num_races").fetchall():
+        seasons_per_length[row['num_races']] = row['total']
+
+    win_prob_percentages = {}
+    for length, wins in win_prob_by_length.items():
+        total = seasons_per_length.get(length, 1)
+        win_prob_percentages[length] = round((wins / total) * 100, 2)
+
+    response = {
+        "driver_code": driver_code,
+        "driver_name": DRIVER_NAMES[driver_code],
+        "driver_info": DRIVERS[driver_code],
+        "total_wins": total_wins,
+        "total_championships": total_championships,
+        "win_percentage": win_percentage,
+        "highest_position": highest_pos,
+        "highest_position_championship_id": highest_pos_championship,
+        "min_races_to_win": min_races_to_win,
+        "position_distribution": position_counts,
+        "head_to_head": h2h_records,
+        "win_probability_by_length": win_prob_percentages,
+        "seasons_per_length": seasons_per_length
+    }
+
+    return jsonify(response)
+
+
 @bp.route('/create_championship', methods=['GET'])
 def create_championship():
     """

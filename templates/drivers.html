@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}All Drivers{% endblock %}
+
+{% block page_title %}2025 F1 Drivers{% endblock %}
+
+{% block header %}
+<h1><a href="{{ url_for('views.index') }}" style="text-decoration: none; color: white;">2025 F1 Drivers</a></h1>
+{% endblock %}
+
+{% block content %}
+<p>Click on a driver to view their detailed championship statistics across all 16.7 million scenarios.</p>
+
+<div class="drivers-grid">
+    {% for code, driver in drivers.items() %}
+    <a href="{{ url_for('views.driver_page', driver_code=code) }}" class="driver-card" style="--team-color: {{ driver.color }};">
+        <div class="driver-number">{{ driver.number }}</div>
+        <div class="driver-details">
+            <span class="driver-name">{{ driver.flag }} {{ driver.name }}</span>
+            <span class="driver-team">{{ driver.team }}</span>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<a href="{{ url_for('views.index') }}" class="back-link">&larr; Back to Home</a>
+{% endblock %}

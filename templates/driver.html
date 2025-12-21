@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}{{ driver.name }}{% endblock %}
+
+{% block page_title %}{{ driver.name }}{% endblock %}
+
+{% block content %}
+<div class="driver-hero" style="--team-color: {{ driver.color }};">
+    <div class="driver-hero-number">{{ driver.number }}</div>
+    <div class="driver-hero-info">
+        <h1>{{ driver.flag }} {{ driver.name }}</h1>
+        <div class="driver-team">{{ driver.team }}</div>
+    </div>
+</div>
+
+<div id="loading-indicator" style="text-align: center; padding: 40px;">
+    <div class="spinner"></div>
+    <p>Loading driver statistics...</p>
+</div>
+
+<div id="driver-content" style="display: none;">
+    <!-- Stats Cards -->
+    <div class="stats-grid" style="--team-color: {{ driver.color }};">
+        <div class="stat-card">
+            <div class="stat-value" id="stat-wins">-</div>
+            <div class="stat-label">Championship Wins</div>
+            <div class="stat-detail" id="stat-wins-pct"></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="stat-best-pos">-</div>
+            <div class="stat-label">Best Position</div>
+            <div class="stat-detail" id="stat-best-link"></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="stat-min-races">-</div>
+            <div class="stat-label">Min Races to Win</div>
+            <div class="stat-detail">Fewest races needed for a title</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="stat-win-rate">-</div>
+            <div class="stat-label">Win Rate</div>
+            <div class="stat-detail">Across all scenarios</div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-section">
+        <div class="chart-card">
+            <h3>Position Distribution</h3>
+            <canvas id="position-chart"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>Win Probability by Season Length</h3>
+            <canvas id="probability-chart"></canvas>
+        </div>
+    </div>
+
+    <!-- Head-to-Head Section -->
+    <div class="h2h-section">
+        <h3>Head-to-Head Record</h3>
+        <div class="h2h-grid" id="h2h-grid">
+            <!-- Populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<a href="{{ url_for('views.drivers_page') }}" class="back-link">&larr; Back to All Drivers</a>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    const DRIVER_CODE = "{{ driver_code }}";
+    const DRIVERS = {{ drivers | tojson | safe }};
+    const TEAM_COLOR = "{{ driver.color }}";
+</script>
+<script src="{{ url_for('static', filename='js/driver.js') }}"></script>
+{% endblock %}
