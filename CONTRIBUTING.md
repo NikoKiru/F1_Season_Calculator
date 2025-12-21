@@ -11,6 +11,8 @@ First off, thank you for considering contributing to F1 Season Calculator! It's 
 - [Commit Guidelines](#commit-guidelines)
 - [Pull Request Process](#pull-request-process)
 - [Project Structure](#project-structure)
+- [Testing](#-testing)
+- [CI/CD Pipeline](#-cicd-pipeline)
 
 ## 📜 Code of Conduct
 
@@ -76,7 +78,7 @@ Unsure where to begin? You can start by looking through these issues:
 
 ### Prerequisites
 
-- Python 3.6+
+- Python 3.10+ (tested on 3.10, 3.11, 3.12)
 - Git
 - Virtual environment tool (venv)
 
@@ -401,6 +403,55 @@ def test_calculate_standings_single_race():
     assert sorted_drivers[0] == 'VER'
     assert sorted_scores[0] == 25
 ```
+
+## 🚀 CI/CD Pipeline
+
+All pull requests are automatically validated by our CI pipeline.
+
+### What CI Checks
+
+When you submit a PR, the following checks run automatically:
+
+| Check | Description | Must Pass |
+|-------|-------------|-----------|
+| **Lint** | flake8 code quality | Yes |
+| **Security** | pip-audit vulnerability scan | Yes |
+| **Test (3.10)** | pytest on Python 3.10 | Yes |
+| **Test (3.11)** | pytest on Python 3.11 | Yes |
+| **Test (3.12)** | pytest on Python 3.12 | Yes |
+| **Coverage** | Minimum 30% code coverage | Yes |
+| **App Validation** | Flask app starts correctly | Yes |
+
+### Before Submitting a PR
+
+Run these locally to catch issues early:
+
+```bash
+# 1. Run linter
+flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+# 2. Run tests with coverage
+pytest tests/ -v --cov=championship --cov-fail-under=30
+
+# 3. Verify app starts
+flask run  # Should start without errors
+```
+
+### Release Process
+
+Releases are managed by maintainers using the Release workflow:
+
+1. Maintainer runs **Release** workflow
+2. Selects version bump (patch/minor/major)
+3. Workflow creates:
+   - Git tag (e.g., `v1.2.3`)
+   - Auto-generated changelog
+   - GitHub Release
+
+### Deployment
+
+- **Staging**: Auto-deploys when CI passes on `main`
+- **Production**: Manual deployment with version tag + confirmation
 
 ## 📚 Additional Resources
 

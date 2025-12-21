@@ -1,6 +1,7 @@
 # 🏎️ F1 Season Calculator
 
-[![Python](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/downloads/)
+[![CI](https://github.com/NikoKiru/F1_Season_Calculator/actions/workflows/ci.yml/badge.svg)](https://github.com/NikoKiru/F1_Season_Calculator/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/flask-3.1.2-black.svg?logo=flask)](https://flask.palletsprojects.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![GitHub last commit](https://img.shields.io/github/last-commit/NikoKiru/F1_Season_Calculator)](https://github.com/NikoKiru/F1_Season_Calculator/commits/main)
@@ -70,7 +71,7 @@ flask run
 
 ### Prerequisites
 
-- Python 3.6 or higher
+- Python 3.10 or higher (tested on 3.10, 3.11, 3.12)
 - pip (Python package manager)
 - Git
 
@@ -381,9 +382,45 @@ pytest tests/test_api.py
 
 ### Test Coverage Goals
 
-- Unit tests: >80%
-- Integration tests: >70%
-- API tests: 100%
+- Minimum coverage threshold: 30% (enforced in CI)
+- Target coverage: 80%+
+
+## 🚀 CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration and deployment.
+
+### Workflows
+
+| Workflow | Trigger | Description |
+|----------|---------|-------------|
+| **CI** | Push/PR to main | Lint, security scan, test (Python 3.10-3.12), build |
+| **CD - Staging** | Push to main | Auto-deploy to staging after CI passes |
+| **CD - Production** | Manual | Deploy specific version with approval |
+| **Release** | Manual | Create semantic version releases with changelog |
+
+### CI Pipeline
+
+The CI pipeline runs on every push and pull request:
+
+1. **Lint** - Code quality checks with flake8
+2. **Security** - Dependency vulnerability scan with pip-audit
+3. **Test** - Matrix testing on Python 3.10, 3.11, 3.12 with coverage
+4. **App Validation** - Verify Flask app starts correctly
+5. **Build** - Create deployment artifact
+
+### Creating a Release
+
+1. Go to **Actions** > **Release**
+2. Click **Run workflow**
+3. Select version bump type (patch/minor/major)
+4. Workflow creates tag, changelog, and GitHub release
+
+### Deploying to Production
+
+1. Go to **Actions** > **CD - Production**
+2. Enter the version tag (e.g., `v1.2.3`)
+3. Type `deploy` to confirm
+4. Requires environment approval (configure in repo settings)
 
 ## 🤝 Contributing
 
