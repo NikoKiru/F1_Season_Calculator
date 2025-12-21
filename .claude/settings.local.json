@@ -19,7 +19,9 @@
       "Bash(.venvScriptspython -m pytest tests/ -v --tb=short)",
       "Bash(python -m pytest:*)",
       "Bash(git push:*)",
-      "Bash(git branch:*)"
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)"
     ]
   }
 }
