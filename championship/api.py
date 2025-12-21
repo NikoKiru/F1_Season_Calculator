@@ -358,8 +358,6 @@ def head_to_head(driver1, driver2):
       200:
         description: A JSON object showing the win count for each driver in the head-to-head comparison.
     """
-    global _head_to_head_cache
-
     d1_upper = driver1.upper()
     d2_upper = driver2.upper()
 
@@ -440,8 +438,6 @@ def driver_positions():
       200:
         description: A JSON object with drivers and their count of finishes in the specified position.
     """
-    global _driver_positions_cache
-
     position = request.args.get('position', type=int)
     if position is None or position < 1:
         return jsonify({"error": "A valid 'position' parameter is required."}), 400
