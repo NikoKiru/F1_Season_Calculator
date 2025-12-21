@@ -179,6 +179,7 @@ def all_championship_wins_route():
 _highest_position_cache = None
 _head_to_head_cache = {}
 _driver_positions_cache = {}
+_driver_stats_cache = {}  # Cache for driver page stats
 
 
 @bp.route('/highest_position', methods=['GET'])
@@ -573,6 +574,7 @@ def driver_stats(driver_code):
     """
     Get aggregated statistics for a specific driver.
     Combines data from multiple endpoints for the driver profile page.
+    Uses caching - first request computes full stats, subsequent requests are instant.
     ---
     parameters:
       - name: driver_code
@@ -586,14 +588,19 @@ def driver_stats(driver_code):
       404:
         description: Driver not found
     """
+    global _driver_stats_cache
     driver_code = driver_code.upper()
 
     if driver_code not in DRIVER_NAMES:
         return jsonify({"error": "Driver not found"}), 404
 
+    # Check cache first
+    if driver_code in _driver_stats_cache:
+        return jsonify(_driver_stats_cache[driver_code])
+
     db = get_db()
 
-    # Get total championship wins
+    # Get total championship wins (fast - uses indexed winner column)
     wins_query = "SELECT COUNT(*) as wins FROM championship_results WHERE winner = ?"
     wins_result = db.execute(wins_query, (driver_code,)).fetchone()
     total_wins = wins_result['wins'] if wins_result else 0
@@ -605,92 +612,52 @@ def driver_stats(driver_code):
 
     win_percentage = round((total_wins / total_championships) * 100, 2) if total_championships > 0 else 0
 
-    # Get highest position
+    # Get minimum races to win (fast - uses indexed winner column)
+    min_races_query = "SELECT MIN(num_races) as min_races FROM championship_results WHERE winner = ?"
+    min_races_result = db.execute(min_races_query, (driver_code,)).fetchone()
+    min_races_to_win = min_races_result['min_races'] if min_races_result and min_races_result['min_races'] else None
+
+    # FULL COMPUTATION with progress - compute position distribution, h2h, and best position
+    # This runs once and gets cached
+    pattern = f"%{driver_code}%"
+    position_counts = {}
+    h2h_records = {opp: {"wins": 0, "losses": 0} for opp in DRIVER_NAMES.keys() if opp != driver_code}
     highest_pos = 20
     highest_pos_championship = None
 
-    # Query championships ordered by num_races desc to find best positions in longer seasons
-    query = """
-        SELECT championship_id, standings
-        FROM championship_results
-        WHERE standings LIKE ?
-        ORDER BY num_races DESC
-        LIMIT 10000
-    """
-    pattern = f"%{driver_code}%"
+    # Fetch all rows containing this driver
+    query = "SELECT championship_id, standings FROM championship_results WHERE standings LIKE ?"
     rows = db.execute(query, (pattern,)).fetchall()
 
     for row in rows:
         standings = row['standings'].split(',')
         try:
-            position = standings.index(driver_code) + 1
+            driver_pos = standings.index(driver_code)
+            position = driver_pos + 1
+            
+            # Count position
+            position_counts[position] = position_counts.get(position, 0) + 1
+            
+            # Track best position
             if position < highest_pos:
                 highest_pos = position
                 highest_pos_championship = row['championship_id']
-                if position == 1:
-                    break
+            
+            # Head-to-head against all opponents
+            for opponent_code in h2h_records.keys():
+                try:
+                    opponent_pos = standings.index(opponent_code)
+                    if driver_pos < opponent_pos:
+                        h2h_records[opponent_code]["wins"] += 1
+                    else:
+                        h2h_records[opponent_code]["losses"] += 1
+                except ValueError:
+                    continue
+                    
         except ValueError:
             continue
 
-    # Get minimum races to win
-    min_races_query = "SELECT MIN(num_races) as min_races FROM championship_results WHERE winner = ?"
-    min_races_result = db.execute(min_races_query, (driver_code,)).fetchone()
-    min_races_to_win = min_races_result['min_races'] if min_races_result and min_races_result['min_races'] else None
-
-    # Get position distribution using OPTIMIZED sampling approach
-    # Instead of scanning ALL rows, sample from different num_races to estimate distribution
-    position_counts = {}
-    
-    # Get a representative sample of championships (much faster than full scan)
-    sample_query = """
-        SELECT standings FROM championship_results 
-        WHERE standings LIKE ?
-        ORDER BY RANDOM()
-        LIMIT 50000
-    """
-    sample_rows = db.execute(sample_query, (pattern,)).fetchall()
-    
-    for row in sample_rows:
-        standings = row['standings'].split(',')
-        try:
-            position = standings.index(driver_code) + 1
-            position_counts[position] = position_counts.get(position, 0) + 1
-        except ValueError:
-            continue
-
-    # Get head-to-head records - OPTIMIZED: Use pre-computed or estimate from sample
-    h2h_records = {}
-    
-    # Build all head-to-head stats from the same sample we already fetched
-    # This avoids 19 separate expensive queries!
-    for row in sample_rows:
-        standings = row['standings'].split(',')
-        try:
-            driver_pos = standings.index(driver_code)
-        except ValueError:
-            continue
-        
-        for opponent_code in DRIVER_NAMES.keys():
-            if opponent_code == driver_code:
-                continue
-            try:
-                opponent_pos = standings.index(opponent_code)
-                if opponent_code not in h2h_records:
-                    h2h_records[opponent_code] = {"wins": 0, "losses": 0}
-                
-                if driver_pos < opponent_pos:
-                    h2h_records[opponent_code]["wins"] += 1
-                else:
-                    h2h_records[opponent_code]["losses"] += 1
-            except ValueError:
-                continue
-    
-    # Ensure all opponents are represented even if not in sample
-    for opponent_code in DRIVER_NAMES.keys():
-        if opponent_code != driver_code and opponent_code not in h2h_records:
-            h2h_records[opponent_code] = {"wins": 0, "losses": 0}
-
-    # Get win probability by season length
+    # Get win probability by season length (fast - indexed)
     win_prob_by_length = {}
     query = "SELECT num_races, COUNT(*) as wins FROM championship_results WHERE winner = ? GROUP BY num_races"
     for row in db.execute(query, (driver_code,)).fetchall():
@@ -721,6 +688,9 @@ def driver_stats(driver_code):
         "win_probability_by_length": win_prob_percentages,
         "seasons_per_length": seasons_per_length
     }
+
+    # Cache the result
+    _driver_stats_cache[driver_code] = response
 
     return jsonify(response)
 
