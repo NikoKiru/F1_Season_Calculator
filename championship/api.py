@@ -340,10 +340,11 @@ def clear_cache():
       200:
         description: Cache cleared successfully
     """
-    global _highest_position_cache, _head_to_head_cache, _driver_positions_cache
+    global _highest_position_cache, _head_to_head_cache, _driver_positions_cache, _driver_stats_cache
     _highest_position_cache = None
     _head_to_head_cache = {}
     _driver_positions_cache = {}
+    _driver_stats_cache = {}
     return jsonify({"message": "Cache cleared successfully"})
 
 
