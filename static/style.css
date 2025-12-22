@@ -448,6 +448,40 @@ footer {
     transform: translateY(-2px);
 }
 
+/* Championship chip links (for highest_position page etc.) */
+.championship-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    margin: 3px;
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.95em;
+    transition: all 0.2s;
+    color: var(--text-primary);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.championship-link:hover {
+    background: var(--f1-red);
+    border-color: var(--f1-red);
+    color: white;
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.championship-link .champ-id {
+    font-weight: 600;
+}
+
+.championship-link .champ-races {
+    opacity: 0.75;
+}
+
 /* Mobile: Card-based layout */
 @media (max-width: 768px) {
     .table-wrapper {
