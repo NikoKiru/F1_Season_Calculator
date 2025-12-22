@@ -702,6 +702,185 @@ footer {
     font-weight: 400;
 }
 
+/* ============================================
+   CHAMPIONSHIP PAGE HERO
+   ============================================ */
+
+.championship-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, var(--surface-secondary) 0%, var(--surface) 100%);
+    border-radius: var(--border-radius);
+    padding: 30px;
+    margin-bottom: 25px;
+    border: 1px solid var(--border-color);
+    gap: 30px;
+}
+
+.championship-winner-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.winner-trophy {
+    font-size: 4em;
+    line-height: 1;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+}
+
+.winner-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.winner-label {
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.winner-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.8em;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.winner-name .color-bar {
+    width: 5px;
+    height: 30px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.winner-team {
+    font-size: 1em;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.championship-stats {
+    display: flex;
+    gap: 30px;
+}
+
+.championship-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px 25px;
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    min-width: 100px;
+}
+
+.championship-stat .stat-number {
+    font-size: 2.5em;
+    font-weight: 800;
+    color: var(--f1-red);
+    line-height: 1;
+}
+
+.championship-stat .stat-label {
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-top: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Rounds Section */
+.rounds-section {
+    margin-bottom: 25px;
+}
+
+.rounds-title {
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    margin: 0 0 12px 0;
+    font-weight: 600;
+}
+
+.rounds-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.round-chip {
+    display: inline-block;
+    padding: 6px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 500;
+    color: var(--text-primary);
+    transition: all var(--transition-speed);
+}
+
+.round-chip:hover {
+    background: var(--f1-red);
+    color: white;
+    border-color: var(--f1-red);
+}
+
+/* Responsive Championship Hero */
+@media (max-width: 768px) {
+    .championship-hero {
+        flex-direction: column;
+        text-align: center;
+        padding: 25px 20px;
+    }
+
+    .championship-winner-section {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .winner-trophy {
+        font-size: 3em;
+    }
+
+    .winner-name {
+        font-size: 1.5em;
+        justify-content: center;
+    }
+
+    .winner-info {
+        align-items: center;
+    }
+
+    .championship-stats {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .championship-stat {
+        flex: 1;
+        max-width: 120px;
+    }
+
+    .championship-stat .stat-number {
+        font-size: 2em;
+    }
+
+    .rounds-chips {
+        justify-content: center;
+    }
+}
+
 /* Loading Spinner */
 .spinner {
     border: 4px solid var(--border-color);

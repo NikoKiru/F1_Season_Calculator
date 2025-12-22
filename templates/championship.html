@@ -11,14 +11,40 @@
 {% block content %}
 <div class="data-container">
     {% if data %}
-        <p><strong>Winner:</strong>
-            <span class="driver-with-color">
-                <span class="color-bar" style="background-color: {{ drivers[data.winner].color if data.winner in drivers else '#666' }};"></span>
-                {{ drivers[data.winner].name if data.winner in drivers else data.winner }}
-            </span>
-        </p>
-        <p><strong>Number of Races:</strong> {{ data.num_races }}</p>
-        <p><strong>Rounds Included:</strong> {{ data.round_names|join(', ') }}</p>
+        <!-- Modern Championship Info Section -->
+        <div class="championship-hero">
+            <div class="championship-winner-section">
+                <div class="winner-trophy">🏆</div>
+                <div class="winner-info">
+                    <span class="winner-label">Champion</span>
+                    <div class="winner-name">
+                        <span class="color-bar" style="background-color: {{ drivers[data.winner].color if data.winner in drivers else '#666' }};"></span>
+                        {{ drivers[data.winner].name if data.winner in drivers else data.winner }}
+                    </div>
+                    <span class="winner-team">{{ drivers[data.winner].team if data.winner in drivers else '' }}</span>
+                </div>
+            </div>
+            <div class="championship-stats">
+                <div class="championship-stat">
+                    <span class="stat-number">{{ data.num_races }}</span>
+                    <span class="stat-label">Races</span>
+                </div>
+                <div class="championship-stat">
+                    <span class="stat-number">{{ data.round_points_data[data.winner].total_points if data.round_points_data and data.winner in data.round_points_data else '—' }}</span>
+                    <span class="stat-label">Points</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="rounds-section">
+            <h4 class="rounds-title">Rounds Included</h4>
+            <div class="rounds-chips">
+                {% for round_name in data.round_names %}
+                    <span class="round-chip">{{ round_name }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
         {% if data.round_points_data %}
         <h3 style="margin-top: 20px;">Championship Points Table:</h3>
         <div class="table-wrapper">
