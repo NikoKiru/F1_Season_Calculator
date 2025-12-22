@@ -3,3 +3,4 @@ Flask
 flasgger
 numpy
 python-dotenv
+strawberry-graphql[flask]

@@ -67,4 +67,11 @@ def create_app(test_config=None):
     errors.init_app(app)
     commands.init_app(app)
 
+    # Register GraphQL blueprint
+    try:
+        from .graphql_api import graphql_bp
+    except ImportError:
+        from graphql_api import graphql_bp
+    app.register_blueprint(graphql_bp)
+
     return app
