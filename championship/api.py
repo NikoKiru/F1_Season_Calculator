@@ -241,7 +241,7 @@ def highest_position():
 
         # Get championships with this number of races (limited sample for performance)
         query = """
-        SELECT championship_id, standings
+        SELECT championship_id, standings, num_races
         FROM championship_results
         WHERE num_races = ?
         ORDER BY championship_id DESC
@@ -252,6 +252,7 @@ def highest_position():
         for row in rows:
             championship_id = row['championship_id']
             standings = row['standings']
+            champ_num_races = row['num_races']
             drivers_list = [d.strip() for d in standings.split(",")]
 
             for position, driver in enumerate(drivers_list, start=1):
@@ -259,7 +260,7 @@ def highest_position():
                 if driver not in highest_positions:
                     highest_positions[driver] = {
                         "position": position,
-                        "championship_ids": [championship_id]
+                        "championships": [{"id": championship_id, "num_races": champ_num_races}]
                     }
                     # If this is position 1, we've found the best possible
                     if position == 1:
@@ -268,21 +269,21 @@ def highest_position():
                 elif position < highest_positions[driver]["position"]:
                     highest_positions[driver] = {
                         "position": position,
-                        "championship_ids": [championship_id]
+                        "championships": [{"id": championship_id, "num_races": champ_num_races}]
                     }
                     # If this is position 1, we've found the best possible
                     if position == 1:
                         drivers_to_find.discard(driver)
                 # Same position, add more championship IDs
                 elif position == highest_positions[driver]["position"]:
-                    if len(highest_positions[driver]["championship_ids"]) < 5:
-                        highest_positions[driver]["championship_ids"].append(championship_id)
+                    if len(highest_positions[driver]["championships"]) < 5:
+                        highest_positions[driver]["championships"].append({"id": championship_id, "num_races": champ_num_races})
 
     # Step 4: For any remaining drivers (edge case), do a targeted search
     if drivers_to_find:
         for driver in list(drivers_to_find):
             query = """
-            SELECT championship_id, standings
+            SELECT championship_id, standings, num_races
             FROM championship_results
             WHERE standings LIKE ?
             ORDER BY num_races DESC, championship_id DESC
@@ -294,6 +295,7 @@ def highest_position():
             for row in rows:
                 championship_id = row['championship_id']
                 standings = row['standings']
+                champ_num_races = row['num_races']
                 drivers_list = [d.strip() for d in standings.split(",")]
 
                 try:
@@ -302,16 +304,16 @@ def highest_position():
                     if driver not in highest_positions:
                         highest_positions[driver] = {
                             "position": position,
-                            "championship_ids": [championship_id]
+                            "championships": [{"id": championship_id, "num_races": champ_num_races}]
                         }
                     elif position < highest_positions[driver]["position"]:
                         highest_positions[driver] = {
                             "position": position,
-                            "championship_ids": [championship_id]
+                            "championships": [{"id": championship_id, "num_races": champ_num_races}]
                         }
                     elif position == highest_positions[driver]["position"]:
-                        if len(highest_positions[driver]["championship_ids"]) < 5:
-                            highest_positions[driver]["championship_ids"].append(championship_id)
+                        if len(highest_positions[driver]["championships"]) < 5:
+                            highest_positions[driver]["championships"].append({"id": championship_id, "num_races": champ_num_races})
                 except ValueError:
                     continue
 
@@ -320,7 +322,7 @@ def highest_position():
 
     # Create a list of dictionaries to preserve order
     ordered_highest_positions = [
-        {'driver': k, 'position': v['position'], 'championship_ids': v['championship_ids']}
+        {'driver': k, 'position': v['position'], 'championships': v['championships']}
         for k, v in sorted_positions
     ]
 

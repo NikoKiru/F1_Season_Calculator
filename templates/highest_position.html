@@ -25,10 +25,10 @@
                             </td>
                             <td data-label="Highest Position">{{ item.position }}</td>
                             <td data-label="Championships">
-                                {% for id in item.championship_ids[:5] %}
-                                    <a href="{{ url_for('views.championship_page', id=id) }}">{{ id }}</a>{% if not loop.last %}, {% endif %}
+                                {% for champ in item.championships[:5] %}
+                                    <a href="{{ url_for('views.championship_page', id=champ.id) }}">{{ champ.id }} ({{ champ.num_races }})</a>{% if not loop.last %}, {% endif %}
                                 {% endfor %}
-                                {% if item.championship_ids|length > 5 %}
+                                {% if item.championships|length > 5 %}
                                     ...
                                 {% endif %}
                             </td>
