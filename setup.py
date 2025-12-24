@@ -15,6 +15,7 @@ setup(
     install_requires=[
         'pandas',
         'Flask',
+        'Flask-Caching',
         'flasgger',
         'numpy',
         'python-dotenv',
