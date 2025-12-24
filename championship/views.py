@@ -1,5 +1,6 @@
+from typing import Tuple, Union
 from flask import (
-    Blueprint, render_template
+    Blueprint, render_template, Response
 )
 from .api import (
     get_championship, all_championship_wins, highest_position,
@@ -11,12 +12,12 @@ bp = Blueprint('views', __name__, template_folder='templates')
 
 
 @bp.route('/')
-def index():
+def index() -> str:
     return render_template('index.html')
 
 
 @bp.route('/championship/<int:id>')
-def championship_page(id):
+def championship_page(id: int) -> Union[str, Tuple[str, int]]:
     response = get_championship(id)
     if response.status_code != 200:
         data = None
@@ -30,55 +31,55 @@ def championship_page(id):
 
 
 @bp.route('/all_championship_wins')
-def all_championship_wins_page():
+def all_championship_wins_page() -> str:
     response = all_championship_wins()
     data = response.get_json()
     return render_template('all_championship_wins.html', data=data, drivers=DRIVERS)
 
 
 @bp.route('/highest_position')
-def highest_position_page():
+def highest_position_page() -> str:
     response = highest_position()
     data = response.get_json()
     return render_template('highest_position.html', data=data, drivers=DRIVERS)
 
 
 @bp.route('/driver_positions')
-def driver_positions_page():
+def driver_positions_page() -> str:
     return render_template('driver_positions.html', drivers=DRIVERS)
 
 
 @bp.route('/head_to_head')
-def head_to_head_page():
+def head_to_head_page() -> str:
     return render_template('head_to_head.html', drivers=DRIVERS)
 
 
 @bp.route('/min_races_to_win')
-def min_races_to_win_page():
+def min_races_to_win_page() -> str:
     response = min_races_to_win()
     data = response.get_json()
     return render_template('min_races_to_win.html', data=data, drivers=DRIVERS)
 
 
 @bp.route('/championship_win_probability')
-def championship_win_probability_page():
+def championship_win_probability_page() -> str:
     response = championship_win_probability()
     data = response.get_json()
     return render_template('championship_win_probability.html', data=data, drivers=DRIVERS)
 
 
 @bp.route('/create_championship')
-def create_championship_page():
+def create_championship_page() -> str:
     return render_template('create_championship.html', rounds=ROUND_NAMES_2025, drivers=DRIVERS)
 
 
 @bp.route('/drivers')
-def drivers_page():
+def drivers_page() -> str:
     return render_template('drivers.html', drivers=DRIVERS)
 
 
 @bp.route('/driver/<string:driver_code>')
-def driver_page(driver_code):
+def driver_page(driver_code: str) -> Union[str, Tuple[str, int]]:
     driver_code = driver_code.upper()
     if driver_code not in DRIVERS:
         return render_template('404.html'), 404

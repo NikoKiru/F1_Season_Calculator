@@ -1,5 +1,6 @@
+from typing import Any, Dict, List, Optional, Tuple
 from flask import (
-    Blueprint, jsonify, request, url_for
+    Blueprint, jsonify, request, url_for, Response
 )
 # Import db module - works with both package and standalone setup
 try:
@@ -54,7 +55,10 @@ CACHE_KEY_DRIVER_STATS = 'driver_stats_{code}'
 bp = Blueprint('api', __name__, url_prefix='/api')
 
 
-def format_championship_data(row, with_round_points=False):
+def format_championship_data(
+    row: Optional[Any],
+    with_round_points: bool = False
+) -> Optional[Dict[str, Any]]:
     """Formats a championship row from the database into a dictionary."""
     if not row:
         return None
@@ -81,7 +85,10 @@ def format_championship_data(row, with_round_points=False):
 
 
 # Function to query all data from the SQLite database
-def get_all_data(page=1, per_page=100):
+def get_all_data(
+    page: int = 1,
+    per_page: int = 100
+) -> Tuple[List[Optional[Dict[str, Any]]], int]:
     db = get_db()
     table_name = 'championship_results'
 
@@ -102,7 +109,7 @@ def get_all_data(page=1, per_page=100):
 
 # Flask route to return all data as JSON
 @bp.route('/data', methods=['GET'])
-def get_data_route():
+def get_data_route() -> Response:
     """
     Fetch All Championship Data
     This endpoint retrieves all championship results stored in the database.
@@ -151,7 +158,7 @@ def get_data_route():
 
 
 @bp.route('/championship/<int:id>', methods=['GET'])
-def get_championship(id):
+def get_championship(id: int) -> Response:
     """
     Fetch a Specific Championship by ID
     This endpoint retrieves a single championship result by its unique ID.
@@ -187,7 +194,7 @@ def get_championship(id):
         return jsonify(response), status
 
 
-def all_championship_wins():
+def all_championship_wins() -> Response:
     """
     Get All Championship Wins for All Drivers
     This endpoint returns a summary of championship wins for every driver.
@@ -217,7 +224,7 @@ def all_championship_wins():
 
 
 @bp.route('/all_championship_wins', methods=['GET'])
-def all_championship_wins_route():
+def all_championship_wins_route() -> Response:
     """
     API route wrapper for all_championship_wins to expose it at `/api/all_championship_wins`.
     """
@@ -225,7 +232,7 @@ def all_championship_wins_route():
 
 
 @bp.route('/highest_position', methods=['GET'])
-def highest_position():
+def highest_position() -> Response:
     """
     Get the Highest Championship Position for Each Driver
     This endpoint returns the best final championship ranking for every driver,
@@ -374,7 +381,7 @@ def highest_position():
 
 
 @bp.route('/clear-cache', methods=['POST'])
-def clear_cache():
+def clear_cache() -> Response:
     """
     Clear all API caches
     Useful after reprocessing data to ensure fresh results.
@@ -388,7 +395,7 @@ def clear_cache():
 
 
 @bp.route('/head_to_head/<string:driver1>/<string:driver2>', methods=['GET'])
-def head_to_head(driver1, driver2):
+def head_to_head(driver1: str, driver2: str) -> Response:
     """
     Head-to-Head Driver Comparison
     Compares two drivers to see who finished ahead more often across all championship scenarios.
@@ -474,7 +481,7 @@ def head_to_head(driver1, driver2):
 
 
 @bp.route('/min_races_to_win', methods=['GET'])
-def min_races_to_win():
+def min_races_to_win() -> Response:
     """
     Minimum Races Needed for a Driver to Win a Championship
     Calculates the smallest number of races a driver needed to win a championship.
@@ -500,7 +507,7 @@ def min_races_to_win():
 
 
 @bp.route('/driver_positions', methods=['GET'])
-def driver_positions():
+def driver_positions() -> Response:
     """
     Count Driver Finishes in a Specific Position
     Counts how many times each driver finished in a given position.
@@ -567,7 +574,7 @@ def driver_positions():
 
 
 @bp.route('/championship_win_probability', methods=['GET'])
-def championship_win_probability():
+def championship_win_probability() -> Response:
     """
     Calculate the probability of winning a championship for each driver based on season length.
     ---
@@ -628,7 +635,7 @@ def championship_win_probability():
 
 
 @bp.route('/driver/<string:driver_code>/stats', methods=['GET'])
-def driver_stats(driver_code):
+def driver_stats(driver_code: str) -> Response:
     """
     Get aggregated statistics for a specific driver.
     Combines data from multiple endpoints for the driver profile page.
@@ -758,7 +765,7 @@ def driver_stats(driver_code):
 
 
 @bp.route('/create_championship', methods=['GET'])
-def create_championship():
+def create_championship() -> Response:
     """
     Finds an existing championship from a list of rounds and returns its URL.
     ---

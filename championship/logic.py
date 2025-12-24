@@ -1,9 +1,13 @@
 import pandas as pd
 import os
+from typing import Dict, List, Any, Optional
 from flask import current_app
 
 
-def get_round_points_for_championship(drivers, round_numbers):
+def get_round_points_for_championship(
+    drivers: List[str],
+    round_numbers: List[int]
+) -> Dict[str, Dict[str, Any]]:
     """
     Gets the points for each driver for each round in a given championship.
 
@@ -41,7 +45,9 @@ def get_round_points_for_championship(drivers, round_numbers):
     return championship_points
 
 
-def calculate_championship_from_rounds(round_numbers):
+def calculate_championship_from_rounds(
+    round_numbers: List[int]
+) -> Dict[str, Any]:
     """
     Calculates championship standings from a given list of round numbers.
 
