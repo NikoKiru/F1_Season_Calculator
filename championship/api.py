@@ -13,9 +13,29 @@ except ImportError:
 try:
     from .models import ROUND_NAMES_2025, DRIVER_NAMES, DRIVERS
     from .logic import get_round_points_for_championship
+    from .validators import (
+        ValidationError,
+        validate_pagination,
+        validate_driver_code,
+        validate_position,
+        validate_championship_id,
+        validate_rounds,
+        validate_boolean,
+        format_validation_error,
+    )
 except ImportError:
     from championship.models import ROUND_NAMES_2025, DRIVER_NAMES, DRIVERS
     from championship.logic import get_round_points_for_championship
+    from championship.validators import (
+        ValidationError,
+        validate_pagination,
+        validate_driver_code,
+        validate_position,
+        validate_championship_id,
+        validate_rounds,
+        validate_boolean,
+        format_validation_error,
+    )
 
 # Cache key constants for consistent naming
 CACHE_KEY_HIGHEST_POSITION = 'highest_position'
@@ -89,13 +109,20 @@ def get_data_route():
         in: query
         type: integer
         default: 100
-        description: The number of results to retrieve per page.
+        description: The number of results to retrieve per page (max 1000).
     responses:
       200:
         description: A paginated list of all championship results.
+      400:
+        description: Invalid pagination parameters.
     """
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 100, type=int)
+    try:
+        page, per_page = validate_pagination(
+            request.args.get('page'),
+            request.args.get('per_page')
+        )
+    except ValidationError as e:
+        return jsonify(format_validation_error(e)), 400
 
     data, total_count = get_all_data(page, per_page)
 
@@ -181,8 +208,6 @@ def all_championship_wins_route():
     API route wrapper for all_championship_wins to expose it at `/api/all_championship_wins`.
     """
     return all_championship_wins()
-
-
 
 
 @bp.route('/highest_position', methods=['GET'])
@@ -360,24 +385,26 @@ def head_to_head(driver1, driver2):
         in: path
         type: string
         required: true
-        description: The abbreviation for the first driver.
+        description: The abbreviation for the first driver (3-letter code).
       - name: driver2
         in: path
         type: string
         required: true
-        description: The abbreviation for the second driver.
+        description: The abbreviation for the second driver (3-letter code).
     responses:
       200:
         description: A JSON object showing the win count for each driver in the head-to-head comparison.
+      400:
+        description: Invalid driver code or same driver provided twice.
     """
-    d1_upper = driver1.upper()
-    d2_upper = driver2.upper()
+    try:
+        d1_upper = validate_driver_code(driver1, DRIVER_NAMES, "driver1")
+        d2_upper = validate_driver_code(driver2, DRIVER_NAMES, "driver2")
+    except ValidationError as e:
+        return jsonify(format_validation_error(e)), 400
 
     if d1_upper == d2_upper:
-        return jsonify({"error": "Provide two different driver abbreviations"}), 400
-
-    if d1_upper not in DRIVER_NAMES or d2_upper not in DRIVER_NAMES:
-        return jsonify({"error": "Invalid driver abbreviation"}), 400
+        return jsonify({"error": "Cannot compare a driver with themselves", "field": "driver2"}), 400
 
     # Create a cache key (normalize order so VER-NOR == NOR-VER)
     sorted_drivers = sorted([d1_upper, d2_upper])
@@ -461,14 +488,17 @@ def driver_positions():
         in: query
         type: integer
         required: true
-        description: The championship position to count.
+        description: The championship position to count (1-24).
     responses:
       200:
         description: A JSON object with drivers and their count of finishes in the specified position.
+      400:
+        description: Invalid position parameter.
     """
-    position = request.args.get('position', type=int)
-    if position is None or position < 1:
-        return jsonify({"error": "A valid 'position' parameter is required."}), 400
+    try:
+        position = validate_position(request.args.get('position'))
+    except ValidationError as e:
+        return jsonify(format_validation_error(e)), 400
 
     # Check cache first (thread-safe)
     cache_key = CACHE_KEY_DRIVER_POSITIONS.format(pos=position)
@@ -585,17 +615,22 @@ def driver_stats(driver_code):
         in: path
         type: string
         required: true
-        description: The driver abbreviation (e.g., VER, NOR, HAM)
+        description: The driver abbreviation (3-letter code, e.g., VER, NOR, HAM)
     responses:
       200:
         description: Aggregated driver statistics
+      400:
+        description: Invalid driver code format
       404:
         description: Driver not found
     """
-    driver_code = driver_code.upper()
-
-    if driver_code not in DRIVER_NAMES:
-        return jsonify({"error": "Driver not found"}), 404
+    try:
+        driver_code = validate_driver_code(driver_code, DRIVER_NAMES)
+    except ValidationError as e:
+        # Return 404 for unknown drivers, 400 for format errors
+        if "Unknown driver" in e.message:
+            return jsonify({"error": "Driver not found", "field": e.field}), 404
+        return jsonify(format_validation_error(e)), 400
 
     # Check cache first (thread-safe)
     cache_key = CACHE_KEY_DRIVER_STATS.format(code=driver_code)
@@ -701,19 +736,25 @@ def driver_stats(driver_code):
 def create_championship():
     """
     Finds an existing championship from a list of rounds and returns its URL.
+    ---
+    parameters:
+      - name: rounds
+        in: query
+        type: string
+        required: true
+        description: Comma-separated list of round numbers (1-24, no duplicates)
+    responses:
+      200:
+        description: URL to the championship page
+      400:
+        description: Invalid rounds parameter
+      404:
+        description: Championship not found
     """
-    rounds_str = request.args.get('rounds')
-    if not rounds_str:
-        return jsonify({"error": "No rounds provided"}), 400
-
     try:
-        # Sort the round numbers to match the database format
-        round_numbers = sorted([int(r) for r in rounds_str.split(',')])
-    except (ValueError, TypeError):
-        return jsonify({"error": "Invalid round numbers"}), 400
-
-    if not round_numbers:
-        return jsonify({"error": "No rounds provided"}), 400
+        round_numbers = validate_rounds(request.args.get('rounds'))
+    except ValidationError as e:
+        return jsonify(format_validation_error(e)), 400
 
     sorted_rounds_str = ','.join(map(str, round_numbers))
 
