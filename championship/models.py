@@ -1,5 +1,17 @@
+from typing import Dict, TypedDict
+
+
+class DriverInfo(TypedDict):
+    """Type definition for driver information."""
+    name: str
+    team: str
+    number: int
+    flag: str
+    color: str
+
+
 # Official team colors from OpenF1 API (2025 season)
-TEAM_COLORS = {
+TEAM_COLORS: Dict[str, str] = {
     "McLaren": "#F47600",
     "Red Bull Racing": "#4781D7",
     "Mercedes": "#00D7B6",
@@ -12,7 +24,7 @@ TEAM_COLORS = {
     "Alpine": "#00A1E8",
 }
 
-DRIVERS = {
+DRIVERS: Dict[str, Dict[str, str | int]] = {
     "PIA": {"name": "Oscar Piastri", "team": "McLaren", "number": 81, "flag": "🇦🇺"},
     "NOR": {"name": "Lando Norris", "team": "McLaren", "number": 4, "flag": "🇬🇧"},
     "VER": {"name": "Max Verstappen", "team": "Red Bull Racing", "number": 1, "flag": "🇳🇱"},
@@ -39,9 +51,9 @@ DRIVERS = {
 for driver_code, driver_data in DRIVERS.items():
     driver_data["color"] = TEAM_COLORS.get(driver_data["team"], "#FFFFFF")
 
-DRIVER_NAMES = {k: v['name'] for k, v in DRIVERS.items()}
+DRIVER_NAMES: Dict[str, str] = {k: v['name'] for k, v in DRIVERS.items()}
 
-ROUND_NAMES_2025 = {
+ROUND_NAMES_2025: Dict[int, str] = {
     1: "AUS",
     2: "CHN",
     3: "JPN",

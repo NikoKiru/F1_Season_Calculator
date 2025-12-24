@@ -1,9 +1,12 @@
 import sqlite3
 import os
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import click
 from flask import current_app, g
 from flask.cli import with_appcontext
+
+if TYPE_CHECKING:
+    from flask import Flask
 
 
 def get_db() -> sqlite3.Connection:
@@ -39,7 +42,7 @@ def close_db(e: Optional[Exception] = None) -> None:
         db.close()
 
 
-def init_db(clear_existing: bool = False):
+def init_db(clear_existing: bool = False) -> None:
     """Initialize the database with optimized settings and schema.
 
     Args:
@@ -104,7 +107,7 @@ def init_db(clear_existing: bool = False):
 @click.command('init-db')
 @click.option('--clear', is_flag=True, help='Clear existing database before initializing')
 @with_appcontext
-def init_db_command(clear):
+def init_db_command(clear: bool) -> None:
     """Initialize the database schema and apply performance optimizations.
 
     Creates the instance directory if needed, sets up the championship_results
@@ -116,7 +119,7 @@ def init_db_command(clear):
 
 @click.command('setup')
 @with_appcontext
-def setup_command():
+def setup_command() -> None:
     """Set up the application for first-time use.
 
     Creates necessary directories (data/, instance/) and provides guidance
@@ -181,7 +184,7 @@ def setup_command():
     click.echo("="*60)
 
 
-def init_app(app):
+def init_app(app: "Flask") -> None:
     """Register database functions with the Flask app."""
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)

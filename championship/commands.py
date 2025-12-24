@@ -1,6 +1,7 @@
 import pandas as pd
 import itertools
 import numpy as np
+import sqlite3
 import click
 from flask.cli import with_appcontext
 # Import db module - works with both package and standalone setup
@@ -10,8 +11,8 @@ except ImportError:
     import db
     get_db = db.get_db
 import os
-from flask import current_app
-from typing import Tuple, List
+from flask import current_app, Flask
+from typing import Tuple, List, Iterator
 
 
 # Step 1: Read the CSV file and convert to NumPy for performance
@@ -31,14 +32,18 @@ def read_csv(file_path: str) -> Tuple[np.ndarray, np.ndarray]:
 
 
 # Step 2: Generate subsets of races
-def generate_race_combinations(num_races):
+def generate_race_combinations(num_races: int) -> Iterator[Tuple[int, ...]]:
     for r in range(1, num_races + 1):
         for combination in itertools.combinations(range(num_races), r):  # Use 0-based index
             yield combination
 
 
 # Step 3: Calculate championship standings using NumPy
-def calculate_standings(drivers, scores, race_subset):
+def calculate_standings(
+    drivers: np.ndarray,
+    scores: np.ndarray,
+    race_subset: Tuple[int, ...]
+) -> Tuple[np.ndarray, np.ndarray]:
     # Sum scores for the given subset of races. This is much faster in NumPy.
     subset_scores = scores[:, race_subset].sum(axis=1)
 
@@ -51,7 +56,11 @@ def calculate_standings(drivers, scores, race_subset):
 
 
 # Step 4: Save to SQLite database
-def save_to_database(db, table_name: str, championship_data: List[tuple]):
+def save_to_database(
+    db: sqlite3.Connection,
+    table_name: str,
+    championship_data: List[Tuple[int, str, str, str, str]]
+) -> None:
     """Insert a batch of championship rows into the database.
 
     Uses a single executemany call for efficiency.
@@ -70,7 +79,7 @@ def save_to_database(db, table_name: str, championship_data: List[tuple]):
 
 
 # Main function
-def process_data(batch_size=100000):
+def process_data(batch_size: int = 100000) -> None:
     """Processes the championship data and saves it to the database."""
     db = get_db()
     table_name = "championship_results"
@@ -126,7 +135,7 @@ def process_data(batch_size=100000):
 @click.command('process-data')
 @click.option('--batch-size', default=100000, type=int, help='Number of records to process per batch')
 @with_appcontext
-def process_data_command(batch_size):
+def process_data_command(batch_size: int) -> None:
     """Processes championship data and saves it to the database.
 
     Reads championships.csv from the data folder and generates all possible
@@ -150,5 +159,5 @@ def process_data_command(batch_size):
         raise
 
 
-def init_app(app):
+def init_app(app: Flask) -> None:
     app.cli.add_command(process_data_command)

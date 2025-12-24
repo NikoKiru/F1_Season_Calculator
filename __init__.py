@@ -1,12 +1,13 @@
 import os
+from typing import Optional, Dict, Any
 from flask import Flask
 from flask_caching import Cache
 
 # Initialize cache instance (configured in create_app)
-cache = Cache()
+cache: Cache = Cache()
 
 
-def create_app(test_config=None):
+def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
     """Create and configure the Flask application.
 
     Args:

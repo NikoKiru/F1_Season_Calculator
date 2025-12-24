@@ -3,7 +3,9 @@ Centralized error handlers for the F1 Season Calculator.
 
 Provides consistent error responses across all API endpoints and views.
 """
-from flask import render_template, jsonify, request, Blueprint
+from typing import Tuple, Union
+from flask import render_template, jsonify, request, Blueprint, Flask, Response
+from werkzeug.exceptions import HTTPException
 
 try:
     from .validators import (
@@ -33,21 +35,21 @@ def is_api_request() -> bool:
 
 
 @errors_bp.app_errorhandler(ValidationError)
-def handle_validation_error(error):
+def handle_validation_error(error: ValidationError) -> Tuple[Response, int]:
     """Handle ValidationError exceptions."""
     response, status = format_validation_error(error)
     return jsonify(response), status
 
 
 @errors_bp.app_errorhandler(NotFoundError)
-def handle_not_found_error(error):
+def handle_not_found_error(error: NotFoundError) -> Tuple[Response, int]:
     """Handle NotFoundError exceptions."""
     response, status = format_not_found_error(error)
     return jsonify(response), status
 
 
 @errors_bp.app_errorhandler(400)
-def bad_request_error(error):
+def bad_request_error(error: HTTPException) -> Union[Tuple[Response, int], Tuple[str, int]]:
     """Handle 400 Bad Request errors."""
     if is_api_request():
         response, status = build_error_response(
@@ -59,7 +61,7 @@ def bad_request_error(error):
 
 
 @errors_bp.app_errorhandler(404)
-def not_found_error(error):
+def not_found_error(error: HTTPException) -> Union[Tuple[Response, int], Tuple[str, int]]:
     """Handle 404 Not Found errors."""
     if is_api_request():
         response, status = build_error_response(
@@ -71,7 +73,7 @@ def not_found_error(error):
 
 
 @errors_bp.app_errorhandler(405)
-def method_not_allowed_error(error):
+def method_not_allowed_error(error: HTTPException) -> Union[Tuple[Response, int], Tuple[str, int]]:
     """Handle 405 Method Not Allowed errors."""
     if is_api_request():
         response, status = build_error_response(
@@ -84,7 +86,7 @@ def method_not_allowed_error(error):
 
 
 @errors_bp.app_errorhandler(500)
-def internal_error(error):
+def internal_error(error: HTTPException) -> Union[Tuple[Response, int], Tuple[str, int]]:
     """Handle 500 Internal Server Error."""
     # In a real app, you'd want to log the error.
     # current_app.logger.error(f"Server Error: {error}", exc_info=True)
@@ -97,6 +99,6 @@ def internal_error(error):
     return render_template('500.html'), 500
 
 
-def init_app(app):
+def init_app(app: Flask) -> None:
     """Register error handlers with the Flask app."""
     app.register_blueprint(errors_bp)
