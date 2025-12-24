@@ -72,9 +72,9 @@ class TestHeadToHead:
         assert response.status_code == 400
 
     def test_head_to_head_invalid_driver(self, client):
-        """Should error with invalid driver abbreviation."""
+        """Should return 404 for unknown driver abbreviation."""
         response = client.get('/api/head_to_head/XXX/YYY')
-        assert response.status_code == 400
+        assert response.status_code == 404  # Unknown driver returns "not found"
 
 
 class TestChampionshipEndpoints:

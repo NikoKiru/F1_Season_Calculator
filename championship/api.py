@@ -14,27 +14,35 @@ try:
     from .models import ROUND_NAMES_2025, DRIVER_NAMES, DRIVERS
     from .logic import get_round_points_for_championship
     from .validators import (
+        ErrorCode,
         ValidationError,
+        NotFoundError,
         validate_pagination,
         validate_driver_code,
         validate_position,
         validate_championship_id,
         validate_rounds,
         validate_boolean,
+        build_error_response,
         format_validation_error,
+        format_not_found_error,
     )
 except ImportError:
     from championship.models import ROUND_NAMES_2025, DRIVER_NAMES, DRIVERS
     from championship.logic import get_round_points_for_championship
     from championship.validators import (
+        ErrorCode,
         ValidationError,
+        NotFoundError,
         validate_pagination,
         validate_driver_code,
         validate_position,
         validate_championship_id,
         validate_rounds,
         validate_boolean,
+        build_error_response,
         format_validation_error,
+        format_not_found_error,
     )
 
 # Cache key constants for consistent naming
@@ -122,7 +130,8 @@ def get_data_route():
             request.args.get('per_page')
         )
     except ValidationError as e:
-        return jsonify(format_validation_error(e)), 400
+        response, status = format_validation_error(e)
+        return jsonify(response), status
 
     data, total_count = get_all_data(page, per_page)
 
@@ -170,7 +179,12 @@ def get_championship(id):
     if championship_data:
         return jsonify(championship_data)
     else:
-        return jsonify({"error": "Championship not found"}), 404
+        response, status = build_error_response(
+            code=ErrorCode.CHAMPIONSHIP_NOT_FOUND,
+            message="Championship not found",
+            details={"championship_id": id}
+        )
+        return jsonify(response), status
 
 
 def all_championship_wins():
@@ -400,11 +414,20 @@ def head_to_head(driver1, driver2):
     try:
         d1_upper = validate_driver_code(driver1, DRIVER_NAMES, "driver1")
         d2_upper = validate_driver_code(driver2, DRIVER_NAMES, "driver2")
+    except NotFoundError as e:
+        response, status = format_not_found_error(e)
+        return jsonify(response), status
     except ValidationError as e:
-        return jsonify(format_validation_error(e)), 400
+        response, status = format_validation_error(e)
+        return jsonify(response), status
 
     if d1_upper == d2_upper:
-        return jsonify({"error": "Cannot compare a driver with themselves", "field": "driver2"}), 400
+        response, status = build_error_response(
+            code=ErrorCode.INVALID_DRIVER_COMPARISON,
+            message="Cannot compare a driver with themselves",
+            field="driver2"
+        )
+        return jsonify(response), status
 
     # Create a cache key (normalize order so VER-NOR == NOR-VER)
     sorted_drivers = sorted([d1_upper, d2_upper])
@@ -498,7 +521,8 @@ def driver_positions():
     try:
         position = validate_position(request.args.get('position'))
     except ValidationError as e:
-        return jsonify(format_validation_error(e)), 400
+        response, status = format_validation_error(e)
+        return jsonify(response), status
 
     # Check cache first (thread-safe)
     cache_key = CACHE_KEY_DRIVER_POSITIONS.format(pos=position)
@@ -626,11 +650,12 @@ def driver_stats(driver_code):
     """
     try:
         driver_code = validate_driver_code(driver_code, DRIVER_NAMES)
+    except NotFoundError as e:
+        response, status = format_not_found_error(e)
+        return jsonify(response), status
     except ValidationError as e:
-        # Return 404 for unknown drivers, 400 for format errors
-        if "Unknown driver" in e.message:
-            return jsonify({"error": "Driver not found", "field": e.field}), 404
-        return jsonify(format_validation_error(e)), 400
+        response, status = format_validation_error(e)
+        return jsonify(response), status
 
     # Check cache first (thread-safe)
     cache_key = CACHE_KEY_DRIVER_STATS.format(code=driver_code)
@@ -754,7 +779,8 @@ def create_championship():
     try:
         round_numbers = validate_rounds(request.args.get('rounds'))
     except ValidationError as e:
-        return jsonify(format_validation_error(e)), 400
+        response, status = format_validation_error(e)
+        return jsonify(response), status
 
     sorted_rounds_str = ','.join(map(str, round_numbers))
 
@@ -768,5 +794,9 @@ def create_championship():
         championship_id = row['championship_id']
         return jsonify({'url': url_for('views.championship_page', id=championship_id)})
     else:
-        # In a real scenario, you might want a more user-friendly error page.
-        return jsonify({"error": "Championship with this combination of rounds not found"}), 404
+        response, status = build_error_response(
+            code=ErrorCode.CHAMPIONSHIP_NOT_FOUND,
+            message="Championship with this combination of rounds not found",
+            details={"rounds": round_numbers}
+        )
+        return jsonify(response), status

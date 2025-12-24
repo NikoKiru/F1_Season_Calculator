@@ -1,11 +1,45 @@
 """
-Input validation utilities for API endpoints.
+Input validation and error response utilities for API endpoints.
 
-Provides consistent validation and error messages across all endpoints.
+Provides consistent validation, error codes, and error messages across all endpoints.
 """
-from typing import Tuple, Optional, List, Any
+from typing import Tuple, Optional, List, Any, Dict
+from enum import Enum
 
-# Validation constants
+
+# =============================================================================
+# Error Codes - Standardized codes for all API errors
+# =============================================================================
+
+class ErrorCode(str, Enum):
+    """Standardized error codes for API responses."""
+
+    # Validation errors (400)
+    VALIDATION_ERROR = "VALIDATION_ERROR"
+    INVALID_PARAMETER = "INVALID_PARAMETER"
+    MISSING_PARAMETER = "MISSING_PARAMETER"
+    INVALID_FORMAT = "INVALID_FORMAT"
+    OUT_OF_RANGE = "OUT_OF_RANGE"
+    DUPLICATE_VALUE = "DUPLICATE_VALUE"
+
+    # Not found errors (404)
+    NOT_FOUND = "NOT_FOUND"
+    DRIVER_NOT_FOUND = "DRIVER_NOT_FOUND"
+    CHAMPIONSHIP_NOT_FOUND = "CHAMPIONSHIP_NOT_FOUND"
+
+    # Client errors (400)
+    BAD_REQUEST = "BAD_REQUEST"
+    INVALID_DRIVER_COMPARISON = "INVALID_DRIVER_COMPARISON"
+
+    # Server errors (500)
+    INTERNAL_ERROR = "INTERNAL_ERROR"
+    DATABASE_ERROR = "DATABASE_ERROR"
+
+
+# =============================================================================
+# Validation Constants
+# =============================================================================
+
 MAX_PAGE_SIZE = 1000
 MIN_PAGE = 1
 MIN_PAGE_SIZE = 1
@@ -16,13 +50,132 @@ MIN_ROUND = 1
 DRIVER_CODE_LENGTH = 3
 
 
+# =============================================================================
+# Exception Classes
+# =============================================================================
+
 class ValidationError(Exception):
     """Exception raised for validation errors."""
 
-    def __init__(self, message: str, field: str = None):
+    def __init__(
+        self,
+        message: str,
+        field: str = None,
+        code: ErrorCode = ErrorCode.VALIDATION_ERROR
+    ):
         self.message = message
         self.field = field
+        self.code = code
         super().__init__(self.message)
+
+
+class NotFoundError(Exception):
+    """Exception raised when a resource is not found."""
+
+    def __init__(
+        self,
+        message: str,
+        code: ErrorCode = ErrorCode.NOT_FOUND,
+        resource_type: str = None,
+        resource_id: Any = None
+    ):
+        self.message = message
+        self.code = code
+        self.resource_type = resource_type
+        self.resource_id = resource_id
+        super().__init__(self.message)
+
+
+# =============================================================================
+# Standardized Error Response Builder
+# =============================================================================
+
+def build_error_response(
+    code: ErrorCode,
+    message: str,
+    field: str = None,
+    details: Dict = None,
+    http_status: int = None
+) -> Tuple[Dict, int]:
+    """
+    Build a standardized error response.
+
+    Args:
+        code: The error code from ErrorCode enum
+        message: Human-readable error message
+        field: Optional field name that caused the error
+        details: Optional additional details
+        http_status: Optional HTTP status code override
+
+    Returns:
+        Tuple of (error_dict, http_status_code)
+    """
+    error_body = {
+        "code": code.value,
+        "message": message
+    }
+
+    if field:
+        error_body["field"] = field
+
+    if details:
+        error_body["details"] = details
+
+    response = {"error": error_body}
+
+    # Determine HTTP status from error code if not provided
+    if http_status is None:
+        if code in (ErrorCode.NOT_FOUND, ErrorCode.DRIVER_NOT_FOUND,
+                    ErrorCode.CHAMPIONSHIP_NOT_FOUND):
+            http_status = 404
+        elif code in (ErrorCode.INTERNAL_ERROR, ErrorCode.DATABASE_ERROR):
+            http_status = 500
+        else:
+            http_status = 400
+
+    return response, http_status
+
+
+def format_validation_error(error: ValidationError) -> Tuple[Dict, int]:
+    """
+    Format a ValidationError into a standardized error response.
+
+    Args:
+        error: The ValidationError to format
+
+    Returns:
+        Tuple of (error_dict, http_status_code)
+    """
+    return build_error_response(
+        code=error.code,
+        message=error.message,
+        field=error.field
+    )
+
+
+def format_not_found_error(error: NotFoundError) -> Tuple[Dict, int]:
+    """
+    Format a NotFoundError into a standardized error response.
+
+    Args:
+        error: The NotFoundError to format
+
+    Returns:
+        Tuple of (error_dict, http_status_code)
+    """
+    details = None
+    if error.resource_type or error.resource_id:
+        details = {}
+        if error.resource_type:
+            details["resource_type"] = error.resource_type
+        if error.resource_id is not None:
+            details["resource_id"] = error.resource_id
+
+    return build_error_response(
+        code=error.code,
+        message=error.message,
+        details=details
+    )
 
 
 def validate_pagination(
@@ -52,13 +205,15 @@ def validate_pagination(
     except (ValueError, TypeError):
         raise ValidationError(
             f"'page' must be a valid integer, got: {page}",
-            field="page"
+            field="page",
+            code=ErrorCode.INVALID_FORMAT
         )
 
     if page < MIN_PAGE:
         raise ValidationError(
             f"'page' must be at least {MIN_PAGE}, got: {page}",
-            field="page"
+            field="page",
+            code=ErrorCode.OUT_OF_RANGE
         )
 
     # Validate per_page
@@ -69,19 +224,22 @@ def validate_pagination(
     except (ValueError, TypeError):
         raise ValidationError(
             f"'per_page' must be a valid integer, got: {per_page}",
-            field="per_page"
+            field="per_page",
+            code=ErrorCode.INVALID_FORMAT
         )
 
     if per_page < MIN_PAGE_SIZE:
         raise ValidationError(
             f"'per_page' must be at least {MIN_PAGE_SIZE}, got: {per_page}",
-            field="per_page"
+            field="per_page",
+            code=ErrorCode.OUT_OF_RANGE
         )
 
     if per_page > max_per_page:
         raise ValidationError(
             f"'per_page' cannot exceed {max_per_page}, got: {per_page}",
-            field="per_page"
+            field="per_page",
+            code=ErrorCode.OUT_OF_RANGE
         )
 
     return page, per_page
@@ -105,17 +263,20 @@ def validate_driver_code(
 
     Raises:
         ValidationError: If driver code is invalid
+        NotFoundError: If driver code is not in valid_drivers
     """
     if driver_code is None:
         raise ValidationError(
             f"'{field_name}' is required",
-            field=field_name
+            field=field_name,
+            code=ErrorCode.MISSING_PARAMETER
         )
 
     if not isinstance(driver_code, str):
         raise ValidationError(
             f"'{field_name}' must be a string",
-            field=field_name
+            field=field_name,
+            code=ErrorCode.INVALID_FORMAT
         )
 
     driver_code = driver_code.strip().upper()
@@ -123,19 +284,23 @@ def validate_driver_code(
     if len(driver_code) != DRIVER_CODE_LENGTH:
         raise ValidationError(
             f"'{field_name}' must be a {DRIVER_CODE_LENGTH}-letter code, got: {driver_code}",
-            field=field_name
+            field=field_name,
+            code=ErrorCode.INVALID_FORMAT
         )
 
     if not driver_code.isalpha():
         raise ValidationError(
             f"'{field_name}' must contain only letters, got: {driver_code}",
-            field=field_name
+            field=field_name,
+            code=ErrorCode.INVALID_FORMAT
         )
 
     if driver_code not in valid_drivers:
-        raise ValidationError(
-            f"Unknown driver code: {driver_code}. Valid codes: {', '.join(sorted(valid_drivers.keys()))}",
-            field=field_name
+        raise NotFoundError(
+            f"Driver not found: {driver_code}",
+            code=ErrorCode.DRIVER_NOT_FOUND,
+            resource_type="driver",
+            resource_id=driver_code
         )
 
     return driver_code
@@ -157,7 +322,8 @@ def validate_position(position: Any) -> int:
     if position is None:
         raise ValidationError(
             "'position' parameter is required",
-            field="position"
+            field="position",
+            code=ErrorCode.MISSING_PARAMETER
         )
 
     try:
@@ -165,19 +331,22 @@ def validate_position(position: Any) -> int:
     except (ValueError, TypeError):
         raise ValidationError(
             f"'position' must be a valid integer, got: {position}",
-            field="position"
+            field="position",
+            code=ErrorCode.INVALID_FORMAT
         )
 
     if position < MIN_POSITION:
         raise ValidationError(
             f"'position' must be at least {MIN_POSITION}, got: {position}",
-            field="position"
+            field="position",
+            code=ErrorCode.OUT_OF_RANGE
         )
 
     if position > MAX_POSITION:
         raise ValidationError(
             f"'position' cannot exceed {MAX_POSITION}, got: {position}",
-            field="position"
+            field="position",
+            code=ErrorCode.OUT_OF_RANGE
         )
 
     return position
@@ -199,7 +368,8 @@ def validate_championship_id(championship_id: Any) -> int:
     if championship_id is None:
         raise ValidationError(
             "'id' parameter is required",
-            field="id"
+            field="id",
+            code=ErrorCode.MISSING_PARAMETER
         )
 
     try:
@@ -207,13 +377,15 @@ def validate_championship_id(championship_id: Any) -> int:
     except (ValueError, TypeError):
         raise ValidationError(
             f"'id' must be a valid integer, got: {championship_id}",
-            field="id"
+            field="id",
+            code=ErrorCode.INVALID_FORMAT
         )
 
     if championship_id < 1:
         raise ValidationError(
             f"'id' must be a positive integer, got: {championship_id}",
-            field="id"
+            field="id",
+            code=ErrorCode.OUT_OF_RANGE
         )
 
     return championship_id
@@ -235,13 +407,15 @@ def validate_rounds(rounds_str: Any) -> List[int]:
     if rounds_str is None or rounds_str == '':
         raise ValidationError(
             "'rounds' parameter is required",
-            field="rounds"
+            field="rounds",
+            code=ErrorCode.MISSING_PARAMETER
         )
 
     if not isinstance(rounds_str, str):
         raise ValidationError(
             "'rounds' must be a comma-separated string of numbers",
-            field="rounds"
+            field="rounds",
+            code=ErrorCode.INVALID_FORMAT
         )
 
     rounds_str = rounds_str.strip()
@@ -249,7 +423,8 @@ def validate_rounds(rounds_str: Any) -> List[int]:
     if not rounds_str:
         raise ValidationError(
             "'rounds' cannot be empty",
-            field="rounds"
+            field="rounds",
+            code=ErrorCode.MISSING_PARAMETER
         )
 
     try:
@@ -257,13 +432,15 @@ def validate_rounds(rounds_str: Any) -> List[int]:
     except ValueError:
         raise ValidationError(
             f"'rounds' must contain only valid integers separated by commas, got: {rounds_str}",
-            field="rounds"
+            field="rounds",
+            code=ErrorCode.INVALID_FORMAT
         )
 
     if not round_numbers:
         raise ValidationError(
             "'rounds' must contain at least one round number",
-            field="rounds"
+            field="rounds",
+            code=ErrorCode.MISSING_PARAMETER
         )
 
     # Validate each round number
@@ -271,14 +448,16 @@ def validate_rounds(rounds_str: Any) -> List[int]:
     if invalid_rounds:
         raise ValidationError(
             f"Round numbers must be between {MIN_ROUND} and {MAX_ROUND}, invalid: {invalid_rounds}",
-            field="rounds"
+            field="rounds",
+            code=ErrorCode.OUT_OF_RANGE
         )
 
     # Check for duplicates
     if len(round_numbers) != len(set(round_numbers)):
         raise ValidationError(
             "Duplicate round numbers are not allowed",
-            field="rounds"
+            field="rounds",
+            code=ErrorCode.DUPLICATE_VALUE
         )
 
     return sorted(round_numbers)
@@ -311,21 +490,6 @@ def validate_boolean(value: Any, field_name: str, default: bool = False) -> bool
 
     raise ValidationError(
         f"'{field_name}' must be a boolean value (true/false), got: {value}",
-        field=field_name
+        field=field_name,
+        code=ErrorCode.INVALID_FORMAT
     )
-
-
-def format_validation_error(error: ValidationError) -> dict:
-    """
-    Format a ValidationError into a JSON-serializable dict.
-
-    Args:
-        error: The ValidationError to format
-
-    Returns:
-        Dictionary with error details
-    """
-    result = {"error": error.message}
-    if error.field:
-        result["field"] = error.field
-    return result
