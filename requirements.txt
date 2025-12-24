@@ -1,5 +1,6 @@
 pandas
 Flask
+Flask-Caching
 flasgger
 numpy
 python-dotenv

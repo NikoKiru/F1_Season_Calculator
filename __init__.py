@@ -1,5 +1,9 @@
 import os
 from flask import Flask
+from flask_caching import Cache
+
+# Initialize cache instance (configured in create_app)
+cache = Cache()
 
 
 def create_app(test_config=None):
@@ -27,7 +31,11 @@ def create_app(test_config=None):
     app.config.from_mapping(
         SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
         DATABASE=os.environ.get('DATABASE_PATH', default_db_path),
-        DATA_FOLDER=os.environ.get('DATA_FOLDER', default_data_folder)
+        DATA_FOLDER=os.environ.get('DATA_FOLDER', default_data_folder),
+        # Cache configuration - thread-safe SimpleCache by default
+        # Can be changed to Redis for production: CACHE_TYPE='redis'
+        CACHE_TYPE=os.environ.get('CACHE_TYPE', 'SimpleCache'),
+        CACHE_DEFAULT_TIMEOUT=os.environ.get('CACHE_TIMEOUT', 3600),
     )
 
     if test_config is None:
@@ -46,6 +54,9 @@ def create_app(test_config=None):
         os.makedirs(app.instance_path, exist_ok=True)
     except OSError:
         pass
+
+    # Initialize Flask-Caching with app
+    cache.init_app(app)
 
     # Import modules - try relative first, then absolute
     try:

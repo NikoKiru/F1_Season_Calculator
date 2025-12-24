@@ -4,9 +4,11 @@ from flask import (
 # Import db module - works with both package and standalone setup
 try:
     from ..db import get_db
+    from .. import cache
 except ImportError:
     import db
     get_db = db.get_db
+    from __init__ import cache
 
 try:
     from .models import ROUND_NAMES_2025, DRIVER_NAMES, DRIVERS
@@ -14,6 +16,12 @@ try:
 except ImportError:
     from championship.models import ROUND_NAMES_2025, DRIVER_NAMES, DRIVERS
     from championship.logic import get_round_points_for_championship
+
+# Cache key constants for consistent naming
+CACHE_KEY_HIGHEST_POSITION = 'highest_position'
+CACHE_KEY_HEAD_TO_HEAD = 'h2h_{d1}_{d2}'
+CACHE_KEY_DRIVER_POSITIONS = 'driver_positions_{pos}'
+CACHE_KEY_DRIVER_STATS = 'driver_stats_{code}'
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -175,11 +183,6 @@ def all_championship_wins_route():
     return all_championship_wins()
 
 
-# Cache for expensive queries
-_highest_position_cache = None
-_head_to_head_cache = {}
-_driver_positions_cache = {}
-_driver_stats_cache = {}  # Cache for driver page stats
 
 
 @bp.route('/highest_position', methods=['GET'])
@@ -205,14 +208,13 @@ def highest_position():
           objects containing their highest rank and a list of up to 5
           corresponding championship IDs.
     """
-    global _highest_position_cache
-
     # Check if we should bypass cache
     refresh = request.args.get('refresh', 'false').lower() == 'true'
 
     # Return cached result if available and not refreshing
-    if _highest_position_cache is not None and not refresh:
-        return jsonify(_highest_position_cache)
+    cached_result = cache.get(CACHE_KEY_HIGHEST_POSITION)
+    if cached_result is not None and not refresh:
+        return jsonify(cached_result)
 
     db = get_db()
 
@@ -326,8 +328,8 @@ def highest_position():
         for k, v in sorted_positions
     ]
 
-    # Cache the result
-    _highest_position_cache = ordered_highest_positions
+    # Cache the result (thread-safe)
+    cache.set(CACHE_KEY_HIGHEST_POSITION, ordered_highest_positions)
 
     return jsonify(ordered_highest_positions)
 
@@ -342,11 +344,7 @@ def clear_cache():
       200:
         description: Cache cleared successfully
     """
-    global _highest_position_cache, _head_to_head_cache, _driver_positions_cache, _driver_stats_cache
-    _highest_position_cache = None
-    _head_to_head_cache = {}
-    _driver_positions_cache = {}
-    _driver_stats_cache = {}
+    cache.clear()
     return jsonify({"message": "Cache cleared successfully"})
 
 
@@ -382,11 +380,12 @@ def head_to_head(driver1, driver2):
         return jsonify({"error": "Invalid driver abbreviation"}), 400
 
     # Create a cache key (normalize order so VER-NOR == NOR-VER)
-    cache_key = tuple(sorted([d1_upper, d2_upper]))
+    sorted_drivers = sorted([d1_upper, d2_upper])
+    cache_key = CACHE_KEY_HEAD_TO_HEAD.format(d1=sorted_drivers[0], d2=sorted_drivers[1])
 
-    # Check cache first
-    if cache_key in _head_to_head_cache:
-        cached_data = _head_to_head_cache[cache_key]
+    # Check cache first (thread-safe)
+    cached_data = cache.get(cache_key)
+    if cached_data is not None:
         # Return in the order requested
         return jsonify({
             d1_upper: cached_data[d1_upper],
@@ -418,8 +417,8 @@ def head_to_head(driver1, driver2):
         d2_upper: result['driver2_wins']
     }
 
-    # Cache the result
-    _head_to_head_cache[cache_key] = response_data
+    # Cache the result (thread-safe)
+    cache.set(cache_key, response_data)
 
     return jsonify(response_data)
 
@@ -471,9 +470,11 @@ def driver_positions():
     if position is None or position < 1:
         return jsonify({"error": "A valid 'position' parameter is required."}), 400
 
-    # Check cache first
-    if position in _driver_positions_cache:
-        return jsonify(_driver_positions_cache[position])
+    # Check cache first (thread-safe)
+    cache_key = CACHE_KEY_DRIVER_POSITIONS.format(pos=position)
+    cached_result = cache.get(cache_key)
+    if cached_result is not None:
+        return jsonify(cached_result)
 
     db = get_db()
 
@@ -505,8 +506,8 @@ def driver_positions():
             "percentage": round(percentage, 2)
         })
 
-    # Cache the result
-    _driver_positions_cache[position] = result_data
+    # Cache the result (thread-safe)
+    cache.set(cache_key, result_data)
 
     return jsonify(result_data)
 
@@ -596,9 +597,11 @@ def driver_stats(driver_code):
     if driver_code not in DRIVER_NAMES:
         return jsonify({"error": "Driver not found"}), 404
 
-    # Check cache first
-    if driver_code in _driver_stats_cache:
-        return jsonify(_driver_stats_cache[driver_code])
+    # Check cache first (thread-safe)
+    cache_key = CACHE_KEY_DRIVER_STATS.format(code=driver_code)
+    cached_result = cache.get(cache_key)
+    if cached_result is not None:
+        return jsonify(cached_result)
 
     db = get_db()
 
@@ -688,8 +691,8 @@ def driver_stats(driver_code):
         "seasons_per_length": seasons_per_length
     }
 
-    # Cache the result
-    _driver_stats_cache[driver_code] = response
+    # Cache the result (thread-safe)
+    cache.set(cache_key, response)
 
     return jsonify(response)
 
