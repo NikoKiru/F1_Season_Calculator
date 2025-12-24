@@ -23,7 +23,7 @@ async function loadDriverStats() {
         renderProbabilityChart(data.win_probability_by_length, data.seasons_per_length);
 
         // Render head-to-head grid
-        renderH2HGrid(data.head_to_head);
+        renderHeadToHeadGrid(data.head_to_head);
 
     } catch (error) {
         console.error('Error loading driver stats:', error);
@@ -198,21 +198,21 @@ function renderProbabilityChart(winProbData, seasonsPerLength) {
     });
 }
 
-function renderH2HGrid(h2hData) {
-    const grid = document.getElementById('h2h-grid');
+function renderHeadToHeadGrid(headToHeadData) {
+    const grid = document.getElementById('head-to-head-grid');
     grid.innerHTML = '';
 
     // Sort opponents by win percentage descending
-    const opponents = Object.keys(h2hData).sort((a, b) => {
-        const totalA = h2hData[a].wins + h2hData[a].losses;
-        const totalB = h2hData[b].wins + h2hData[b].losses;
-        const pctA = totalA > 0 ? h2hData[a].wins / totalA : 0;
-        const pctB = totalB > 0 ? h2hData[b].wins / totalB : 0;
+    const opponents = Object.keys(headToHeadData).sort((a, b) => {
+        const totalA = headToHeadData[a].wins + headToHeadData[a].losses;
+        const totalB = headToHeadData[b].wins + headToHeadData[b].losses;
+        const pctA = totalA > 0 ? headToHeadData[a].wins / totalA : 0;
+        const pctB = totalB > 0 ? headToHeadData[b].wins / totalB : 0;
         return pctB - pctA;
     });
 
     opponents.forEach(opponentCode => {
-        const record = h2hData[opponentCode];
+        const record = headToHeadData[opponentCode];
         const opponent = DRIVERS[opponentCode];
 
         if (!opponent) return;
@@ -230,10 +230,10 @@ function renderH2HGrid(h2hData) {
         else if (losses > wins) statusClass = 'losing';
 
         const card = document.createElement('div');
-        card.className = `h2h-card ${statusClass}`;
+        card.className = `head-to-head-card ${statusClass}`;
         card.innerHTML = `
-            <span class="h2h-opponent">${opponent.flag} ${opponent.name.split(' ').pop()}</span>
-            <span class="h2h-record">
+            <span class="head-to-head-opponent">${opponent.flag} ${opponent.name.split(' ').pop()}</span>
+            <span class="head-to-head-record">
                 <span class="wins">${winPct}%</span> -
                 <span class="losses">${lossPct}%</span>
             </span>

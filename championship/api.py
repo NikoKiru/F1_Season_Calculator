@@ -48,9 +48,9 @@ except ImportError:
 
 # Cache key constants for consistent naming
 CACHE_KEY_HIGHEST_POSITION = 'highest_position'
-CACHE_KEY_HEAD_TO_HEAD = 'h2h_{d1}_{d2}'
-CACHE_KEY_DRIVER_POSITIONS = 'driver_positions_{pos}'
-CACHE_KEY_DRIVER_STATS = 'driver_stats_{code}'
+CACHE_KEY_HEAD_TO_HEAD = 'head_to_head_{driver1}_{driver2}'
+CACHE_KEY_DRIVER_POSITIONS = 'driver_positions_{position}'
+CACHE_KEY_DRIVER_STATS = 'driver_stats_{driver_code}'
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -300,7 +300,7 @@ def highest_position() -> Response:
         for row in rows:
             championship_id = row['championship_id']
             standings = row['standings']
-            champ_num_races = row['num_races']
+            championship_num_races = row['num_races']
             drivers_list = [d.strip() for d in standings.split(",")]
 
             for position, driver in enumerate(drivers_list, start=1):
@@ -308,7 +308,7 @@ def highest_position() -> Response:
                 if driver not in highest_positions:
                     highest_positions[driver] = {
                         "position": position,
-                        "championships": [{"id": championship_id, "num_races": champ_num_races}]
+                        "championships": [{"id": championship_id, "num_races": championship_num_races}]
                     }
                     # If this is position 1, we've found the best possible
                     if position == 1:
@@ -317,7 +317,7 @@ def highest_position() -> Response:
                 elif position < highest_positions[driver]["position"]:
                     highest_positions[driver] = {
                         "position": position,
-                        "championships": [{"id": championship_id, "num_races": champ_num_races}]
+                        "championships": [{"id": championship_id, "num_races": championship_num_races}]
                     }
                     # If this is position 1, we've found the best possible
                     if position == 1:
@@ -325,7 +325,7 @@ def highest_position() -> Response:
                 # Same position, add more championship IDs
                 elif position == highest_positions[driver]["position"]:
                     if len(highest_positions[driver]["championships"]) < 5:
-                        highest_positions[driver]["championships"].append({"id": championship_id, "num_races": champ_num_races})
+                        highest_positions[driver]["championships"].append({"id": championship_id, "num_races": championship_num_races})
 
     # Step 4: For any remaining drivers (edge case), do a targeted search
     if drivers_to_find:
@@ -343,7 +343,7 @@ def highest_position() -> Response:
             for row in rows:
                 championship_id = row['championship_id']
                 standings = row['standings']
-                champ_num_races = row['num_races']
+                championship_num_races = row['num_races']
                 drivers_list = [d.strip() for d in standings.split(",")]
 
                 try:
@@ -352,16 +352,16 @@ def highest_position() -> Response:
                     if driver not in highest_positions:
                         highest_positions[driver] = {
                             "position": position,
-                            "championships": [{"id": championship_id, "num_races": champ_num_races}]
+                            "championships": [{"id": championship_id, "num_races": championship_num_races}]
                         }
                     elif position < highest_positions[driver]["position"]:
                         highest_positions[driver] = {
                             "position": position,
-                            "championships": [{"id": championship_id, "num_races": champ_num_races}]
+                            "championships": [{"id": championship_id, "num_races": championship_num_races}]
                         }
                     elif position == highest_positions[driver]["position"]:
                         if len(highest_positions[driver]["championships"]) < 5:
-                            highest_positions[driver]["championships"].append({"id": championship_id, "num_races": champ_num_races})
+                            highest_positions[driver]["championships"].append({"id": championship_id, "num_races": championship_num_races})
                 except ValueError:
                     continue
 
@@ -380,7 +380,7 @@ def highest_position() -> Response:
     return jsonify(ordered_highest_positions)
 
 
-@bp.route('/clear-cache', methods=['POST'])
+@bp.route('/clear_cache', methods=['POST'])
 def clear_cache() -> Response:
     """
     Clear all API caches
@@ -438,7 +438,7 @@ def head_to_head(driver1: str, driver2: str) -> Response:
 
     # Create a cache key (normalize order so VER-NOR == NOR-VER)
     sorted_drivers = sorted([d1_upper, d2_upper])
-    cache_key = CACHE_KEY_HEAD_TO_HEAD.format(d1=sorted_drivers[0], d2=sorted_drivers[1])
+    cache_key = CACHE_KEY_HEAD_TO_HEAD.format(driver1=sorted_drivers[0], driver2=sorted_drivers[1])
 
     # Check cache first (thread-safe)
     cached_data = cache.get(cache_key)
@@ -532,7 +532,7 @@ def driver_positions() -> Response:
         return jsonify(response), status
 
     # Check cache first (thread-safe)
-    cache_key = CACHE_KEY_DRIVER_POSITIONS.format(pos=position)
+    cache_key = CACHE_KEY_DRIVER_POSITIONS.format(position=position)
     cached_result = cache.get(cache_key)
     if cached_result is not None:
         return jsonify(cached_result)
@@ -665,7 +665,7 @@ def driver_stats(driver_code: str) -> Response:
         return jsonify(response), status
 
     # Check cache first (thread-safe)
-    cache_key = CACHE_KEY_DRIVER_STATS.format(code=driver_code)
+    cache_key = CACHE_KEY_DRIVER_STATS.format(driver_code=driver_code)
     cached_result = cache.get(cache_key)
     if cached_result is not None:
         return jsonify(cached_result)
@@ -689,13 +689,13 @@ def driver_stats(driver_code: str) -> Response:
     min_races_result = db.execute(min_races_query, (driver_code,)).fetchone()
     min_races_to_win = min_races_result['min_races'] if min_races_result and min_races_result['min_races'] else None
 
-    # FULL COMPUTATION with progress - compute position distribution, h2h, and best position
+    # FULL COMPUTATION with progress - compute position distribution, head-to-head, and best position
     # This runs once and gets cached
     pattern = f"%{driver_code}%"
     position_counts = {}
-    h2h_records = {opp: {"wins": 0, "losses": 0} for opp in DRIVER_NAMES.keys() if opp != driver_code}
-    highest_pos = 20
-    highest_pos_championship = None
+    head_to_head_records = {opp: {"wins": 0, "losses": 0} for opp in DRIVER_NAMES.keys() if opp != driver_code}
+    highest_position = 20
+    highest_position_championship = None
 
     # Fetch all rows containing this driver
     query = "SELECT championship_id, standings FROM championship_results WHERE standings LIKE ?"
@@ -709,17 +709,17 @@ def driver_stats(driver_code: str) -> Response:
             # Count position
             position_counts[position] = position_counts.get(position, 0) + 1
             # Track best position
-            if position < highest_pos:
-                highest_pos = position
-                highest_pos_championship = row['championship_id']
+            if position < highest_position:
+                highest_position = position
+                highest_position_championship = row['championship_id']
             # Head-to-head against all opponents
-            for opponent_code in h2h_records.keys():
+            for opponent_code in head_to_head_records.keys():
                 try:
                     opponent_pos = standings.index(opponent_code)
                     if driver_pos < opponent_pos:
-                        h2h_records[opponent_code]["wins"] += 1
+                        head_to_head_records[opponent_code]["wins"] += 1
                     else:
-                        h2h_records[opponent_code]["losses"] += 1
+                        head_to_head_records[opponent_code]["losses"] += 1
                 except ValueError:
                     continue
                     
@@ -749,11 +749,11 @@ def driver_stats(driver_code: str) -> Response:
         "total_wins": total_wins,
         "total_championships": total_championships,
         "win_percentage": win_percentage,
-        "highest_position": highest_pos,
-        "highest_position_championship_id": highest_pos_championship,
+        "highest_position": highest_position,
+        "highest_position_championship_id": highest_position_championship,
         "min_races_to_win": min_races_to_win,
         "position_distribution": position_counts,
-        "head_to_head": h2h_records,
+        "head_to_head": head_to_head_records,
         "win_probability_by_length": win_prob_percentages,
         "seasons_per_length": seasons_per_length
     }

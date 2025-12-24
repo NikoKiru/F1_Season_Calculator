@@ -1307,63 +1307,63 @@ footer {
 }
 
 /* Head-to-Head Grid */
-.h2h-section {
+.head-to-head-section {
     margin-bottom: 30px;
 }
 
-.h2h-section h3 {
+.head-to-head-section h3 {
     margin: 0 0 20px 0;
     font-size: 1.3em;
 }
 
-.h2h-grid {
+.head-to-head-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 12px;
 }
 
-.h2h-card {
+.head-to-head-card {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 12px 15px;
     background: var(--surface-secondary);
     border-radius: 8px;
-    border-left: 4px solid var(--h2h-color, var(--border-color));
+    border-left: 4px solid var(--head-to-head-color, var(--border-color));
     transition: all var(--transition-speed);
 }
 
-.h2h-card:hover {
+.head-to-head-card:hover {
     transform: translateX(5px);
 }
 
-.h2h-card.winning {
-    --h2h-color: #22c55e;
+.head-to-head-card.winning {
+    --head-to-head-color: #22c55e;
 }
 
-.h2h-card.losing {
-    --h2h-color: #ef4444;
+.head-to-head-card.losing {
+    --head-to-head-color: #ef4444;
 }
 
-.h2h-card.tied {
-    --h2h-color: #f59e0b;
+.head-to-head-card.tied {
+    --head-to-head-color: #f59e0b;
 }
 
-.h2h-opponent {
+.head-to-head-opponent {
     font-weight: 600;
     flex-grow: 1;
 }
 
-.h2h-record {
+.head-to-head-record {
     font-weight: 700;
     font-size: 0.95em;
 }
 
-.h2h-record .wins {
+.head-to-head-record .wins {
     color: #22c55e;
 }
 
-.h2h-record .losses {
+.head-to-head-record .losses {
     color: #ef4444;
 }
 
@@ -1406,7 +1406,7 @@ footer {
         font-size: 2.2em;
     }
 
-    .h2h-grid {
+    .head-to-head-grid {
         grid-template-columns: 1fr;
     }
 }

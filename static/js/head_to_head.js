@@ -22,11 +22,11 @@ function createStripedPattern(ctx, baseColor) {
     return ctx.createPattern(canvas, 'repeat');
 }
 
-document.getElementById('h2h-form').addEventListener('submit', function(event) {
+document.getElementById('head-to-head-form').addEventListener('submit', function(event) {
     event.preventDefault();
     const driver1 = document.getElementById('driver1').value.trim().toUpperCase();
     const driver2 = document.getElementById('driver2').value.trim().toUpperCase();
-    const resultDiv = document.getElementById('h2h-result');
+    const resultDiv = document.getElementById('head-to-head-result');
     const loadingDiv = document.getElementById('loading-indicator');
 
     if (driver1 && driver2) {
@@ -64,11 +64,11 @@ document.getElementById('h2h-form').addEventListener('submit', function(event) {
                 // Create chart container
                 const chartContainer = document.createElement('div');
                 chartContainer.className = 'chart-container';
-                chartContainer.innerHTML = '<canvas id="h2h-chart"></canvas>';
+                chartContainer.innerHTML = '<canvas id="head-to-head-chart"></canvas>';
                 resultDiv.appendChild(chartContainer);
 
                 // Get canvas context
-                const ctx = document.getElementById('h2h-chart').getContext('2d');
+                const ctx = document.getElementById('head-to-head-chart').getContext('2d');
 
                 // Prepare colors
                 let d1Color = d1Data.color || '#666';
@@ -152,7 +152,7 @@ document.getElementById('h2h-form').addEventListener('submit', function(event) {
             .catch(error => {
                 // Hide loading indicator
                 loadingDiv.style.display = 'none';
-                console.error('Error fetching H2H data:', error);
+                console.error('Error fetching head-to-head data:', error);
                 resultDiv.innerHTML = `<p class="driver-result" style="color: var(--f1-red);">Error: ${error.message}</p>`;
             });
     }
