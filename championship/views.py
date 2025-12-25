@@ -4,7 +4,7 @@ from flask import (
 )
 from .api import (
     get_championship, all_championship_wins, highest_position,
-    championship_win_probability, min_races_to_win
+    championship_win_probability, min_races_to_win, driver_position_championships
 )
 from .models import ROUND_NAMES_2025, DRIVERS
 
@@ -85,3 +85,25 @@ def driver_page(driver_code: str) -> Union[str, Tuple[str, int]]:
         return render_template('404.html'), 404
     driver = DRIVERS[driver_code]
     return render_template('driver.html', driver_code=driver_code, driver=driver, drivers=DRIVERS)
+
+
+@bp.route('/driver/<string:driver_code>/position/<int:position>')
+def driver_position_detail(driver_code: str, position: int) -> Union[str, Tuple[str, int]]:
+    driver_code = driver_code.upper()
+    if driver_code not in DRIVERS:
+        return render_template('404.html'), 404
+
+    response = driver_position_championships(driver_code, position)
+    if response.status_code != 200:
+        return render_template('404.html'), 404
+
+    data = response.get_json()
+    driver = DRIVERS[driver_code]
+    return render_template(
+        'driver_position_detail.html',
+        data=data,
+        driver_code=driver_code,
+        driver=driver,
+        position=position,
+        drivers=DRIVERS
+    )

@@ -14,44 +14,46 @@
 {% endblock %}
 
 {% block content %}
-<h2>Highest Championship Position</h2>
+<div class="page-header">
+    <h2>Highest Championship Position</h2>
+    <p class="page-subtitle">Best championship finish for each driver. Click any element to explore details.</p>
+</div>
+
 <div class="data-container">
     {% if data %}
-        <div class="table-wrapper">
-            <table class="standings-table">
-                <thead>
-                    <tr>
-                        <th>Driver</th>
-                        <th>Highest Position</th>
-                        <th>Championships</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in data %}
-                        <tr>
-                            <td class="driver-cell" data-label="Driver">
-                                <span class="color-bar" style="background-color: {{ drivers[item.driver].color if item.driver in drivers else '#666' }};"></span>
-                                {{ drivers[item.driver].name if item.driver in drivers else item.driver }}
-                            </td>
-                            <td data-label="Highest Position">{{ item.position }}</td>
-                            <td data-label="Championships">
-                                {% for champ in item.championships[:5] %}
-                                    <a href="{{ url_for('views.championship_page', id=champ.id) }}" class="championship-link">
-                                        <span class="champ-id">{{ champ.id }}</span>
-                                        <span class="champ-races">({{ champ.num_races }})</span>
-                                    </a>
-                                {% endfor %}
-                                {% if item.championships|length > 5 %}
-                                    <span class="championship-link" style="opacity: 0.6;">...</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="highest-position-grid">
+            {% for item in data %}
+                <div class="position-card" style="--team-color: {{ drivers[item.driver].color if item.driver in drivers else '#666' }};">
+                    <div class="position-card-header">
+                        <a href="{{ url_for('views.driver_page', driver_code=item.driver) }}" class="driver-info">
+                            <span class="driver-flag">{{ drivers[item.driver].flag if item.driver in drivers else '' }}</span>
+                            <span class="driver-name">{{ drivers[item.driver].name if item.driver in drivers else item.driver }}</span>
+                        </a>
+                        <span class="driver-team">{{ drivers[item.driver].team if item.driver in drivers else '' }}</span>
+                    </div>
+                    <div class="position-card-body">
+                        <a href="{{ url_for('views.driver_position_detail', driver_code=item.driver, position=item.position) }}" class="position-badge">
+                            <span class="position-rank">P{{ item.position }}</span>
+                            <span class="position-detail">{{ item.max_races }} races</span>
+                        </a>
+                        <div class="position-stats">
+                            <span class="stat-item">
+                                <span class="stat-value">{{ item.count }}</span>
+                                <span class="stat-label">times</span>
+                            </span>
+                            {% if item.best_margin is not none %}
+                                <a href="{{ url_for('views.championship_page', id=item.best_margin_championship_id) }}" class="stat-item margin-stat">
+                                    <span class="stat-value">+{{ item.best_margin }}</span>
+                                    <span class="stat-label">best margin</span>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
     {% else %}
-        <p>No data available.</p>
+        <p class="no-data">No data available.</p>
     {% endif %}
 </div>
 {% endblock %}

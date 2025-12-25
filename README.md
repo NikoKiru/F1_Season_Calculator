@@ -188,14 +188,15 @@ The application provides a comprehensive REST API with the following endpoints:
 | `/api/data` | GET | Paginated championship data |
 | `/api/championship/<id>` | GET | Specific championship details |
 | `/api/all_championship_wins` | GET | Championship wins per driver |
-| `/api/highest_position` | GET | Best position achieved by each driver |
+| `/api/highest_position` | GET | Best position achieved by each driver with enriched stats |
 | `/api/head_to_head/<driver1>/<driver2>` | GET | Compare two drivers |
 | `/api/min_races_to_win` | GET | Minimum races needed to win |
 | `/api/driver_positions?position=N` | GET | How many times each driver finished in position N |
 | `/api/championship_win_probability` | GET | Win probability based on number of races |
 | `/api/driver/<code>/stats` | GET | Aggregated statistics for a specific driver |
+| `/api/driver/<code>/position/<n>` | GET | All championships where driver finished in position N |
 | `/api/create_championship` | POST | Find championship by specific rounds |
-| `/api/clear-cache` | POST | Clear API caches |
+| `/api/clear_cache` | POST | Clear API caches |
 
 ### Interactive Documentation
 
@@ -220,11 +221,12 @@ response = requests.get('http://127.0.0.1:5000/api/head_to_head/VER/NOR')
 comparison = response.json()
 print(f"VER finished ahead: {comparison['driver1_ahead_count']} times")
 
-# Get highest positions
+# Get highest positions (enriched with max races and winning margin)
 response = requests.get('http://127.0.0.1:5000/api/highest_position')
 positions = response.json()
 for driver in positions:
-    print(f"{driver['driver']}: Position {driver['position']}")
+    margin_info = f", margin: +{driver['best_margin']}" if driver['best_margin'] else ""
+    print(f"{driver['driver']}: P{driver['position']} ({driver['max_races']} races){margin_info}")
 ```
 
 ## 📊 Data Format
@@ -502,8 +504,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Lines of Code:** ~4,000
 - **Championships Analyzed:** 16,777,215 (24 races)
-- **API Endpoints:** 11
-- **Web Pages:** 14
+- **API Endpoints:** 12
+- **Web Pages:** 15
 - **Response Time:** <1 second (cached)
 - **Database Size:** ~1.5 GB (24 races)
 

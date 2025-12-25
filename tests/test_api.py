@@ -100,3 +100,117 @@ class TestCacheEndpoint:
         assert response.status_code == 200
         data = response.get_json()
         assert 'message' in data
+
+
+class TestHighestPositionEnriched:
+    """Test enriched highest position endpoint."""
+
+    def test_highest_position_returns_enriched_data(self, client):
+        """Highest position should return enriched data structure."""
+        response = client.get('/api/highest_position')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert isinstance(data, list)
+        if len(data) > 0:
+            item = data[0]
+            assert 'driver' in item
+            assert 'position' in item
+            assert 'max_races' in item
+            assert 'count' in item
+            assert 'best_margin' in item or item.get('best_margin') is None
+
+    def test_highest_position_sorted_by_position(self, client):
+        """Results should be sorted by position."""
+        response = client.get('/api/highest_position')
+        data = response.get_json()
+        positions = [item['position'] for item in data]
+        assert positions == sorted(positions)
+
+    def test_highest_position_margin_for_winners(self, client):
+        """Winners (position 1) should have margin data."""
+        response = client.get('/api/highest_position')
+        data = response.get_json()
+        winners = [item for item in data if item['position'] == 1]
+        # All winners should have margin and championship_id
+        for winner in winners:
+            assert winner['best_margin'] is not None
+            assert winner['best_margin'] >= 0
+            assert winner['best_margin_championship_id'] is not None
+
+    def test_highest_position_non_winners_no_margin(self, client):
+        """Non-winners should not have margin data."""
+        response = client.get('/api/highest_position')
+        data = response.get_json()
+        non_winners = [item for item in data if item['position'] > 1]
+        for non_winner in non_winners:
+            assert non_winner['best_margin'] is None
+
+
+class TestHighestPositionView:
+    """Test highest position view page."""
+
+    def test_highest_position_page_loads(self, client):
+        """Highest position page should load successfully."""
+        response = client.get('/highest_position')
+        assert response.status_code == 200
+        assert b'Highest Championship Position' in response.data
+
+
+class TestDriverPositionChampionships:
+    """Test driver position championships endpoint."""
+
+    def test_driver_position_valid_request(self, client):
+        """Should return championships for valid driver and position."""
+        response = client.get('/api/driver/VER/position/1')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert 'driver_code' in data
+        assert 'position' in data
+        assert 'total_count' in data
+        assert 'championships' in data
+        assert data['driver_code'] == 'VER'
+        assert data['position'] == 1
+
+    def test_driver_position_invalid_driver(self, client):
+        """Should return 404 for unknown driver."""
+        response = client.get('/api/driver/XXX/position/1')
+        assert response.status_code == 404
+
+    def test_driver_position_invalid_position(self, client):
+        """Should return 400 for invalid position."""
+        response = client.get('/api/driver/VER/position/0')
+        assert response.status_code == 400
+        response = client.get('/api/driver/VER/position/25')
+        assert response.status_code == 400
+
+    def test_driver_position_championship_data_structure(self, client):
+        """Championships should have expected structure."""
+        response = client.get('/api/driver/VER/position/1')
+        data = response.get_json()
+        if data['total_count'] > 0:
+            champ = data['championships'][0]
+            assert 'championship_id' in champ
+            assert 'num_races' in champ
+            assert 'standings' in champ
+            assert 'driver_points' in champ
+            assert 'margin' in champ or champ.get('margin') is None
+
+
+class TestDriverPositionDetailView:
+    """Test driver position detail view."""
+
+    def test_driver_position_detail_page_loads(self, client):
+        """Driver position detail page should load."""
+        response = client.get('/driver/VER/position/1')
+        assert response.status_code == 200
+        assert b'VER' in response.data or b'Verstappen' in response.data
+
+    def test_driver_position_detail_invalid_driver(self, client):
+        """Should return 404 for unknown driver."""
+        response = client.get('/driver/XXX/position/1')
+        assert response.status_code == 404
+
+    def test_driver_position_detail_case_insensitive(self, client):
+        """Driver code should be case insensitive."""
+        response = client.get('/driver/ver/position/1')
+        assert response.status_code == 200

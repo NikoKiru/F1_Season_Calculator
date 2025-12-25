@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}{{ driver.name }} - Position {{ position }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <div class="breadcrumbs-container">
+        <ol class="breadcrumb-list">
+            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('views.highest_position_page') }}" class="breadcrumb-link">Highest Position</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('views.driver_page', driver_code=driver_code) }}" class="breadcrumb-link">{{ driver.name }}</a></li>
+            <li class="breadcrumb-item"><span class="breadcrumb-current">Position {{ position }}</span></li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="driver-hero" style="--team-color: {{ driver.color }};">
+    <div class="driver-hero-number">P{{ position }}</div>
+    <div class="driver-hero-info">
+        <h1>{{ driver.flag }} {{ driver.name }}</h1>
+        <div class="driver-team">Position {{ position }} Championships</div>
+    </div>
+</div>
+
+<div class="stats-grid" style="--team-color: {{ driver.color }};">
+    <div class="stat-card">
+        <div class="stat-value">{{ data.total_count }}</div>
+        <div class="stat-label">Total Championships</div>
+        <div class="stat-detail">Finished P{{ position }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">
+            {% if data.championships|length > 0 %}
+                {{ data.championships[0].num_races }}
+            {% else %}
+                -
+            {% endif %}
+        </div>
+        <div class="stat-label">Max Season Length</div>
+        <div class="stat-detail">Races in longest championship</div>
+    </div>
+    {% if position == 1 %}
+    <div class="stat-card">
+        <div class="stat-value">
+            {% set best_margin = namespace(value=0) %}
+            {% for champ in data.championships %}
+                {% if champ.margin is not none and champ.margin > best_margin.value %}
+                    {% set best_margin.value = champ.margin %}
+                {% endif %}
+            {% endfor %}
+            +{{ best_margin.value }}
+        </div>
+        <div class="stat-label">Best Winning Margin</div>
+        <div class="stat-detail">Points ahead of 2nd place</div>
+    </div>
+    {% else %}
+    <div class="stat-card">
+        <div class="stat-value">
+            {% set closest_margin = namespace(value=999) %}
+            {% for champ in data.championships %}
+                {% if champ.margin is not none and champ.margin < closest_margin.value %}
+                    {% set closest_margin.value = champ.margin %}
+                {% endif %}
+            {% endfor %}
+            {% if closest_margin.value < 999 %}
+                -{{ closest_margin.value }}
+            {% else %}
+                -
+            {% endif %}
+        </div>
+        <div class="stat-label">Closest Gap</div>
+        <div class="stat-detail">Points behind P{{ position - 1 }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="data-container">
+    <h2>All Championships at Position {{ position }}</h2>
+    <p>Click any row to view championship details.</p>
+
+    {% if data.championships %}
+        <div class="table-wrapper">
+            <table class="standings-table">
+                <thead>
+                    <tr>
+                        <th>Races</th>
+                        <th>Points</th>
+                        <th>{% if position == 1 %}Winning Margin{% else %}Gap to P{{ position - 1 }}{% endif %}</th>
+                        <th>Full Standings</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for champ in data.championships %}
+                        <tr class="clickable-row" onclick="window.location='{{ url_for('views.championship_page', id=champ.championship_id) }}'">
+                            <td data-label="Races">{{ champ.num_races }}</td>
+                            <td data-label="Points">{{ champ.driver_points }} pts</td>
+                            <td data-label="Margin">
+                                {% if champ.margin is not none %}
+                                    {% if position == 1 %}
+                                        <span class="margin-positive">+{{ champ.margin }}</span>
+                                    {% else %}
+                                        <span class="margin-negative">-{{ champ.margin }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td data-label="Standings" class="standings-mini">
+                                {% for driver in champ.standings[:5] %}
+                                    <span class="standing-driver {% if driver == driver_code %}highlight-driver{% endif %}" style="background-color: {{ drivers[driver].color if driver in drivers else '#666' }}20; border-left: 3px solid {{ drivers[driver].color if driver in drivers else '#666' }};">
+                                        {{ driver }}
+                                    </span>
+                                {% endfor %}
+                                {% if champ.standings|length > 5 %}
+                                    <span class="more-drivers">+{{ champ.standings|length - 5 }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="no-data">No championships found where {{ driver.name }} finished in position {{ position }}.</p>
+    {% endif %}
+</div>
+{% endblock %}
