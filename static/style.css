@@ -1825,6 +1825,44 @@ footer {
     font-style: italic;
 }
 
+/* Pagination Controls */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    margin: 16px 0;
+}
+
+.pagination-bottom {
+    margin-top: 24px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 24px;
+}
+
+.pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 20px;
+    background: var(--f1-red);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background var(--transition-speed), transform 0.2s;
+}
+
+.pagination-btn:hover {
+    background: var(--f1-red-dark);
+    transform: translateY(-2px);
+}
+
+.pagination-info {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
 /* Responsive adjustments for position detail */
 @media (max-width: 768px) {
     .standings-mini {

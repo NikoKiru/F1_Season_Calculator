@@ -89,11 +89,20 @@ def driver_page(driver_code: str) -> Union[str, Tuple[str, int]]:
 
 @bp.route('/driver/<string:driver_code>/position/<int:position>')
 def driver_position_detail(driver_code: str, position: int) -> Union[str, Tuple[str, int]]:
+    from flask import request
     driver_code = driver_code.upper()
     if driver_code not in DRIVERS:
         return render_template('404.html'), 404
 
-    response = driver_position_championships(driver_code, position)
+    # Pass pagination params to API
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 100, type=int)
+
+    # Temporarily set request args for the API call
+    from flask import current_app
+    with current_app.test_request_context(f'/api/driver/{driver_code}/position/{position}?page={page}&per_page={per_page}'):
+        response = driver_position_championships(driver_code, position)
+
     if response.status_code != 200:
         return render_template('404.html'), 404
 
@@ -105,5 +114,8 @@ def driver_position_detail(driver_code: str, position: int) -> Union[str, Tuple[
         driver_code=driver_code,
         driver=driver,
         position=position,
-        drivers=DRIVERS
+        drivers=DRIVERS,
+        page=data.get('page', 1),
+        per_page=data.get('per_page', 100),
+        total_pages=data.get('total_pages', 1)
     )

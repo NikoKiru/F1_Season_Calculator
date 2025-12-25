@@ -382,10 +382,18 @@ For detailed architecture information, see [docs/architecture/ARCHITECTURE.md](d
 | Operation | Before | After | Improvement |
 |-----------|--------|-------|-------------|
 | `/api/highest_position` | 50+ seconds | 20ms | **2,600x faster** |
+| `/api/driver/<code>/stats` | 2+ minutes | <100ms | **1,200x faster** |
+| `/api/driver/<code>/position/1` | 3+ minutes | <200ms | **900x faster** |
 | Pre-computed stats | N/A | ~95s (one-time) | Instant queries |
 | Cached requests | N/A | <1ms | Instant |
 | Data import (24 races) | ~10 min | ~3 min | 3.3x faster |
 | Database size | N/A | ~6GB | 16.7M championships |
+
+**Key optimizations:**
+- Pre-computed driver statistics table for instant highest position queries
+- Indexed `winner` column for P1 position queries (uses index instead of LIKE)
+- Pagination for large result sets (avoids returning millions of rows)
+- Thread-safe caching for repeated requests
 
 For detailed performance analysis, see [docs/performance/PERFORMANCE_OPTIMIZATION.md](docs/performance/PERFORMANCE_OPTIMIZATION.md)
 

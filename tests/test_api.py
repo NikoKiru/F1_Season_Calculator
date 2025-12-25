@@ -194,6 +194,23 @@ class TestDriverPositionChampionships:
             assert 'driver_points' in champ
             assert 'margin' in champ or champ.get('margin') is None
 
+    def test_driver_position_pagination_fields(self, client):
+        """Response should include pagination fields."""
+        response = client.get('/api/driver/VER/position/1')
+        data = response.get_json()
+        assert 'page' in data
+        assert 'per_page' in data
+        assert 'total_pages' in data
+        assert data['page'] == 1
+        assert data['per_page'] == 100
+
+    def test_driver_position_custom_pagination(self, client):
+        """Should respect custom pagination parameters."""
+        response = client.get('/api/driver/VER/position/1?page=1&per_page=10')
+        data = response.get_json()
+        assert data['per_page'] == 10
+        assert len(data['championships']) <= 10
+
 
 class TestDriverPositionDetailView:
     """Test driver position detail view."""

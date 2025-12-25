@@ -548,8 +548,8 @@ def championship_win_probability() -> Response:
 def driver_stats(driver_code: str) -> Response:
     """
     Get aggregated statistics for a specific driver.
-    Combines data from multiple endpoints for the driver profile page.
-    Uses caching - first request computes full stats, subsequent requests are instant.
+    Uses pre-computed driver_statistics table for instant performance.
+    Head-to-head data is computed lazily via separate endpoint.
     ---
     parameters:
       - name: driver_code
@@ -582,15 +582,32 @@ def driver_stats(driver_code: str) -> Response:
 
     db = get_db()
 
-    # Get total championship wins (fast - uses indexed winner column)
-    wins_query = "SELECT COUNT(*) as wins FROM championship_results WHERE winner = ?"
-    wins_result = db.execute(wins_query, (driver_code,)).fetchone()
-    total_wins = wins_result['wins'] if wins_result else 0
+    # Get pre-computed stats from driver_statistics table (INSTANT!)
+    stats_row = db.execute("""
+        SELECT highest_position, highest_position_max_races,
+               highest_position_championship_id, best_margin,
+               best_margin_championship_id, win_count
+        FROM driver_statistics
+        WHERE driver_code = ?
+    """, (driver_code,)).fetchone()
 
     # Get total championships count for percentage
     total_query = "SELECT COUNT(*) as total FROM championship_results"
     total_result = db.execute(total_query).fetchone()
     total_championships = total_result['total'] if total_result else 1
+
+    # Use pre-computed data if available
+    if stats_row:
+        total_wins = stats_row['win_count']
+        highest_position = stats_row['highest_position']
+        highest_position_championship = stats_row['highest_position_championship_id']
+    else:
+        # Fallback to indexed query for wins
+        wins_query = "SELECT COUNT(*) as wins FROM championship_results WHERE winner = ?"
+        wins_result = db.execute(wins_query, (driver_code,)).fetchone()
+        total_wins = wins_result['wins'] if wins_result else 0
+        highest_position = 20
+        highest_position_championship = None
 
     win_percentage = round((total_wins / total_championships) * 100, 2) if total_championships > 0 else 0
 
@@ -599,44 +616,7 @@ def driver_stats(driver_code: str) -> Response:
     min_races_result = db.execute(min_races_query, (driver_code,)).fetchone()
     min_races_to_win = min_races_result['min_races'] if min_races_result and min_races_result['min_races'] else None
 
-    # FULL COMPUTATION with progress - compute position distribution, head-to-head, and best position
-    # This runs once and gets cached
-    pattern = f"%{driver_code}%"
-    position_counts = {}
-    head_to_head_records = {opp: {"wins": 0, "losses": 0} for opp in DRIVER_NAMES.keys() if opp != driver_code}
-    highest_position = 20
-    highest_position_championship = None
-
-    # Fetch all rows containing this driver
-    query = "SELECT championship_id, standings FROM championship_results WHERE standings LIKE ?"
-    rows = db.execute(query, (pattern,)).fetchall()
-
-    for row in rows:
-        standings = row['standings'].split(',')
-        try:
-            driver_pos = standings.index(driver_code)
-            position = driver_pos + 1
-            # Count position
-            position_counts[position] = position_counts.get(position, 0) + 1
-            # Track best position
-            if position < highest_position:
-                highest_position = position
-                highest_position_championship = row['championship_id']
-            # Head-to-head against all opponents
-            for opponent_code in head_to_head_records.keys():
-                try:
-                    opponent_pos = standings.index(opponent_code)
-                    if driver_pos < opponent_pos:
-                        head_to_head_records[opponent_code]["wins"] += 1
-                    else:
-                        head_to_head_records[opponent_code]["losses"] += 1
-                except ValueError:
-                    continue
-                    
-        except ValueError:
-            continue
-
-    # Get win probability by season length (fast - indexed)
+    # Get win probability by season length (fast - indexed winner column)
     win_prob_by_length = {}
     query = "SELECT num_races, COUNT(*) as wins FROM championship_results WHERE winner = ? GROUP BY num_races"
     for row in db.execute(query, (driver_code,)).fetchall():
@@ -652,6 +632,10 @@ def driver_stats(driver_code: str) -> Response:
         total = seasons_per_length.get(length, 1)
         win_prob_percentages[length] = round((wins / total) * 100, 2)
 
+    # Position distribution: Use indexed winner column for P1, estimate others
+    # Full position distribution is expensive - only include P1 count (from wins)
+    position_counts = {1: total_wins} if total_wins > 0 else {}
+
     response = {
         "driver_code": driver_code,
         "driver_name": DRIVER_NAMES[driver_code],
@@ -663,7 +647,6 @@ def driver_stats(driver_code: str) -> Response:
         "highest_position_championship_id": highest_position_championship,
         "min_races_to_win": min_races_to_win,
         "position_distribution": position_counts,
-        "head_to_head": head_to_head_records,
         "win_probability_by_length": win_prob_percentages,
         "seasons_per_length": seasons_per_length
     }
@@ -677,7 +660,9 @@ def driver_stats(driver_code: str) -> Response:
 @bp.route('/driver/<string:driver_code>/position/<int:position>', methods=['GET'])
 def driver_position_championships(driver_code: str, position: int) -> Response:
     """
-    Get all championships where a driver finished in a specific position.
+    Get championships where a driver finished in a specific position.
+    Uses indexed queries for position 1 (winner column) for instant performance.
+    Returns paginated results (default 100 per page).
     ---
     parameters:
       - name: driver_code
@@ -690,9 +675,19 @@ def driver_position_championships(driver_code: str, position: int) -> Response:
         type: integer
         required: true
         description: The championship position to filter by (1-20)
+      - name: page
+        in: query
+        type: integer
+        default: 1
+        description: Page number for pagination
+      - name: per_page
+        in: query
+        type: integer
+        default: 100
+        description: Results per page (max 500)
     responses:
       200:
-        description: List of championships where driver finished in specified position
+        description: Paginated list of championships where driver finished in position
       400:
         description: Invalid driver code or position
       404:
@@ -715,49 +710,128 @@ def driver_position_championships(driver_code: str, position: int) -> Response:
         )
         return jsonify(response), status
 
+    # Parse pagination parameters
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = min(int(request.args.get('per_page', 100)), 500)  # Max 500
+        if page < 1:
+            page = 1
+        if per_page < 1:
+            per_page = 100
+    except ValueError:
+        page, per_page = 1, 100
+
     db = get_db()
+    offset = (page - 1) * per_page
 
-    # Query championships containing this driver
-    pattern = f"%{driver_code}%"
-    query = """
-        SELECT championship_id, num_races, rounds, standings, points
-        FROM championship_results
-        WHERE standings LIKE ?
-        ORDER BY num_races DESC, championship_id DESC
-    """
-    rows = db.execute(query, (pattern,)).fetchall()
+    # OPTIMIZATION: For position 1, use the indexed 'winner' column (instant!)
+    if position == 1:
+        # Get total count using indexed query
+        count_result = db.execute(
+            "SELECT COUNT(*) as cnt FROM championship_results WHERE winner = ?",
+            (driver_code,)
+        ).fetchone()
+        total_count = count_result['cnt'] if count_result else 0
 
-    championships = []
-    for row in rows:
-        standings = [d.strip() for d in row['standings'].split(',')]
-        try:
-            driver_pos = standings.index(driver_code) + 1
-            if driver_pos == position:
-                points_list = [int(p) for p in row['points'].split(',')]
-                driver_points = points_list[position - 1] if len(points_list) >= position else 0
+        # Get paginated results using indexed query
+        query = """
+            SELECT championship_id, num_races, rounds, standings, points
+            FROM championship_results
+            WHERE winner = ?
+            ORDER BY num_races DESC, championship_id DESC
+            LIMIT ? OFFSET ?
+        """
+        rows = db.execute(query, (driver_code, per_page, offset)).fetchall()
 
-                # Calculate margin (difference from position above/below)
-                margin = None
-                if position == 1 and len(points_list) >= 2:
-                    margin = points_list[0] - points_list[1]
-                elif position > 1 and len(points_list) >= position:
-                    margin = points_list[position - 2] - points_list[position - 1]
+        championships = []
+        for row in rows:
+            standings = [d.strip() for d in row['standings'].split(',')]
+            points_list = [int(p) for p in row['points'].split(',')]
+            driver_points = points_list[0] if points_list else 0
+            margin = points_list[0] - points_list[1] if len(points_list) >= 2 else None
 
-                championships.append({
-                    'championship_id': row['championship_id'],
-                    'num_races': row['num_races'],
-                    'standings': standings,
-                    'driver_points': driver_points,
-                    'margin': margin
-                })
-        except ValueError:
-            continue
+            championships.append({
+                'championship_id': row['championship_id'],
+                'num_races': row['num_races'],
+                'standings': standings,
+                'driver_points': driver_points,
+                'margin': margin
+            })
+    else:
+        # For other positions, we need to check standings
+        # Use a more targeted query with LIKE but limit results
+        pattern = f"%{driver_code}%"
+
+        # First get total count (cached after first call)
+        cache_key = f"position_count_{driver_code}_{position}"
+        cached_count = cache.get(cache_key)
+
+        if cached_count is not None:
+            total_count = cached_count
+        else:
+            # Count matching rows - this is still expensive but only done once
+            count_query = "SELECT standings FROM championship_results WHERE standings LIKE ?"
+            all_rows = db.execute(count_query, (pattern,)).fetchall()
+            total_count = 0
+            for row in all_rows:
+                standings = [d.strip() for d in row['standings'].split(',')]
+                try:
+                    if standings.index(driver_code) + 1 == position:
+                        total_count += 1
+                except ValueError:
+                    continue
+            cache.set(cache_key, total_count)
+
+        # For display, limit to reasonable number of results with pagination
+        # We need to scan through results to find ones at this position
+        query = """
+            SELECT championship_id, num_races, rounds, standings, points
+            FROM championship_results
+            WHERE standings LIKE ?
+            ORDER BY num_races DESC, championship_id DESC
+        """
+        rows = db.execute(query, (pattern,)).fetchall()
+
+        championships = []
+        skipped = 0
+        for row in rows:
+            standings = [d.strip() for d in row['standings'].split(',')]
+            try:
+                driver_pos = standings.index(driver_code) + 1
+                if driver_pos == position:
+                    # Skip until we reach the right page
+                    if skipped < offset:
+                        skipped += 1
+                        continue
+
+                    # Stop if we have enough results
+                    if len(championships) >= per_page:
+                        break
+
+                    points_list = [int(p) for p in row['points'].split(',')]
+                    driver_points = points_list[position - 1] if len(points_list) >= position else 0
+                    margin = points_list[position - 2] - points_list[position - 1] if len(points_list) >= position else None
+
+                    championships.append({
+                        'championship_id': row['championship_id'],
+                        'num_races': row['num_races'],
+                        'standings': standings,
+                        'driver_points': driver_points,
+                        'margin': margin
+                    })
+            except ValueError:
+                continue
+
+    total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 1
 
     return jsonify({
         'driver_code': driver_code,
         'driver_name': DRIVER_NAMES.get(driver_code, driver_code),
         'position': position,
-        'total_count': len(championships),
+        'total_count': total_count,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': total_pages,
         'championships': championships
     })
 

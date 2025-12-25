@@ -77,8 +77,20 @@
 </div>
 
 <div class="data-container">
-    <h2>All Championships at Position {{ position }}</h2>
-    <p>Click any row to view championship details.</p>
+    <h2>Championships at Position {{ position }}</h2>
+    <p>Showing {{ data.championships|length }} of {{ data.total_count|default(0) }} championships. Click any row to view details.</p>
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        {% if page > 1 %}
+            <a href="{{ url_for('views.driver_position_detail', driver_code=driver_code, position=position, page=page-1) }}" class="pagination-btn">&laquo; Previous</a>
+        {% endif %}
+        <span class="pagination-info">Page {{ page }} of {{ total_pages }}</span>
+        {% if page < total_pages %}
+            <a href="{{ url_for('views.driver_position_detail', driver_code=driver_code, position=position, page=page+1) }}" class="pagination-btn">Next &raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
 
     {% if data.championships %}
         <div class="table-wrapper">
@@ -122,6 +134,18 @@
                 </tbody>
             </table>
         </div>
+
+        {% if total_pages > 1 %}
+        <div class="pagination pagination-bottom">
+            {% if page > 1 %}
+                <a href="{{ url_for('views.driver_position_detail', driver_code=driver_code, position=position, page=page-1) }}" class="pagination-btn">&laquo; Previous</a>
+            {% endif %}
+            <span class="pagination-info">Page {{ page }} of {{ total_pages }}</span>
+            {% if page < total_pages %}
+                <a href="{{ url_for('views.driver_position_detail', driver_code=driver_code, position=position, page=page+1) }}" class="pagination-btn">Next &raquo;</a>
+            {% endif %}
+        </div>
+        {% endif %}
     {% else %}
         <p class="no-data">No championships found where {{ driver.name }} finished in position {{ position }}.</p>
     {% endif %}
