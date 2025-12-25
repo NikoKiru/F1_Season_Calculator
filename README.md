@@ -246,6 +246,34 @@ NOR,18,25,18,25,25,18,25,18,25,18,25,18,25,18,25,18,25,18,25,18,25,18,25,18
 | `Driver` | String | Three-letter driver code (e.g., VER, NOR) | Yes |
 | `1..N` | Integer | Points scored in each race | Yes |
 
+### Season Configuration
+
+Season data (drivers, teams, races) is stored in JSON config files at `data/seasons/{year}.json`:
+
+```json
+{
+    "season": 2025,
+    "teams": {
+        "McLaren": {"color": "#F47600"},
+        "Red Bull Racing": {"color": "#4781D7"}
+    },
+    "drivers": {
+        "VER": {
+            "name": "Max Verstappen",
+            "team": "Red Bull Racing",
+            "number": 1,
+            "flag": "\ud83c\uddf3\ud83c\uddf1"
+        }
+    },
+    "rounds": {
+        "1": "AUS",
+        "2": "CHN"
+    }
+}
+```
+
+To add a new season, create a new JSON file (e.g., `data/seasons/2026.json`) following this format.
+
 ### Database Schema
 
 ```sql
@@ -282,7 +310,7 @@ F1_Season_Calculator/
 │   ├── commands.py        # CLI commands
 │   ├── views.py           # Web routes
 │   ├── logic.py           # Business logic
-│   ├── models.py          # Data models
+│   ├── models.py          # Data models (loads from JSON config)
 │   └── errors.py          # Error handlers
 │
 ├── static/                 # 🎨 Frontend assets
@@ -292,6 +320,9 @@ F1_Season_Calculator/
 ├── templates/              # 🖼️ HTML templates
 │
 ├── data/                   # 📊 Championship data
+│   ├── seasons/           # Season configuration (JSON)
+│   │   └── 2025.json      # 2025 season: drivers, teams, races
+│   └── championships.csv  # Race results data
 │
 ├── instance/               # 💾 Database
 │

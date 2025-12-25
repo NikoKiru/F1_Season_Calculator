@@ -1,3 +1,5 @@
+import json
+import os
 from typing import Dict, TypedDict
 
 
@@ -10,72 +12,110 @@ class DriverInfo(TypedDict):
     color: str
 
 
-# Official team colors from OpenF1 API (2025 season)
-TEAM_COLORS: Dict[str, str] = {
-    "McLaren": "#F47600",
-    "Red Bull Racing": "#4781D7",
-    "Mercedes": "#00D7B6",
-    "Ferrari": "#ED1131",
-    "Aston Martin": "#229971",
-    "Williams": "#1868DB",
-    "Racing Bulls": "#6C98FF",
-    "Sauber": "#01C00E",
-    "Haas": "#9C9FA2",
-    "Alpine": "#00A1E8",
-}
+def _get_season_config_path(season: int = 2025) -> str:
+    """Get the path to the season config file."""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_dir, 'data', 'seasons', f'{season}.json')
 
-DRIVERS: Dict[str, Dict[str, str | int]] = {
-    "PIA": {"name": "Oscar Piastri", "team": "McLaren", "number": 81, "flag": "🇦🇺"},
-    "NOR": {"name": "Lando Norris", "team": "McLaren", "number": 4, "flag": "🇬🇧"},
-    "VER": {"name": "Max Verstappen", "team": "Red Bull Racing", "number": 1, "flag": "🇳🇱"},
-    "RUS": {"name": "George Russell", "team": "Mercedes", "number": 63, "flag": "🇬🇧"},
-    "LEC": {"name": "Charles Leclerc", "team": "Ferrari", "number": 16, "flag": "🇲🇨"},
-    "HAM": {"name": "Lewis Hamilton", "team": "Ferrari", "number": 44, "flag": "🇬🇧"},
-    "ANT": {"name": "Andrea Kimi Antonelli", "team": "Mercedes", "number": 12, "flag": "🇮🇹"},
-    "ALB": {"name": "Alex Albon", "team": "Williams", "number": 23, "flag": "🇹🇭"},
-    "HAD": {"name": "Isack Hadjar", "team": "Racing Bulls", "number": 37, "flag": "🇫🇷"},
-    "HUL": {"name": "Nico Hülkenberg", "team": "Sauber", "number": 27, "flag": "🇩🇪"},
-    "STR": {"name": "Lance Stroll", "team": "Aston Martin", "number": 18, "flag": "🇨🇦"},
-    "SAI": {"name": "Carlos Sainz", "team": "Williams", "number": 55, "flag": "🇪🇸"},
-    "LAW": {"name": "Liam Lawson", "team": "Racing Bulls", "number": 30, "flag": "🇳🇿"},
-    "ALO": {"name": "Fernando Alonso", "team": "Aston Martin", "number": 14, "flag": "🇪🇸"},
-    "OCO": {"name": "Esteban Ocon", "team": "Haas", "number": 31, "flag": "🇫🇷"},
-    "GAS": {"name": "Pierre Gasly", "team": "Alpine", "number": 10, "flag": "🇫🇷"},
-    "TSU": {"name": "Yuki Tsunoda", "team": "Red Bull Racing", "number": 22, "flag": "🇯🇵"},
-    "BOR": {"name": "Gabriel Bortoleto", "team": "Sauber", "number": 8, "flag": "🇧🇷"},
-    "BEA": {"name": "Oliver Bearman", "team": "Haas", "number": 50, "flag": "🇬🇧"},
-    "COL": {"name": "Franco Colapinto", "team": "Alpine", "number": 43, "flag": "🇦🇷"},
-}
 
-# Add color to each driver based on their team
-for driver_code, driver_data in DRIVERS.items():
-    driver_data["color"] = TEAM_COLORS.get(driver_data["team"], "#FFFFFF")
+def load_season_data(season: int = 2025) -> dict:
+    """
+    Load season data from a JSON config file.
 
-DRIVER_NAMES: Dict[str, str] = {k: v['name'] for k, v in DRIVERS.items()}
+    Args:
+        season: The year of the season to load (default: 2025)
 
-ROUND_NAMES_2025: Dict[int, str] = {
-    1: "AUS",
-    2: "CHN",
-    3: "JPN",
-    4: "BHR",
-    5: "SAU",
-    6: "MIA",
-    7: "EMI",
-    8: "MON",
-    9: "ESP",
-    10: "CAN",
-    11: "AUT",
-    12: "GBR",
-    13: "BEL",
-    14: "HUN",
-    15: "NED",
-    16: "ITA",
-    17: "AZE",
-    18: "SIN",
-    19: "USA",
-    20: "MXC",
-    21: "SAP",
-    22: "LVG",
-    23: "QAT",
-    24: "ABU",
-}
+    Returns:
+        Dictionary containing teams, drivers, and rounds data
+
+    Raises:
+        FileNotFoundError: If the season config file doesn't exist
+        json.JSONDecodeError: If the config file is invalid JSON
+    """
+    config_path = _get_season_config_path(season)
+
+    with open(config_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def _build_team_colors(season_data: dict) -> Dict[str, str]:
+    """Build team colors dictionary from season data."""
+    return {team: info['color'] for team, info in season_data['teams'].items()}
+
+
+def _build_drivers(season_data: dict, team_colors: Dict[str, str]) -> Dict[str, Dict[str, str | int]]:
+    """Build drivers dictionary from season data with team colors added."""
+    drivers = {}
+    for code, info in season_data['drivers'].items():
+        drivers[code] = {
+            'name': info['name'],
+            'team': info['team'],
+            'number': info['number'],
+            'flag': info['flag'],
+            'color': team_colors.get(info['team'], '#FFFFFF')
+        }
+    return drivers
+
+
+def _build_round_names(season_data: dict) -> Dict[int, str]:
+    """Build round names dictionary from season data."""
+    return {int(num): name for num, name in season_data['rounds'].items()}
+
+
+def _build_driver_names(drivers: Dict[str, Dict[str, str | int]]) -> Dict[str, str]:
+    """Build driver names dictionary from drivers data."""
+    return {code: info['name'] for code, info in drivers.items()}
+
+
+# Load the default season data
+_season_data = load_season_data()
+
+# Build the exported dictionaries
+TEAM_COLORS: Dict[str, str] = _build_team_colors(_season_data)
+DRIVERS: Dict[str, Dict[str, str | int]] = _build_drivers(_season_data, TEAM_COLORS)
+DRIVER_NAMES: Dict[str, str] = _build_driver_names(DRIVERS)
+ROUND_NAMES_2025: Dict[int, str] = _build_round_names(_season_data)
+
+
+def reload_season_data(season: int = 2025) -> None:
+    """
+    Reload season data from config file.
+
+    This function allows updating the global season data at runtime,
+    useful for switching seasons or refreshing after config changes.
+
+    Args:
+        season: The year of the season to load
+    """
+    global TEAM_COLORS, DRIVERS, DRIVER_NAMES, ROUND_NAMES_2025, _season_data
+
+    _season_data = load_season_data(season)
+    TEAM_COLORS = _build_team_colors(_season_data)
+    DRIVERS = _build_drivers(_season_data, TEAM_COLORS)
+    DRIVER_NAMES = _build_driver_names(DRIVERS)
+    ROUND_NAMES_2025 = _build_round_names(_season_data)
+
+
+def get_available_seasons() -> list[int]:
+    """
+    Get list of available season years.
+
+    Returns:
+        List of season years that have config files
+    """
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    seasons_dir = os.path.join(base_dir, 'data', 'seasons')
+
+    if not os.path.exists(seasons_dir):
+        return []
+
+    seasons = []
+    for filename in os.listdir(seasons_dir):
+        if filename.endswith('.json'):
+            try:
+                season_year = int(filename[:-5])  # Remove .json extension
+                seasons.append(season_year)
+            except ValueError:
+                continue
+
+    return sorted(seasons)

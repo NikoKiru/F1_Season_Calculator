@@ -1,0 +1,183 @@
+{
+    "season": 2025,
+    "teams": {
+        "McLaren": {
+            "color": "#F47600"
+        },
+        "Red Bull Racing": {
+            "color": "#4781D7"
+        },
+        "Mercedes": {
+            "color": "#00D7B6"
+        },
+        "Ferrari": {
+            "color": "#ED1131"
+        },
+        "Aston Martin": {
+            "color": "#229971"
+        },
+        "Williams": {
+            "color": "#1868DB"
+        },
+        "Racing Bulls": {
+            "color": "#6C98FF"
+        },
+        "Sauber": {
+            "color": "#01C00E"
+        },
+        "Haas": {
+            "color": "#9C9FA2"
+        },
+        "Alpine": {
+            "color": "#00A1E8"
+        }
+    },
+    "drivers": {
+        "PIA": {
+            "name": "Oscar Piastri",
+            "team": "McLaren",
+            "number": 81,
+            "flag": "\ud83c\udde6\ud83c\uddfa"
+        },
+        "NOR": {
+            "name": "Lando Norris",
+            "team": "McLaren",
+            "number": 4,
+            "flag": "\ud83c\uddec\ud83c\udde7"
+        },
+        "VER": {
+            "name": "Max Verstappen",
+            "team": "Red Bull Racing",
+            "number": 1,
+            "flag": "\ud83c\uddf3\ud83c\uddf1"
+        },
+        "RUS": {
+            "name": "George Russell",
+            "team": "Mercedes",
+            "number": 63,
+            "flag": "\ud83c\uddec\ud83c\udde7"
+        },
+        "LEC": {
+            "name": "Charles Leclerc",
+            "team": "Ferrari",
+            "number": 16,
+            "flag": "\ud83c\uddf2\ud83c\udde8"
+        },
+        "HAM": {
+            "name": "Lewis Hamilton",
+            "team": "Ferrari",
+            "number": 44,
+            "flag": "\ud83c\uddec\ud83c\udde7"
+        },
+        "ANT": {
+            "name": "Andrea Kimi Antonelli",
+            "team": "Mercedes",
+            "number": 12,
+            "flag": "\ud83c\uddee\ud83c\uddf9"
+        },
+        "ALB": {
+            "name": "Alex Albon",
+            "team": "Williams",
+            "number": 23,
+            "flag": "\ud83c\uddf9\ud83c\udded"
+        },
+        "HAD": {
+            "name": "Isack Hadjar",
+            "team": "Racing Bulls",
+            "number": 6,
+            "flag": "\ud83c\uddeb\ud83c\uddf7"
+        },
+        "HUL": {
+            "name": "Nico Hülkenberg",
+            "team": "Sauber",
+            "number": 27,
+            "flag": "\ud83c\udde9\ud83c\uddea"
+        },
+        "STR": {
+            "name": "Lance Stroll",
+            "team": "Aston Martin",
+            "number": 18,
+            "flag": "\ud83c\udde8\ud83c\udde6"
+        },
+        "SAI": {
+            "name": "Carlos Sainz",
+            "team": "Williams",
+            "number": 55,
+            "flag": "\ud83c\uddea\ud83c\uddf8"
+        },
+        "LAW": {
+            "name": "Liam Lawson",
+            "team": "Racing Bulls",
+            "number": 30,
+            "flag": "\ud83c\uddf3\ud83c\uddff"
+        },
+        "ALO": {
+            "name": "Fernando Alonso",
+            "team": "Aston Martin",
+            "number": 14,
+            "flag": "\ud83c\uddea\ud83c\uddf8"
+        },
+        "OCO": {
+            "name": "Esteban Ocon",
+            "team": "Haas",
+            "number": 31,
+            "flag": "\ud83c\uddeb\ud83c\uddf7"
+        },
+        "GAS": {
+            "name": "Pierre Gasly",
+            "team": "Alpine",
+            "number": 10,
+            "flag": "\ud83c\uddeb\ud83c\uddf7"
+        },
+        "TSU": {
+            "name": "Yuki Tsunoda",
+            "team": "Red Bull Racing",
+            "number": 22,
+            "flag": "\ud83c\uddef\ud83c\uddf5"
+        },
+        "BOR": {
+            "name": "Gabriel Bortoleto",
+            "team": "Sauber",
+            "number": 5,
+            "flag": "\ud83c\udde7\ud83c\uddf7"
+        },
+        "BEA": {
+            "name": "Oliver Bearman",
+            "team": "Haas",
+            "number": 87,
+            "flag": "\ud83c\uddec\ud83c\udde7"
+        },
+        "COL": {
+            "name": "Franco Colapinto",
+            "team": "Alpine",
+            "number": 43,
+            "flag": "\ud83c\udde6\ud83c\uddf7"
+        }
+    },
+    "rounds": {
+        "1": "AUS",
+        "2": "CHN",
+        "3": "JPN",
+        "4": "BHR",
+        "5": "SAU",
+        "6": "MIA",
+        "7": "EMI",
+        "8": "MON",
+        "9": "ESP",
+        "10": "CAN",
+        "11": "AUT",
+        "12": "GBR",
+        "13": "BEL",
+        "14": "HUN",
+        "15": "NED",
+        "16": "ITA",
+        "17": "AZE",
+        "18": "SIN",
+        "19": "USA",
+        "20": "MXC",
+        "21": "SAP",
+        "22": "LVG",
+        "23": "QAT",
+        "24": "ABU"
+    }
+}

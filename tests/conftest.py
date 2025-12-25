@@ -8,22 +8,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import app as flask_app  # noqa: E402
 from db import get_db  # noqa: E402
-import championship.api as api_module  # noqa: E402
-
-
-def clear_api_caches():
-    """Clear all API caches to prevent test pollution."""
-    api_module._highest_position_cache = None
-    api_module._head_to_head_cache = {}
-    api_module._driver_positions_cache = {}
-    api_module._driver_stats_cache = {}
 
 
 @pytest.fixture
 def app():
     """Create application for testing with a temporary database."""
-    # Clear API caches to prevent test pollution
-    clear_api_caches()
 
     # Create a temporary database file
     db_fd, db_path = tempfile.mkstemp()
