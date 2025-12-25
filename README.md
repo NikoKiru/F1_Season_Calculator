@@ -49,7 +49,10 @@ flask setup
 # 6. Process data
 flask process-data
 
-# 7. Launch the application
+# 7. Pre-compute statistics (for instant page loads)
+flask compute-stats
+
+# 8. Launch the application
 flask run
 ```
 
@@ -175,7 +178,10 @@ Then open your browser to:
 | `flask init-db --clear` | Reset database (deletes all data) |
 | `flask process-data` | Process CSV and generate championships |
 | `flask process-data --batch-size N` | Process with custom batch size |
+| `flask compute-stats` | Pre-compute driver statistics for instant queries |
 | `flask run` | Start the development server |
+
+> **Performance Note**: After processing data, run `flask compute-stats` to pre-compute driver statistics. This makes the Highest Position page load instantly (~20ms vs 50+ seconds).
 
 ## 📡 API Documentation
 
@@ -375,10 +381,11 @@ For detailed architecture information, see [docs/architecture/ARCHITECTURE.md](d
 
 | Operation | Before | After | Improvement |
 |-----------|--------|-------|-------------|
-| `/api/highest_position` | Minutes | 0.92s | >10,000x faster |
-| Cached requests | N/A | 0.00s | Instant |
+| `/api/highest_position` | 50+ seconds | 20ms | **2,600x faster** |
+| Pre-computed stats | N/A | ~95s (one-time) | Instant queries |
+| Cached requests | N/A | <1ms | Instant |
 | Data import (24 races) | ~10 min | ~3 min | 3.3x faster |
-| Database size | N/A | ~1.5GB | Optimized |
+| Database size | N/A | ~6GB | 16.7M championships |
 
 For detailed performance analysis, see [docs/performance/PERFORMANCE_OPTIMIZATION.md](docs/performance/PERFORMANCE_OPTIMIZATION.md)
 

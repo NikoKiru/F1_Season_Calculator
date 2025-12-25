@@ -235,193 +235,59 @@ def all_championship_wins_route() -> Response:
 def highest_position() -> Response:
     """
     Get the Highest Championship Position for Each Driver
-    Returns enriched data including:
+    Returns pre-computed data including:
     - Best position achieved
     - Maximum season length where this position was achieved
     - Championship ID for longest season with this position
     - Biggest winning margin (points ahead of 2nd place) for winners
-    - Total count of championships with this position
 
-    ULTRA-OPTIMIZED: Uses smart heuristics and caching.
+    INSTANT: Uses pre-computed driver_statistics table.
+    Run 'flask compute-stats' to update statistics after data changes.
     ---
-    parameters:
-      - name: refresh
-        in: query
-        type: boolean
-        required: false
-        description: Set to true to bypass cache and recalculate
     responses:
       200:
         description: >
           A JSON array of driver statistics including position, max races,
           winning margin (for winners), and championship details.
     """
-    # Check if we should bypass cache
-    refresh = request.args.get('refresh', 'false').lower() == 'true'
-
-    # Return cached result if available and not refreshing
-    cached_result = cache.get(CACHE_KEY_HIGHEST_POSITION)
-    if cached_result is not None and not refresh:
-        return jsonify(cached_result)
-
     db = get_db()
 
-    # Step 1: Get the max number of races
-    max_races_row = db.execute("SELECT MAX(num_races) as max_races FROM championship_results").fetchone()
-    max_races = max_races_row['max_races']
+    # Query the pre-computed statistics table (instant!)
+    rows = db.execute("""
+        SELECT driver_code, highest_position, highest_position_max_races,
+               highest_position_championship_id, best_margin, best_margin_championship_id,
+               win_count
+        FROM driver_statistics
+        ORDER BY highest_position ASC, win_count DESC
+    """).fetchall()
 
-    # Step 2: Get all drivers from any championship
-    sample_row = db.execute("SELECT standings FROM championship_results LIMIT 1").fetchone()
-    if not sample_row:
+    # If no pre-computed stats exist, return empty and warn
+    if not rows:
+        # Check if championship_results has data
+        count = db.execute("SELECT COUNT(*) FROM championship_results").fetchone()[0]
+        if count > 0:
+            # Data exists but stats not computed - return error message
+            return jsonify({
+                "error": "Statistics not computed. Run 'flask compute-stats' first.",
+                "championship_count": count
+            }), 503
+
         return jsonify([])
 
-    all_drivers = [driver.strip() for driver in sample_row['standings'].split(",")]
-    drivers_to_find = set(all_drivers)
-    highest_positions = {}
-
-    # Step 3: Process championships starting from max races down
-    # Track positions and max_races, but NOT margins yet (need full scan for margins)
-    for num_races in range(max_races, 0, -1):
-        if not drivers_to_find:
-            break
-
-        query = """
-        SELECT championship_id, standings, num_races
-        FROM championship_results
-        WHERE num_races = ?
-        ORDER BY championship_id DESC
-        LIMIT 10000
-        """
-        rows = db.execute(query, (num_races,)).fetchall()
-
-        for row in rows:
-            championship_id = row['championship_id']
-            standings = row['standings']
-            championship_num_races = row['num_races']
-            drivers_list = [d.strip() for d in standings.split(",")]
-
-            for position, driver in enumerate(drivers_list, start=1):
-                if driver not in highest_positions:
-                    highest_positions[driver] = {
-                        "position": position,
-                        "max_races": championship_num_races,
-                        "max_races_championship_id": championship_id,
-                        "best_margin": None,
-                        "best_margin_championship_id": None,
-                        "count": 1
-                    }
-                    if position == 1:
-                        drivers_to_find.discard(driver)
-                elif position < highest_positions[driver]["position"]:
-                    highest_positions[driver] = {
-                        "position": position,
-                        "max_races": championship_num_races,
-                        "max_races_championship_id": championship_id,
-                        "best_margin": None,
-                        "best_margin_championship_id": None,
-                        "count": 1
-                    }
-                    if position == 1:
-                        drivers_to_find.discard(driver)
-                elif position == highest_positions[driver]["position"]:
-                    highest_positions[driver]["count"] += 1
-                    if championship_num_races > highest_positions[driver]["max_races"]:
-                        highest_positions[driver]["max_races"] = championship_num_races
-                        highest_positions[driver]["max_races_championship_id"] = championship_id
-
-    # Step 4: For any remaining drivers (edge case), do a targeted search
-    if drivers_to_find:
-        for driver in list(drivers_to_find):
-            query = """
-            SELECT championship_id, standings, num_races
-            FROM championship_results
-            WHERE standings LIKE ?
-            ORDER BY num_races DESC, championship_id DESC
-            LIMIT 1000
-            """
-            pattern = f"%{driver}%"
-            rows = db.execute(query, (pattern,)).fetchall()
-
-            for row in rows:
-                championship_id = row['championship_id']
-                standings = row['standings']
-                championship_num_races = row['num_races']
-                drivers_list = [d.strip() for d in standings.split(",")]
-
-                try:
-                    position = drivers_list.index(driver) + 1
-
-                    if driver not in highest_positions:
-                        highest_positions[driver] = {
-                            "position": position,
-                            "max_races": championship_num_races,
-                            "max_races_championship_id": championship_id,
-                            "best_margin": None,
-                            "best_margin_championship_id": None,
-                            "count": 1
-                        }
-                    elif position < highest_positions[driver]["position"]:
-                        highest_positions[driver] = {
-                            "position": position,
-                            "max_races": championship_num_races,
-                            "max_races_championship_id": championship_id,
-                            "best_margin": None,
-                            "best_margin_championship_id": None,
-                            "count": 1
-                        }
-                    elif position == highest_positions[driver]["position"]:
-                        highest_positions[driver]["count"] += 1
-                        if championship_num_races > highest_positions[driver]["max_races"]:
-                            highest_positions[driver]["max_races"] = championship_num_races
-                            highest_positions[driver]["max_races_championship_id"] = championship_id
-                except ValueError:
-                    continue
-
-    # Step 5: Find best winning margins for all drivers who achieved position 1
-    # This requires scanning ALL championships to find the maximum margin
-    winners = [d for d, data in highest_positions.items() if data["position"] == 1]
-    if winners:
-        # Query to find the best margin for each winner efficiently
-        query = """
-        SELECT winner, points, championship_id
-        FROM championship_results
-        WHERE winner IS NOT NULL
-        """
-        rows = db.execute(query).fetchall()
-
-        for row in rows:
-            winner = row['winner']
-            if winner in winners:
-                points_str = row['points']
-                points_list = [int(p) for p in points_str.split(",")] if points_str else []
-                if len(points_list) >= 2:
-                    margin = points_list[0] - points_list[1]
-                    current_best = highest_positions[winner]["best_margin"]
-                    if current_best is None or margin > current_best:
-                        highest_positions[winner]["best_margin"] = margin
-                        highest_positions[winner]["best_margin_championship_id"] = row['championship_id']
-
-    # Sort the results by position
-    sorted_positions = sorted(highest_positions.items(), key=lambda item: item[1]['position'])
-
-    # Create enriched result list
-    ordered_highest_positions = [
+    # Format response to match expected structure
+    result = [
         {
-            'driver': k,
-            'position': v['position'],
-            'max_races': v['max_races'],
-            'max_races_championship_id': v['max_races_championship_id'],
-            'best_margin': v['best_margin'],
-            'best_margin_championship_id': v['best_margin_championship_id'],
-            'count': v['count']
+            'driver': row['driver_code'],
+            'position': row['highest_position'],
+            'max_races': row['highest_position_max_races'],
+            'max_races_championship_id': row['highest_position_championship_id'],
+            'best_margin': row['best_margin'],
+            'best_margin_championship_id': row['best_margin_championship_id'],
         }
-        for k, v in sorted_positions
+        for row in rows
     ]
 
-    # Cache the result (thread-safe)
-    cache.set(CACHE_KEY_HIGHEST_POSITION, ordered_highest_positions)
-
-    return jsonify(ordered_highest_positions)
+    return jsonify(result)
 
 
 @bp.route('/clear_cache', methods=['POST'])

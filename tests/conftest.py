@@ -38,6 +38,20 @@ def app():
         db.execute("CREATE INDEX IF NOT EXISTS idx_winner ON championship_results (winner);")
         db.execute("CREATE INDEX IF NOT EXISTS idx_num_races ON championship_results (num_races);")
 
+        # Create driver_statistics table for pre-computed stats
+        db.execute("""
+        CREATE TABLE IF NOT EXISTS driver_statistics (
+            driver_code TEXT PRIMARY KEY,
+            highest_position INTEGER NOT NULL,
+            highest_position_max_races INTEGER,
+            highest_position_championship_id INTEGER,
+            best_margin INTEGER,
+            best_margin_championship_id INTEGER,
+            win_count INTEGER DEFAULT 0,
+            computed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """)
+
         # Insert sample test data
         sample_data = [
             (3, '1,2,3', 'VER,NOR,LEC,HAM,RUS', 'VER', '68,61,48,45,42'),
@@ -50,6 +64,29 @@ def app():
             INSERT INTO championship_results (num_races, rounds, standings, winner, points)
             VALUES (?, ?, ?, ?, ?)
         """, sample_data)
+
+        # Insert pre-computed driver statistics for tests
+        # VER: P1, 6 races, margin 8 (138-130), 3 wins
+        # NOR: P1, 5 races, margin 5 (113-108), 1 win
+        # LEC: P1, 3 races, margin 5 (70-65), 1 win
+        # HAM: P4, 6 races, no margin (never won)
+        # RUS: P5, 4 races, no margin
+        # PIA: P4, 6 races, no margin
+        stats_data = [
+            ('VER', 1, 6, 4, 8, 4, 3),    # P1, best at 6 races, margin +8, 3 wins
+            ('NOR', 1, 5, 2, 5, 2, 1),    # P1, best at 5 races, margin +5, 1 win
+            ('LEC', 1, 3, 5, 5, 5, 1),    # P1, best at 3 races, margin +5, 1 win
+            ('HAM', 4, 6, 4, None, None, 0),
+            ('RUS', 5, 4, 3, None, None, 0),
+            ('PIA', 4, 6, 4, None, None, 0),
+        ]
+        db.executemany("""
+            INSERT INTO driver_statistics
+            (driver_code, highest_position, highest_position_max_races,
+             highest_position_championship_id, best_margin, best_margin_championship_id, win_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, stats_data)
+
         db.commit()
 
     yield flask_app

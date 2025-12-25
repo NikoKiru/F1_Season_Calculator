@@ -116,7 +116,6 @@ class TestHighestPositionEnriched:
             assert 'driver' in item
             assert 'position' in item
             assert 'max_races' in item
-            assert 'count' in item
             assert 'best_margin' in item or item.get('best_margin') is None
 
     def test_highest_position_sorted_by_position(self, client):
