@@ -1721,42 +1721,36 @@ footer {
     margin-top: 4px;
 }
 
-.position-stats {
+.margin-badge {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    flex: 1;
-}
-
-.position-stats .stat-item {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    text-decoration: none;
-    color: var(--text-primary);
-}
-
-.position-stats .stat-item.margin-stat {
-    padding: 8px 14px;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 20px;
     background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-    border-radius: 8px;
+    border-radius: 12px;
     color: white;
+    text-decoration: none;
     transition: all var(--transition-speed);
+    flex: 1;
+    max-width: 140px;
 }
 
-.position-stats .stat-item.margin-stat:hover {
-    transform: translateX(4px);
-    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+.margin-badge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 16px rgba(34, 197, 94, 0.4);
 }
 
-.position-stats .stat-value {
-    font-size: 1.4em;
-    font-weight: 800;
+.margin-badge .margin-value {
+    font-size: 1.8em;
+    font-weight: 900;
+    line-height: 1;
 }
 
-.position-stats .stat-label {
-    font-size: 0.85em;
-    opacity: 0.8;
+.margin-badge .margin-label {
+    font-size: 0.75em;
+    opacity: 0.9;
+    margin-top: 4px;
 }
 
 /* Responsive adjustments for highest position */
@@ -1766,14 +1760,12 @@ footer {
     }
 
     .position-card-body {
-        flex-direction: column;
-        text-align: center;
+        justify-content: center;
     }
 
-    .position-stats {
-        flex-direction: row;
-        justify-content: center;
-        flex-wrap: wrap;
+    .margin-badge {
+        max-width: none;
+        flex: 1;
     }
 }
 

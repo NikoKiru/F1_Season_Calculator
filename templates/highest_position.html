@@ -36,18 +36,12 @@
                             <span class="position-rank">P{{ item.position }}</span>
                             <span class="position-detail">{{ item.max_races }} races</span>
                         </a>
-                        <div class="position-stats">
-                            <span class="stat-item">
-                                <span class="stat-value">{{ item.count }}</span>
-                                <span class="stat-label">times</span>
-                            </span>
-                            {% if item.best_margin is not none %}
-                                <a href="{{ url_for('views.championship_page', id=item.best_margin_championship_id) }}" class="stat-item margin-stat">
-                                    <span class="stat-value">+{{ item.best_margin }}</span>
-                                    <span class="stat-label">best margin</span>
-                                </a>
-                            {% endif %}
-                        </div>
+                        {% if item.best_margin is not none %}
+                            <a href="{{ url_for('views.championship_page', id=item.best_margin_championship_id) }}" class="margin-badge">
+                                <span class="margin-value">+{{ item.best_margin }}</span>
+                                <span class="margin-label">best margin</span>
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
             {% endfor %}
