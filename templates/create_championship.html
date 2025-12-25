@@ -2,17 +2,26 @@
 
 {% block title %}Create Championship{% endblock %}
 
-{% block page_title %}Create Your Own Championship{% endblock %}
-
-{% block header %}
-<h1><a href="{{ url_for('views.index') }}" class="header-link">F1 Championship Scenario Explorer</a></h1>
+{% block header_extra %}
 <form action="" method="get" id="search-form">
     <input type="search" id="search-input" name="championship_id" placeholder="Search for a Championship ID...">
     <button type="submit">Search</button>
 </form>
 {% endblock %}
 
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <div class="breadcrumbs-container">
+        <ol class="breadcrumb-list">
+            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
+            <li class="breadcrumb-item"><span class="breadcrumb-current">Create Championship</span></li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
 {% block content %}
+<h2>Create Your Own Championship</h2>
 <p>Select the races you want to include in your championship.</p>
 <div class="race-grid" id="race-grid">
     {% for number, name in rounds.items() %}

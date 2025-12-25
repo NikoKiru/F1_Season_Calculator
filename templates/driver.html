@@ -2,7 +2,17 @@
 
 {% block title %}{{ driver.name }}{% endblock %}
 
-{% block page_title %}{{ driver.name }}{% endblock %}
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <div class="breadcrumbs-container">
+        <ol class="breadcrumb-list">
+            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('views.drivers_page') }}" class="breadcrumb-link">Drivers</a></li>
+            <li class="breadcrumb-item"><span class="breadcrumb-current">{{ driver.name }}</span></li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
 
 {% block content %}
 <div class="driver-hero" style="--team-color: {{ driver.color }};">
@@ -63,8 +73,6 @@
         </div>
     </div>
 </div>
-
-<a href="{{ url_for('views.drivers_page') }}" class="back-link">&larr; Back to All Drivers</a>
 {% endblock %}
 
 {% block scripts %}

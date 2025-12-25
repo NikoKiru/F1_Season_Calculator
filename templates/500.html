@@ -2,9 +2,19 @@
 
 {% block title %}Internal Server Error{% endblock %}
 
-{% block page_title %}Internal Server Error{% endblock %}
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <div class="breadcrumbs-container">
+        <ol class="breadcrumb-list">
+            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
+            <li class="breadcrumb-item"><span class="breadcrumb-current">500 Error</span></li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
 
 {% block content %}
+<h2>Internal Server Error</h2>
 <p>An unexpected error occurred on our end. We're working to fix it.</p>
-<a href="{{ url_for('views.index') }}" class="back-link">Go back to the homepage</a>
+<p><a href="{{ url_for('views.index') }}">Return to the homepage</a></p>
 {% endblock %}

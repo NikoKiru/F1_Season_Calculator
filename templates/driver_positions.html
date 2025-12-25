@@ -2,9 +2,19 @@
 
 {% block title %}Driver Finishes by Position{% endblock %}
 
-{% block page_title %}Driver Finishes by Position{% endblock %}
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <div class="breadcrumbs-container">
+        <ol class="breadcrumb-list">
+            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
+            <li class="breadcrumb-item"><span class="breadcrumb-current">Driver Positions</span></li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
 
 {% block content %}
+<h2>Driver Finishes by Position</h2>
 <div class="position-selector">
     <div class="podium-container">
         <div class="podium-block podium-2" data-position="2">
@@ -37,7 +47,6 @@
         <p>Click a position above to see driver statistics.</p>
     </div>
 </div>
-<a href="{{ url_for('views.index') }}" class="back-link">Back to Home</a>
 {% endblock %}
 
 {% block scripts %}

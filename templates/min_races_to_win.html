@@ -2,9 +2,19 @@
 
 {% block title %}Min Races to Win{% endblock %}
 
-{% block page_title %}Minimum Races to Win a Championship{% endblock %}
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <div class="breadcrumbs-container">
+        <ol class="breadcrumb-list">
+            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
+            <li class="breadcrumb-item"><span class="breadcrumb-current">Min Races to Win</span></li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
 
 {% block content %}
+<h2>Minimum Races to Win a Championship</h2>
 <div class="data-container">
     <ul class="driver-list">
         {% for driver, min_races in data.items() %}
@@ -19,5 +29,4 @@
         {% endfor %}
     </ul>
 </div>
-<a href="{{ url_for('views.index') }}" class="back-link">Back to Home</a>
 {% endblock %}

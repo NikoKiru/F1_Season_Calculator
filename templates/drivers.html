@@ -2,13 +2,19 @@
 
 {% block title %}All Drivers{% endblock %}
 
-{% block page_title %}2025 F1 Drivers{% endblock %}
-
-{% block header %}
-<h1><a href="{{ url_for('views.index') }}" style="text-decoration: none; color: white;">2025 F1 Drivers</a></h1>
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <div class="breadcrumbs-container">
+        <ol class="breadcrumb-list">
+            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
+            <li class="breadcrumb-item"><span class="breadcrumb-current">Drivers</span></li>
+        </ol>
+    </div>
+</nav>
 {% endblock %}
 
 {% block content %}
+<h2>2025 F1 Drivers</h2>
 <p>Click on a driver to view their detailed championship statistics across all 16.7 million scenarios.</p>
 
 <div class="drivers-grid">
@@ -22,6 +28,4 @@
     </a>
     {% endfor %}
 </div>
-
-<a href="{{ url_for('views.index') }}" class="back-link">&larr; Back to Home</a>
 {% endblock %}

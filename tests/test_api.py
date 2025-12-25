@@ -96,7 +96,7 @@ class TestCacheEndpoint:
 
     def test_clear_cache(self, client):
         """Clear cache endpoint should work."""
-        response = client.post('/api/clear-cache')
+        response = client.post('/api/clear_cache')
         assert response.status_code == 200
         data = response.get_json()
         assert 'message' in data

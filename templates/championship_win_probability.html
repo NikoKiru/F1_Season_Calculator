@@ -2,11 +2,21 @@
 
 {% block title %}Championship Win Probability{% endblock %}
 
-{% block page_title %}Championship Win Probability by Season Length{% endblock %}
-
 {% block main_class %}full-width{% endblock %}
 
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <div class="breadcrumbs-container">
+        <ol class="breadcrumb-list">
+            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
+            <li class="breadcrumb-item"><span class="breadcrumb-current">Win Probability</span></li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
 {% block content %}
+<h2>Championship Win Probability by Season Length</h2>
 <div class="table-wrapper">
     <table class="standings-table compact-table">
         <thead>
@@ -52,5 +62,4 @@
         </tbody>
     </table>
 </div>
-<a href="{{ url_for('views.index') }}" class="back-link">Back to Home</a>
 {% endblock %}

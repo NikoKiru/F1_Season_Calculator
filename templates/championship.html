@@ -2,10 +2,19 @@
 
 {% block title %}Championship {{ data.championship_id }}{% endblock %}
 
-{% block page_title %}Championship #{{ data.championship_id }}{% endblock %}
-
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <div class="breadcrumbs-container">
+        <ol class="breadcrumb-list">
+            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
+            <li class="breadcrumb-item"><span class="breadcrumb-current">Championship #{{ data.championship_id }}</span></li>
+        </ol>
+    </div>
+</nav>
 {% endblock %}
 
 {% block content %}
@@ -86,7 +95,6 @@
         <p>Championship not found.</p>
     {% endif %}
 </div>
-<a href="{{ url_for('views.index') }}" class="back-link">Back to Home</a>
 {% endblock %}
 
 {% block scripts %}
