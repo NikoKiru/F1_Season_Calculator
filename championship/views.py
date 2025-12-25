@@ -19,7 +19,11 @@ def index() -> str:
 @bp.route('/championship/<int:id>')
 def championship_page(id: int) -> Union[str, Tuple[str, int]]:
     response = get_championship(id)
-    if response.status_code != 200:
+    # Handle both Response object and tuple (response, status) returns
+    if isinstance(response, tuple):
+        # Error case - API returns (jsonify(response), status)
+        data = None
+    elif response.status_code != 200:
         data = None
     else:
         data = response.get_json()

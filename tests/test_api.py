@@ -230,3 +230,233 @@ class TestDriverPositionDetailView:
         """Driver code should be case insensitive."""
         response = client.get('/driver/ver/position/1')
         assert response.status_code == 200
+
+
+class TestViewPages:
+    """Test all view page routes."""
+
+    def test_index_page(self, client):
+        """Index page should load."""
+        response = client.get('/')
+        assert response.status_code == 200
+
+    def test_all_championship_wins_page(self, client):
+        """All championship wins page should load."""
+        response = client.get('/all_championship_wins')
+        assert response.status_code == 200
+
+    def test_driver_positions_page(self, client):
+        """Driver positions page should load."""
+        response = client.get('/driver_positions')
+        assert response.status_code == 200
+
+    def test_head_to_head_page(self, client):
+        """Head to head page should load."""
+        response = client.get('/head_to_head')
+        assert response.status_code == 200
+
+    def test_min_races_to_win_page(self, client):
+        """Min races to win page should load."""
+        response = client.get('/min_races_to_win')
+        assert response.status_code == 200
+
+    def test_championship_win_probability_page(self, client):
+        """Championship win probability page should load."""
+        response = client.get('/championship_win_probability')
+        assert response.status_code == 200
+
+    def test_create_championship_page(self, client):
+        """Create championship page should load."""
+        response = client.get('/create_championship')
+        assert response.status_code == 200
+
+    def test_drivers_page(self, client):
+        """Drivers list page should load."""
+        response = client.get('/drivers')
+        assert response.status_code == 200
+
+    def test_driver_page_valid(self, client):
+        """Individual driver page should load for valid driver."""
+        response = client.get('/driver/VER')
+        assert response.status_code == 200
+        assert b'Verstappen' in response.data or b'VER' in response.data
+
+    def test_driver_page_case_insensitive(self, client):
+        """Driver page should handle lowercase driver code."""
+        response = client.get('/driver/ver')
+        assert response.status_code == 200
+
+    def test_driver_page_invalid(self, client):
+        """Driver page should return 404 for invalid driver."""
+        response = client.get('/driver/XXX')
+        assert response.status_code == 404
+
+    def test_championship_page_with_data(self, client):
+        """Championship page should load for existing championship."""
+        response = client.get('/championship/1')
+        assert response.status_code == 200
+
+    def test_championship_page_not_found(self, client):
+        """Championship page should handle non-existent championship."""
+        response = client.get('/championship/999999')
+        assert response.status_code == 404
+
+
+class TestHeadToHeadEndpoint:
+    """Extended head-to-head endpoint tests."""
+
+    def test_head_to_head_valid_comparison(self, client):
+        """Should return valid comparison data."""
+        response = client.get('/api/head_to_head/VER/NOR')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert 'VER' in data
+        assert 'NOR' in data
+
+    def test_head_to_head_reverse_order(self, client):
+        """Should work with reversed driver order."""
+        response = client.get('/api/head_to_head/NOR/VER')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert 'VER' in data
+        assert 'NOR' in data
+
+
+class TestDriverStatsEndpoint:
+    """Test driver stats endpoint."""
+
+    def test_driver_stats_valid(self, client):
+        """Should return driver stats for valid driver."""
+        response = client.get('/api/driver/VER/stats')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert 'driver_code' in data
+        assert 'driver_name' in data
+        assert 'total_wins' in data
+        assert 'win_percentage' in data
+        assert 'highest_position' in data
+
+    def test_driver_stats_has_required_fields(self, client):
+        """Should include all required fields."""
+        response = client.get('/api/driver/VER/stats')
+        data = response.get_json()
+        required_fields = [
+            'driver_code', 'driver_name', 'driver_info',
+            'total_wins', 'total_championships', 'win_percentage',
+            'highest_position', 'min_races_to_win',
+            'position_distribution', 'win_probability_by_length',
+            'seasons_per_length'
+        ]
+        for field in required_fields:
+            assert field in data, f"Missing field: {field}"
+
+    def test_driver_stats_invalid_driver(self, client):
+        """Should return 404 for unknown driver."""
+        response = client.get('/api/driver/XXX/stats')
+        assert response.status_code == 404
+
+    def test_driver_stats_case_insensitive(self, client):
+        """Driver code should be case insensitive."""
+        response = client.get('/api/driver/ver/stats')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['driver_code'] == 'VER'
+
+
+class TestCreateChampionshipEndpoint:
+    """Test create championship endpoint."""
+
+    def test_create_championship_valid_rounds(self, client):
+        """Should return championship URL for valid rounds."""
+        response = client.get('/api/create_championship?rounds=1,2,3')
+        # Either finds it or returns 404 (championship not in test data)
+        assert response.status_code in [200, 404]
+
+    def test_create_championship_invalid_rounds(self, client):
+        """Should return 400 for invalid rounds format."""
+        response = client.get('/api/create_championship?rounds=abc')
+        assert response.status_code == 400
+
+    def test_create_championship_out_of_range(self, client):
+        """Should return 400 for out of range rounds."""
+        response = client.get('/api/create_championship?rounds=0,1,2')
+        assert response.status_code == 400
+
+    def test_create_championship_duplicate_rounds(self, client):
+        """Should return 400 for duplicate rounds."""
+        response = client.get('/api/create_championship?rounds=1,1,2')
+        assert response.status_code == 400
+
+
+class TestChampionshipEndpointExtended:
+    """Extended championship endpoint tests."""
+
+    def test_championship_returns_expected_fields(self, client):
+        """Championship should return expected data structure."""
+        response = client.get('/api/championship/1')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert 'championship_id' in data
+        assert 'standings' in data
+        assert 'points' in data
+
+
+class TestDataEndpointExtended:
+    """Extended data endpoint tests."""
+
+    def test_data_endpoint_invalid_page(self, client):
+        """Should return 400 for invalid page."""
+        response = client.get('/api/data?page=abc')
+        assert response.status_code == 400
+
+    def test_data_endpoint_negative_page(self, client):
+        """Should return 400 for negative page."""
+        response = client.get('/api/data?page=-1')
+        assert response.status_code == 400
+
+    def test_data_endpoint_invalid_per_page(self, client):
+        """Should return 400 for invalid per_page."""
+        response = client.get('/api/data?per_page=abc')
+        assert response.status_code == 400
+
+    def test_data_endpoint_per_page_too_large(self, client):
+        """Should return 400 for per_page exceeding maximum."""
+        response = client.get('/api/data?per_page=10000')
+        assert response.status_code == 400
+
+
+class TestDriverPositionsEndpoint:
+    """Extended driver positions endpoint tests."""
+
+    def test_driver_positions_invalid_position_format(self, client):
+        """Should return 400 for invalid position format."""
+        response = client.get('/api/driver_positions?position=abc')
+        assert response.status_code == 400
+
+    def test_driver_positions_out_of_range(self, client):
+        """Should return 400 for out of range position."""
+        response = client.get('/api/driver_positions?position=30')
+        assert response.status_code == 400
+
+    def test_driver_positions_negative(self, client):
+        """Should return 400 for negative position."""
+        response = client.get('/api/driver_positions?position=-1')
+        assert response.status_code == 400
+
+
+class TestDriverPositionNonWinner:
+    """Test driver position endpoint for non-P1 positions."""
+
+    def test_driver_position_p2(self, client):
+        """Should return championships where driver finished P2."""
+        response = client.get('/api/driver/VER/position/2')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['position'] == 2
+
+    def test_driver_position_p3(self, client):
+        """Should return championships where driver finished P3."""
+        response = client.get('/api/driver/NOR/position/3')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['position'] == 3
