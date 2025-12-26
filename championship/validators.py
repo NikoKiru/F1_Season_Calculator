@@ -3,7 +3,7 @@ Input validation and error response utilities for API endpoints.
 
 Provides consistent validation, error codes, and error messages across all endpoints.
 """
-from typing import Tuple, Optional, List, Any, Dict
+from typing import Tuple, List, Any, Dict
 from enum import Enum
 
 

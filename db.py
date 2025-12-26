@@ -4,7 +4,7 @@ from typing import Optional, TYPE_CHECKING, Dict, Any
 import click
 from flask import current_app, g
 from flask.cli import with_appcontext
-from sqlalchemy import create_engine, event, text
+from sqlalchemy import create_engine, event
 from sqlalchemy.pool import QueuePool
 from sqlalchemy.engine import Engine
 

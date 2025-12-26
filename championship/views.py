@@ -1,6 +1,6 @@
 from typing import Tuple, Union
 from flask import (
-    Blueprint, render_template, Response
+    Blueprint, render_template
 )
 from .api import (
     get_championship, all_championship_wins, highest_position,

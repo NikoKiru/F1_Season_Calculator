@@ -1,13 +1,9 @@
 """Tests for championship models and season data loading."""
-import os
-import json
-import tempfile
 import pytest
 
 from championship.models import (
     load_season_data,
     get_available_seasons,
-    reload_season_data,
     DRIVERS,
     TEAM_COLORS,
     DRIVER_NAMES,

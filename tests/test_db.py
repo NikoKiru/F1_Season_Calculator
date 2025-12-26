@@ -1,5 +1,4 @@
 """Tests for the database connection pooling functionality."""
-import pytest
 import os
 import sys
 import tempfile

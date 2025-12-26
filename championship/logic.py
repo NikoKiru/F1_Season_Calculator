@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from flask import current_app
 
 
