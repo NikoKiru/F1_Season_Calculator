@@ -78,6 +78,26 @@ def save_to_database(
     # Commit handled by caller for larger transactional control
 
 
+def save_position_results(
+    db: sqlite3.Connection,
+    position_data: List[Tuple[int, str, int, int]]
+) -> None:
+    """Insert a batch of position results into the database.
+
+    Each entry maps a championship_id to a driver's position and points.
+    """
+    if not position_data:
+        return
+
+    db.executemany(
+        """
+    INSERT INTO position_results (championship_id, driver_code, position, points)
+    VALUES (?, ?, ?, ?);
+    """,
+        position_data,
+    )
+
+
 # Main function
 def process_data(batch_size: int = 100000) -> None:
     """Processes the championship data and saves it to the database."""
@@ -96,11 +116,17 @@ def process_data(batch_size: int = 100000) -> None:
     race_combinations_generator = generate_race_combinations(num_races)
 
     championship_data_batch = []
+    # Store (sorted_drivers, sorted_scores) for position_results generation
+    standings_batch = []
 
     # Speed up bulk load: relax durability during import, wrap in a single transaction
     db.execute("PRAGMA synchronous=OFF;")
     db.execute("PRAGMA journal_mode=WAL;")
     db.execute("BEGIN IMMEDIATE;")
+
+    # Get starting championship_id for position_results mapping
+    result = db.execute("SELECT COALESCE(MAX(championship_id), 0) FROM championship_results").fetchone()
+    next_championship_id = result[0] + 1
 
     # Step 3: Process each combination
     for i, race_subset in enumerate(race_combinations_generator):
@@ -114,16 +140,37 @@ def process_data(batch_size: int = 100000) -> None:
         # Add 1 to race indices for rounds string to be 1-based
         rounds_str = ','.join(map(str, [r + 1 for r in race_subset]))
         championship_data_batch.append((len(race_subset), rounds_str, standings_str, winner, points_str))
+        standings_batch.append((sorted_drivers, sorted_scores))
 
         # Step 4: Save to database in batches
         if (i + 1) % batch_size == 0:
             save_to_database(db, table_name, championship_data_batch)
+
+            # Generate and save position_results for this batch
+            position_data = []
+            for j, (drivers_arr, scores_arr) in enumerate(standings_batch):
+                champ_id = next_championship_id + j
+                for pos, (driver, points) in enumerate(zip(drivers_arr, scores_arr), start=1):
+                    position_data.append((champ_id, driver, pos, int(points)))
+            save_position_results(db, position_data)
+
             click.echo(f"Processed batch through combination {i + 1}...")
+            next_championship_id += len(championship_data_batch)
             championship_data_batch = []
+            standings_batch = []
 
     # Save any remaining data
     if championship_data_batch:
         save_to_database(db, table_name, championship_data_batch)
+
+        # Generate and save position_results for final batch
+        position_data = []
+        for j, (drivers_arr, scores_arr) in enumerate(standings_batch):
+            champ_id = next_championship_id + j
+            for pos, (driver, points) in enumerate(zip(drivers_arr, scores_arr), start=1):
+                position_data.append((champ_id, driver, pos, int(points)))
+        save_position_results(db, position_data)
+
         click.echo(f"Processed final batch of {len(championship_data_batch)} combinations.")
 
     # Commit the entire import and restore safer settings

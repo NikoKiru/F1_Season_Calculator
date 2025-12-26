@@ -52,6 +52,19 @@ def app():
         );
         """)
 
+        # Create position_results table for fast position queries
+        db.execute("""
+        CREATE TABLE IF NOT EXISTS position_results (
+            championship_id INTEGER NOT NULL,
+            driver_code TEXT NOT NULL,
+            position INTEGER NOT NULL,
+            points INTEGER NOT NULL,
+            PRIMARY KEY (championship_id, driver_code),
+            FOREIGN KEY (championship_id) REFERENCES championship_results(championship_id)
+        );
+        """)
+        db.execute("CREATE INDEX IF NOT EXISTS idx_driver_position ON position_results (driver_code, position);")
+
         # Insert sample test data
         sample_data = [
             (3, '1,2,3', 'VER,NOR,LEC,HAM,RUS', 'VER', '68,61,48,45,42'),
@@ -64,6 +77,29 @@ def app():
             INSERT INTO championship_results (num_races, rounds, standings, winner, points)
             VALUES (?, ?, ?, ?, ?)
         """, sample_data)
+
+        # Insert position_results for each championship
+        # Championship 1: VER,NOR,LEC,HAM,RUS with points 68,61,48,45,42
+        # Championship 2: NOR,VER,LEC,HAM,PIA with points 113,108,95,88,82
+        # Championship 3: VER,LEC,NOR,HAM,RUS with points 90,78,75,70,65
+        # Championship 4: VER,NOR,LEC,PIA,HAM with points 138,130,118,105,98
+        # Championship 5: LEC,VER,NOR,HAM,RUS with points 70,65,58,50,45
+        position_data = [
+            # Championship 1
+            (1, 'VER', 1, 68), (1, 'NOR', 2, 61), (1, 'LEC', 3, 48), (1, 'HAM', 4, 45), (1, 'RUS', 5, 42),
+            # Championship 2
+            (2, 'NOR', 1, 113), (2, 'VER', 2, 108), (2, 'LEC', 3, 95), (2, 'HAM', 4, 88), (2, 'PIA', 5, 82),
+            # Championship 3
+            (3, 'VER', 1, 90), (3, 'LEC', 2, 78), (3, 'NOR', 3, 75), (3, 'HAM', 4, 70), (3, 'RUS', 5, 65),
+            # Championship 4
+            (4, 'VER', 1, 138), (4, 'NOR', 2, 130), (4, 'LEC', 3, 118), (4, 'PIA', 4, 105), (4, 'HAM', 5, 98),
+            # Championship 5
+            (5, 'LEC', 1, 70), (5, 'VER', 2, 65), (5, 'NOR', 3, 58), (5, 'HAM', 4, 50), (5, 'RUS', 5, 45),
+        ]
+        db.executemany("""
+            INSERT INTO position_results (championship_id, driver_code, position, points)
+            VALUES (?, ?, ?, ?)
+        """, position_data)
 
         # Insert pre-computed driver statistics for tests
         # VER: P1, 6 races, margin 8 (138-130), 3 wins

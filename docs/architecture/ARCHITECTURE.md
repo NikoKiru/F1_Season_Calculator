@@ -84,12 +84,19 @@ The F1 Season Calculator is a Flask-based web application that analyzes Formula 
 │  │  │  • points (TEXT, INDEXED)                         │   │   │
 │  │  └───────────────────────────────────────────────────┘   │   │
 │  │                                                           │   │
+│  │          position_results Table                           │   │
+│  │  ┌───────────────────────────────────────────────────┐   │   │
+│  │  │  • championship_id (FK, INDEXED)                  │   │   │
+│  │  │  • driver_code (TEXT, INDEXED)                    │   │   │
+│  │  │  • position (INTEGER, INDEXED)                    │   │   │
+│  │  │  • points (INTEGER)                               │   │   │
+│  │  └───────────────────────────────────────────────────┘   │   │
+│  │                                                           │   │
 │  │  Indexes:                                                 │   │
 │  │    • idx_winner                                          │   │
 │  │    • idx_num_races                                       │   │
 │  │    • idx_winner_num_races (composite)                    │   │
-│  │    • idx_points                                          │   │
-│  │    • idx_rounds                                          │   │
+│  │    • idx_driver_position (driver_code, position)         │   │
 │  └──────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
                    ▲
@@ -227,13 +234,14 @@ for num_races in range(1, total_races + 1):
 
 #### `init_db(clear_existing=False)`
 - Creates `championship_results` table
+- Creates `position_results` table for fast position queries
 - Applies performance PRAGMAs:
   - `journal_mode=WAL` (Write-Ahead Logging)
   - `synchronous=NORMAL` (balance of speed/safety)
   - `temp_store=MEMORY` (temp tables in RAM)
   - `cache_size=-50000` (50MB cache)
   - `mmap_size=268435456` (256MB memory-mapped I/O)
-- Creates indexes
+- Creates indexes including `idx_driver_position` for fast P2-P20 queries
 - Optional: clears database
 
 #### `close_db()`

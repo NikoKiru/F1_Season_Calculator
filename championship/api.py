@@ -758,69 +758,41 @@ def driver_position_championships(driver_code: str, position: int) -> Response:
                 'margin': margin
             })
     else:
-        # For other positions, we need to check standings
-        # Use a more targeted query with LIKE but limit results
-        pattern = f"%{driver_code}%"
+        # OPTIMIZATION: Use indexed position_results table for instant queries
+        # Get total count using indexed query
+        count_result = db.execute(
+            "SELECT COUNT(*) as cnt FROM position_results WHERE driver_code = ? AND position = ?",
+            (driver_code, position)
+        ).fetchone()
+        total_count = count_result['cnt'] if count_result else 0
 
-        # First get total count (cached after first call)
-        cache_key = f"position_count_{driver_code}_{position}"
-        cached_count = cache.get(cache_key)
-
-        if cached_count is not None:
-            total_count = cached_count
-        else:
-            # Count matching rows - this is still expensive but only done once
-            count_query = "SELECT standings FROM championship_results WHERE standings LIKE ?"
-            all_rows = db.execute(count_query, (pattern,)).fetchall()
-            total_count = 0
-            for row in all_rows:
-                standings = [d.strip() for d in row['standings'].split(',')]
-                try:
-                    if standings.index(driver_code) + 1 == position:
-                        total_count += 1
-                except ValueError:
-                    continue
-            cache.set(cache_key, total_count)
-
-        # For display, limit to reasonable number of results with pagination
-        # We need to scan through results to find ones at this position
+        # Get paginated results using indexed join
         query = """
-            SELECT championship_id, num_races, rounds, standings, points
-            FROM championship_results
-            WHERE standings LIKE ?
-            ORDER BY num_races DESC, championship_id DESC
+            SELECT cr.championship_id, cr.num_races, cr.rounds, cr.standings, cr.points,
+                   pr.points as driver_points
+            FROM position_results pr
+            JOIN championship_results cr ON pr.championship_id = cr.championship_id
+            WHERE pr.driver_code = ? AND pr.position = ?
+            ORDER BY cr.num_races DESC, cr.championship_id DESC
+            LIMIT ? OFFSET ?
         """
-        rows = db.execute(query, (pattern,)).fetchall()
+        rows = db.execute(query, (driver_code, position, per_page, offset)).fetchall()
 
         championships = []
-        skipped = 0
         for row in rows:
             standings = [d.strip() for d in row['standings'].split(',')]
-            try:
-                driver_pos = standings.index(driver_code) + 1
-                if driver_pos == position:
-                    # Skip until we reach the right page
-                    if skipped < offset:
-                        skipped += 1
-                        continue
+            points_list = [int(p) for p in row['points'].split(',')]
+            driver_points = row['driver_points']
+            # Calculate margin: points of driver at position-1 minus driver's points
+            margin = points_list[position - 2] - driver_points if position > 1 and len(points_list) >= position else None
 
-                    # Stop if we have enough results
-                    if len(championships) >= per_page:
-                        break
-
-                    points_list = [int(p) for p in row['points'].split(',')]
-                    driver_points = points_list[position - 1] if len(points_list) >= position else 0
-                    margin = points_list[position - 2] - points_list[position - 1] if len(points_list) >= position else None
-
-                    championships.append({
-                        'championship_id': row['championship_id'],
-                        'num_races': row['num_races'],
-                        'standings': standings,
-                        'driver_points': driver_points,
-                        'margin': margin
-                    })
-            except ValueError:
-                continue
+            championships.append({
+                'championship_id': row['championship_id'],
+                'num_races': row['num_races'],
+                'standings': standings,
+                'driver_points': driver_points,
+                'margin': margin
+            })
 
     total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 1
 

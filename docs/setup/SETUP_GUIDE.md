@@ -62,7 +62,17 @@ Optional: Increase batch size for better performance on large datasets:
 flask process-data --batch-size 200000
 ```
 
-### 5. Run the Application
+### 5. Pre-compute Statistics
+
+Pre-compute driver statistics for instant page loads (required for optimal performance):
+
+```powershell
+flask compute-stats
+```
+
+This creates pre-computed tables for instant queries on driver positions and statistics.
+
+### 6. Run the Application
 
 ```powershell
 flask run
@@ -163,7 +173,8 @@ SECRET_KEY=your-secret-key-here
 3. Run `flask setup`
 4. Copy your CSV data to `data/championships.csv`
 5. Run `flask process-data`
-6. Run `flask run`
+6. Run `flask compute-stats`
+7. Run `flask run`
 
 ### Using Custom Paths
 
@@ -185,6 +196,7 @@ To clear and reinitialize the database:
 ```powershell
 flask init-db --clear
 flask process-data
+flask compute-stats
 ```
 
 ### Checking Current Configuration

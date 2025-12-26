@@ -32,9 +32,14 @@ NOR,18,25,18,25,25
 LEC,15,15,15,18,15
 ```
 
-### Step 5: Process Data & Run
+### Step 5: Process Data & Pre-compute Stats
 ```powershell
 flask process-data
+flask compute-stats
+```
+
+### Step 6: Run the Application
+```powershell
 flask run
 ```
 
@@ -77,6 +82,7 @@ flask init-db --clear  # Start fresh
 | `flask init-db --clear` | Reset database (deletes all data) |
 | `flask process-data` | Generate all championship combinations |
 | `flask process-data --batch-size 200000` | Process with larger batch size |
+| `flask compute-stats` | Pre-compute statistics for instant page loads |
 | `flask run` | Start the web application |
 
 ---

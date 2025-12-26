@@ -111,6 +111,20 @@ def init_db(clear_existing: bool = False) -> None:
     );
     """)
 
+    # Create normalized position_results table for fast position queries
+    click.echo("Creating position_results table...")
+    db.execute("""
+    CREATE TABLE IF NOT EXISTS position_results (
+        championship_id INTEGER NOT NULL,
+        driver_code TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        points INTEGER NOT NULL,
+        PRIMARY KEY (championship_id, driver_code),
+        FOREIGN KEY (championship_id) REFERENCES championship_results(championship_id)
+    );
+    """)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_driver_position ON position_results (driver_code, position);")
+
     db.commit()
 
     # Get table info
@@ -194,7 +208,9 @@ def setup_command() -> None:
         click.echo(f"   {csv_path}")
     click.echo("2. Process the data:")
     click.echo("   flask process-data")
-    click.echo("3. Run the application:")
+    click.echo("3. Pre-compute statistics (for instant page loads):")
+    click.echo("   flask compute-stats")
+    click.echo("4. Run the application:")
     click.echo("   flask run")
     click.echo("="*60)
 

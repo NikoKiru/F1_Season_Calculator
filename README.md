@@ -285,6 +285,7 @@ To add a new season, create a new JSON file (e.g., `data/seasons/2026.json`) fol
 ### Database Schema
 
 ```sql
+-- Main championship results table
 CREATE TABLE championship_results (
     championship_id INTEGER PRIMARY KEY AUTOINCREMENT,
     num_races INTEGER NOT NULL,
@@ -294,12 +295,21 @@ CREATE TABLE championship_results (
     points TEXT NOT NULL           -- Comma-separated point totals
 );
 
+-- Normalized position results for fast position queries
+CREATE TABLE position_results (
+    championship_id INTEGER NOT NULL,
+    driver_code TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    points INTEGER NOT NULL,
+    PRIMARY KEY (championship_id, driver_code),
+    FOREIGN KEY (championship_id) REFERENCES championship_results(championship_id)
+);
+
 -- Indexes for performance
 CREATE INDEX idx_winner ON championship_results (winner);
 CREATE INDEX idx_num_races ON championship_results (num_races);
 CREATE INDEX idx_winner_num_races ON championship_results (winner, num_races);
-CREATE INDEX idx_points ON championship_results (points);
-CREATE INDEX idx_rounds ON championship_results (rounds);
+CREATE INDEX idx_driver_position ON position_results (driver_code, position);
 ```
 
 ## 🏗️ Architecture
@@ -392,6 +402,7 @@ For detailed architecture information, see [docs/architecture/ARCHITECTURE.md](d
 **Key optimizations:**
 - Pre-computed driver statistics table for instant highest position queries
 - Indexed `winner` column for P1 position queries (uses index instead of LIKE)
+- Normalized `position_results` table for instant P2-P20 position queries
 - Pagination for large result sets (avoids returning millions of rows)
 - Thread-safe caching for repeated requests
 
