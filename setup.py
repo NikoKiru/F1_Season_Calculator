@@ -19,6 +19,7 @@ setup(
         'flasgger',
         'numpy',
         'python-dotenv',
+        'sqlalchemy',
     ],
     python_requires='>=3.6',
 )

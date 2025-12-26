@@ -7,7 +7,7 @@ import tempfile
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import app as flask_app  # noqa: E402
-from db import get_db  # noqa: E402
+from db import get_db, dispose_all_engines  # noqa: E402
 
 
 @pytest.fixture
@@ -127,9 +127,20 @@ def app():
 
     yield flask_app
 
-    # Cleanup
+    # Cleanup: dispose engines before deleting database file
+    dispose_all_engines()
     os.close(db_fd)
-    os.unlink(db_path)
+    try:
+        os.unlink(db_path)
+        # Also clean up WAL and SHM files if they exist
+        wal_path = db_path + "-wal"
+        shm_path = db_path + "-shm"
+        if os.path.exists(wal_path):
+            os.unlink(wal_path)
+        if os.path.exists(shm_path):
+            os.unlink(shm_path)
+    except PermissionError:
+        pass  # File may still be locked on Windows
 
 
 @pytest.fixture

@@ -1,23 +1,31 @@
 import sqlite3
 import os
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Dict, Any
 import click
 from flask import current_app, g
 from flask.cli import with_appcontext
+from sqlalchemy import create_engine, event, text
+from sqlalchemy.pool import QueuePool
+from sqlalchemy.engine import Engine
 
 if TYPE_CHECKING:
     from flask import Flask
 
+# Module-level engine cache keyed by database path
+_engines: Dict[str, Engine] = {}
 
-def get_db() -> sqlite3.Connection:
-    """Return a SQLite connection for the current Flask application context.
 
-    The connection is stored in `flask.g` for reuse within the request.
+def _get_engine(db_path: str) -> Engine:
+    """Get or create a SQLAlchemy engine with connection pooling.
+
+    Args:
+        db_path: Path to the SQLite database file.
+
+    Returns:
+        SQLAlchemy Engine with QueuePool for connection pooling.
     """
-    if 'db' not in g:
-        db_path = current_app.config['DATABASE']
-
-        # Ensure the directory for the database exists
+    if db_path not in _engines:
+        # Ensure the directory exists
         db_dir = os.path.dirname(db_path)
         if db_dir and not os.path.exists(db_dir):
             try:
@@ -27,19 +35,117 @@ def get_db() -> sqlite3.Connection:
                 click.echo(f"Error creating directory {db_dir}: {e}", err=True)
                 raise
 
-        g.db = sqlite3.connect(
-            db_path,
-            detect_types=sqlite3.PARSE_DECLTYPES,
+        # Create engine with connection pooling
+        # pool_size: Number of connections to keep open
+        # max_overflow: Additional connections allowed beyond pool_size
+        # pool_timeout: Seconds to wait for a connection from pool
+        # pool_recycle: Seconds before a connection is recycled
+        engine = create_engine(
+            f"sqlite:///{db_path}",
+            poolclass=QueuePool,
+            pool_size=5,
+            max_overflow=10,
+            pool_timeout=30,
+            pool_recycle=3600,
+            connect_args={"check_same_thread": False},
         )
-        g.db.row_factory = sqlite3.Row
+
+        # Configure connections when they're created
+        @event.listens_for(engine, "connect")
+        def set_sqlite_pragma(dbapi_connection: Any, connection_record: Any) -> None:
+            """Set SQLite pragmas for performance on each new connection."""
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.execute("PRAGMA temp_store=MEMORY")
+            cursor.execute("PRAGMA cache_size=-50000")
+            cursor.execute("PRAGMA mmap_size=268435456")
+            cursor.close()
+
+        _engines[db_path] = engine
+
+    return _engines[db_path]
+
+
+class PooledConnection:
+    """Wrapper around SQLAlchemy connection that mimics sqlite3.Connection interface.
+
+    This allows existing code using get_db() to work without modification.
+    """
+
+    def __init__(self, connection: Any):
+        self._connection = connection
+        self._raw_connection = connection.connection.dbapi_connection
+        # Set row factory for sqlite3-style Row access
+        self._raw_connection.row_factory = sqlite3.Row
+
+    def execute(self, sql: str, parameters: tuple = ()) -> Any:
+        """Execute SQL and return a cursor-like result."""
+        cursor = self._raw_connection.cursor()
+        cursor.execute(sql, parameters)
+        return cursor
+
+    def executemany(self, sql: str, seq_of_parameters: Any) -> Any:
+        """Execute SQL with multiple parameter sets."""
+        cursor = self._raw_connection.cursor()
+        cursor.executemany(sql, seq_of_parameters)
+        return cursor
+
+    def commit(self) -> None:
+        """Commit the current transaction."""
+        self._raw_connection.commit()
+
+    def rollback(self) -> None:
+        """Rollback the current transaction."""
+        self._raw_connection.rollback()
+
+    def close(self) -> None:
+        """Return the connection to the pool."""
+        self._connection.close()
+
+
+def get_db() -> PooledConnection:
+    """Return a pooled SQLite connection for the current Flask application context.
+
+    The connection is obtained from a SQLAlchemy connection pool and stored
+    in `flask.g` for reuse within the request. This improves performance
+    for concurrent requests by reusing connections instead of creating new ones.
+
+    Returns:
+        PooledConnection wrapping a SQLAlchemy pooled connection.
+    """
+    if 'db' not in g:
+        db_path = current_app.config['DATABASE']
+        engine = _get_engine(db_path)
+        # Get a connection from the pool
+        connection = engine.connect()
+        g.db = PooledConnection(connection)
     return g.db
 
 
 def close_db(e: Optional[Exception] = None) -> None:
-    """Close the database connection if present in the Flask `g` object."""
+    """Return the database connection to the pool."""
     db = g.pop('db', None)
     if db is not None:
         db.close()
+
+
+def dispose_engine(db_path: str) -> None:
+    """Dispose of a cached engine and remove it from the cache.
+
+    Args:
+        db_path: Path to the database whose engine should be disposed.
+    """
+    if db_path in _engines:
+        _engines[db_path].dispose()
+        del _engines[db_path]
+
+
+def dispose_all_engines() -> None:
+    """Dispose of all cached engines. Used for cleanup in tests."""
+    for engine in list(_engines.values()):
+        engine.dispose()
+    _engines.clear()
 
 
 def init_db(clear_existing: bool = False) -> None:
@@ -55,8 +161,19 @@ def init_db(clear_existing: bool = False) -> None:
 
     if clear_existing and db_exists:
         click.echo(f"Clearing existing database at: {db_path}")
+        # Dispose engine before deleting database file
+        dispose_engine(db_path)
+        # Close any open connection in g
+        close_db()
         try:
             os.remove(db_path)
+            # Also remove WAL and SHM files if they exist
+            wal_path = db_path + "-wal"
+            shm_path = db_path + "-shm"
+            if os.path.exists(wal_path):
+                os.remove(wal_path)
+            if os.path.exists(shm_path):
+                os.remove(shm_path)
             db_exists = False
         except OSError as e:
             click.echo(f"Warning: Could not remove existing database: {e}", err=True)
@@ -66,14 +183,11 @@ def init_db(clear_existing: bool = False) -> None:
     click.echo(f"Database location: {db_path}")
     click.echo(f"Database {'already exists' if db_exists else 'will be created'}")
 
-    # Performance-related PRAGMAs: safe defaults for general use
-    # WAL improves concurrency; normal synchronous keeps durability while faster than FULL
-    click.echo("Applying database performance optimizations...")
-    db.execute("PRAGMA journal_mode=WAL;")
-    db.execute("PRAGMA synchronous=NORMAL;")
-    db.execute("PRAGMA temp_store=MEMORY;")
-    db.execute("PRAGMA cache_size=-50000;")  # roughly ~50MB cache
-    db.execute("PRAGMA mmap_size=268435456;")  # 256MB memory-mapped I/O
+    # Performance PRAGMAs are automatically applied via the connection pool's
+    # connect event (see _get_engine). We echo them here for visibility.
+    click.echo("Database performance optimizations (applied via connection pool):")
+    click.echo("  - journal_mode=WAL, synchronous=NORMAL")
+    click.echo("  - temp_store=MEMORY, cache_size=50MB, mmap_size=256MB")
 
     # Create table with a dedicated 'winner' column
     click.echo("Creating championship_results table...")
