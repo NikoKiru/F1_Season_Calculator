@@ -51,6 +51,50 @@ class TestAPIEndpoints:
         assert 'season_lengths' in data
         assert 'drivers_data' in data
 
+    def test_championship_win_probability_uses_cache(self, client):
+        """Probability endpoint should use pre-computed cache data."""
+        response = client.get('/api/championship_win_probability')
+        assert response.status_code == 200
+        data = response.get_json()
+        # Verify structure from cached data
+        assert 'season_lengths' in data
+        assert 'possible_seasons' in data
+        assert 'drivers_data' in data
+        assert 'driver_names' in data
+        # Verify season lengths from test data (3, 4, 5, 6 races)
+        assert 3 in data['season_lengths']
+        assert 4 in data['season_lengths']
+        assert 5 in data['season_lengths']
+        assert 6 in data['season_lengths']
+
+    def test_championship_win_probability_driver_data(self, client):
+        """Probability endpoint should include all drivers with correct structure."""
+        response = client.get('/api/championship_win_probability')
+        data = response.get_json()
+        drivers_data = data['drivers_data']
+        assert len(drivers_data) > 0
+        # Check structure of driver data
+        for driver_data in drivers_data:
+            assert 'driver' in driver_data
+            assert 'total_titles' in driver_data
+            assert 'wins_per_length' in driver_data
+            assert 'percentages' in driver_data
+            # Percentages should match season_lengths count
+            assert len(driver_data['percentages']) == len(data['season_lengths'])
+
+    def test_championship_win_probability_percentages(self, client):
+        """Probability endpoint should calculate percentages correctly."""
+        response = client.get('/api/championship_win_probability')
+        data = response.get_json()
+        # Find VER's data
+        ver_data = next((d for d in data['drivers_data'] if d['driver'] == 'VER'), None)
+        assert ver_data is not None
+        # VER has 3 total wins in test data
+        assert ver_data['total_titles'] == 3
+        # All percentages should be between 0 and 100
+        for pct in ver_data['percentages']:
+            assert 0 <= pct <= 100
+
     def test_driver_positions_requires_position(self, client):
         """Driver positions endpoint should require position parameter."""
         response = client.get('/api/driver_positions')

@@ -331,3 +331,118 @@ class TestInitDb:
                         os.unlink(db_path + ext)
             except PermissionError:
                 pass
+
+    def test_init_db_creates_win_probability_cache_table(self):
+        """Test that init_db creates the win_probability_cache table."""
+        db_fd, db_path = tempfile.mkstemp()
+        try:
+            flask_app.config['DATABASE'] = db_path
+
+            with flask_app.app_context():
+                dispose_all_engines()
+                close_db()
+                init_db(clear_existing=False)
+
+                db = get_db()
+                cursor = db.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name='win_probability_cache'"
+                )
+                assert cursor.fetchone() is not None
+
+                # Verify table structure
+                cursor = db.execute("PRAGMA table_info(win_probability_cache)")
+                columns = {row[1]: row[2] for row in cursor.fetchall()}
+                assert 'driver_code' in columns
+                assert 'num_races' in columns
+                assert 'win_count' in columns
+                assert 'total_at_length' in columns
+
+        finally:
+            dispose_all_engines()
+            os.close(db_fd)
+            try:
+                os.unlink(db_path)
+                for ext in ["-wal", "-shm"]:
+                    if os.path.exists(db_path + ext):
+                        os.unlink(db_path + ext)
+            except PermissionError:
+                pass
+
+    def test_init_db_creates_win_probability_indexes(self):
+        """Test that init_db creates indexes for win_probability_cache."""
+        db_fd, db_path = tempfile.mkstemp()
+        try:
+            flask_app.config['DATABASE'] = db_path
+
+            with flask_app.app_context():
+                dispose_all_engines()
+                close_db()
+                init_db(clear_existing=False)
+
+                db = get_db()
+                cursor = db.execute(
+                    "SELECT name FROM sqlite_master WHERE type='index'"
+                )
+                indexes = [row[0] for row in cursor.fetchall()]
+                assert 'idx_prob_driver' in indexes
+                assert 'idx_prob_num_races' in indexes
+
+        finally:
+            dispose_all_engines()
+            os.close(db_fd)
+            try:
+                os.unlink(db_path)
+                for ext in ["-wal", "-shm"]:
+                    if os.path.exists(db_path + ext):
+                        os.unlink(db_path + ext)
+            except PermissionError:
+                pass
+
+
+class TestWinProbabilityCache:
+    """Tests for win_probability_cache functionality."""
+
+    def test_win_probability_cache_data(self, app):
+        """Test that win_probability_cache contains expected data."""
+        with app.app_context():
+            db = get_db()
+            cursor = db.execute(
+                "SELECT * FROM win_probability_cache WHERE driver_code = 'VER' ORDER BY num_races"
+            )
+            rows = cursor.fetchall()
+            assert len(rows) == 4  # 4 different season lengths in test data
+            # Check VER's wins at different season lengths
+            ver_data = {row['num_races']: row['win_count'] for row in rows}
+            assert ver_data[3] == 1  # 1 win at 3 races
+            assert ver_data[4] == 1  # 1 win at 4 races
+            assert ver_data[5] == 0  # 0 wins at 5 races
+            assert ver_data[6] == 1  # 1 win at 6 races
+
+    def test_win_probability_cache_totals(self, app):
+        """Test that total_at_length values are correct."""
+        with app.app_context():
+            db = get_db()
+            cursor = db.execute(
+                "SELECT DISTINCT num_races, total_at_length FROM win_probability_cache ORDER BY num_races"
+            )
+            rows = cursor.fetchall()
+            totals = {row['num_races']: row['total_at_length'] for row in rows}
+            assert totals[3] == 2  # 2 championships at 3 races
+            assert totals[4] == 1  # 1 championship at 4 races
+            assert totals[5] == 1  # 1 championship at 5 races
+            assert totals[6] == 1  # 1 championship at 6 races
+
+    def test_win_probability_cache_all_drivers(self, app):
+        """Test that all drivers have cache entries."""
+        with app.app_context():
+            db = get_db()
+            cursor = db.execute(
+                "SELECT DISTINCT driver_code FROM win_probability_cache ORDER BY driver_code"
+            )
+            drivers = [row['driver_code'] for row in cursor.fetchall()]
+            assert 'VER' in drivers
+            assert 'NOR' in drivers
+            assert 'LEC' in drivers
+            assert 'HAM' in drivers
+            assert 'RUS' in drivers
+            assert 'PIA' in drivers

@@ -239,6 +239,20 @@ def init_db(clear_existing: bool = False) -> None:
     """)
     db.execute("CREATE INDEX IF NOT EXISTS idx_driver_position ON position_results (driver_code, position);")
 
+    # Create win_probability_cache table for instant probability queries
+    click.echo("Creating win_probability_cache table...")
+    db.execute("""
+    CREATE TABLE IF NOT EXISTS win_probability_cache (
+        driver_code TEXT NOT NULL,
+        num_races INTEGER NOT NULL,
+        win_count INTEGER NOT NULL DEFAULT 0,
+        total_at_length INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (driver_code, num_races)
+    );
+    """)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_prob_driver ON win_probability_cache (driver_code);")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_prob_num_races ON win_probability_cache (num_races);")
+
     db.commit()
 
     # Get table info
@@ -338,8 +352,9 @@ def compute_stats_command() -> None:
     - Highest position achieved by each driver
     - Best winning margin for each winner
     - Win counts
+    - Win probability cache (wins per driver per season length)
 
-    This runs once and makes the highest_position endpoint instant.
+    This runs once and makes the highest_position and championship_win_probability endpoints instant.
     """
     import time
     start_time = time.time()
@@ -471,12 +486,74 @@ def compute_stats_command() -> None:
 
     db.commit()
 
+    # Step 6: Compute win probability cache
+    click.echo("  [6/6] Computing win probability cache...")
+
+    # Ensure table exists (for databases created before this feature)
+    db.execute("""
+    CREATE TABLE IF NOT EXISTS win_probability_cache (
+        driver_code TEXT NOT NULL,
+        num_races INTEGER NOT NULL,
+        win_count INTEGER NOT NULL DEFAULT 0,
+        total_at_length INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (driver_code, num_races)
+    );
+    """)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_prob_driver ON win_probability_cache (driver_code);")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_prob_num_races ON win_probability_cache (num_races);")
+
+    # Get wins per driver per season length
+    wins_per_length = db.execute("""
+        SELECT winner, num_races, COUNT(*) as wins
+        FROM championship_results
+        WHERE winner IS NOT NULL
+        GROUP BY winner, num_races
+    """).fetchall()
+
+    # Get total championships per season length
+    totals_per_length = db.execute("""
+        SELECT num_races, COUNT(*) as total
+        FROM championship_results
+        GROUP BY num_races
+    """).fetchall()
+
+    totals_dict = {row['num_races']: row['total'] for row in totals_per_length}
+
+    # Clear existing cache and insert new data
+    db.execute("DELETE FROM win_probability_cache")
+
+    # Prepare data for all driver/num_races combinations
+    cache_data = []
+    for row in wins_per_length:
+        driver = row['winner']
+        num_races = row['num_races']
+        wins = row['wins']
+        total = totals_dict.get(num_races, 0)
+        cache_data.append((driver, num_races, wins, total))
+
+    # Also add entries for drivers with 0 wins at certain season lengths
+    existing_combinations = {(d, n) for d, n, _, _ in cache_data}
+    for driver in all_drivers:
+        for num_races, total in totals_dict.items():
+            if (driver, num_races) not in existing_combinations:
+                cache_data.append((driver, num_races, 0, total))
+
+    db.executemany("""
+        INSERT INTO win_probability_cache (driver_code, num_races, win_count, total_at_length)
+        VALUES (?, ?, ?, ?)
+    """, cache_data)
+
+    db.commit()
+
+    click.echo(f"        Cached {len(cache_data)} probability entries")
+
     elapsed = time.time() - start_time
-    click.echo(f"\n[OK] Driver statistics computed in {elapsed:.1f} seconds")
+    click.echo(f"\n[OK] Driver statistics and probability cache computed in {elapsed:.1f} seconds")
     click.echo(f"     {len(driver_stats)} drivers processed")
+    click.echo(f"     {len(cache_data)} probability cache entries created")
 
     # Show sample results
-    click.echo("\nSample results:")
+    click.echo("\nSample driver statistics:")
     for row in db.execute("SELECT * FROM driver_statistics ORDER BY highest_position, win_count DESC LIMIT 5").fetchall():
         margin_str = f"+{row['best_margin']}" if row['best_margin'] else "N/A"
         click.echo(f"  {row['driver_code']}: P{row['highest_position']} ({row['highest_position_max_races']} races), margin: {margin_str}, wins: {row['win_count']}")

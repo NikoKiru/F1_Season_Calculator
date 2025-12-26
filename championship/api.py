@@ -484,6 +484,7 @@ def driver_positions() -> Response:
 def championship_win_probability() -> Response:
     """
     Calculate the probability of winning a championship for each driver based on season length.
+    Uses pre-computed win_probability_cache for instant performance.
     ---
     responses:
       200:
@@ -491,21 +492,54 @@ def championship_win_probability() -> Response:
     """
     db = get_db()
 
-    # Get total wins for each driver
-    query_wins = "SELECT winner, COUNT(*) as wins FROM championship_results GROUP BY winner"
-    driver_total_wins = {row['winner']: row['wins'] for row in db.execute(query_wins).fetchall()}
+    # Try to use the pre-computed cache first
+    cache_rows = db.execute("""
+        SELECT driver_code, num_races, win_count, total_at_length
+        FROM win_probability_cache
+        ORDER BY driver_code, num_races
+    """).fetchall()
 
-    # Get wins per season length for each driver
-    query_wins_per_length = "SELECT winner, num_races, COUNT(*) as wins FROM championship_results GROUP BY winner, num_races"
-    wins_per_length = {}
-    for row in db.execute(query_wins_per_length).fetchall():
-        if row['winner'] not in wins_per_length:
-            wins_per_length[row['winner']] = {}
-        wins_per_length[row['winner']][row['num_races']] = row['wins']
+    if cache_rows:
+        # Build data structures from cache (instant - no aggregation needed)
+        wins_per_length: dict = {}
+        seasons_per_length: dict = {}
+        driver_total_wins: dict = {}
 
-    # Get total seasons per length
-    query_seasons_per_length = "SELECT num_races, COUNT(*) as total FROM championship_results GROUP BY num_races"
-    seasons_per_length = {row['num_races']: row['total'] for row in db.execute(query_seasons_per_length).fetchall()}
+        for row in cache_rows:
+            driver = row['driver_code']
+            num_races = row['num_races']
+            win_count = row['win_count']
+            total = row['total_at_length']
+
+            # Track wins per driver per length
+            if driver not in wins_per_length:
+                wins_per_length[driver] = {}
+            wins_per_length[driver][num_races] = win_count
+
+            # Track total seasons per length (same for all drivers at same length)
+            seasons_per_length[num_races] = total
+
+            # Accumulate total wins per driver
+            if driver not in driver_total_wins:
+                driver_total_wins[driver] = 0
+            driver_total_wins[driver] += win_count
+    else:
+        # Fallback to original queries if cache is empty
+        # Get total wins for each driver
+        query_wins = "SELECT winner, COUNT(*) as wins FROM championship_results GROUP BY winner"
+        driver_total_wins = {row['winner']: row['wins'] for row in db.execute(query_wins).fetchall()}
+
+        # Get wins per season length for each driver
+        query_wins_per_length = "SELECT winner, num_races, COUNT(*) as wins FROM championship_results GROUP BY winner, num_races"
+        wins_per_length = {}
+        for row in db.execute(query_wins_per_length).fetchall():
+            if row['winner'] not in wins_per_length:
+                wins_per_length[row['winner']] = {}
+            wins_per_length[row['winner']][row['num_races']] = row['wins']
+
+        # Get total seasons per length
+        query_seasons_per_length = "SELECT num_races, COUNT(*) as total FROM championship_results GROUP BY num_races"
+        seasons_per_length = {row['num_races']: row['total'] for row in db.execute(query_seasons_per_length).fetchall()}
 
     season_lengths = sorted(seasons_per_length.keys())
 

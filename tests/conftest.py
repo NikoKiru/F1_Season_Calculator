@@ -123,6 +123,43 @@ def app():
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, stats_data)
 
+        # Create win_probability_cache table for fast probability queries
+        db.execute("""
+        CREATE TABLE IF NOT EXISTS win_probability_cache (
+            driver_code TEXT NOT NULL,
+            num_races INTEGER NOT NULL,
+            win_count INTEGER NOT NULL DEFAULT 0,
+            total_at_length INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (driver_code, num_races)
+        );
+        """)
+        db.execute("CREATE INDEX IF NOT EXISTS idx_prob_driver ON win_probability_cache (driver_code);")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_prob_num_races ON win_probability_cache (num_races);")
+
+        # Insert pre-computed win probability cache data
+        # Based on sample_data: 2 championships at 3 races, 1 at 4, 1 at 5, 1 at 6
+        # VER wins: 1 at 3 races, 1 at 4, 0 at 5, 1 at 6
+        # NOR wins: 0 at 3, 0 at 4, 1 at 5, 0 at 6
+        # LEC wins: 1 at 3, 0 at 4, 0 at 5, 0 at 6
+        prob_cache_data = [
+            # VER
+            ('VER', 3, 1, 2), ('VER', 4, 1, 1), ('VER', 5, 0, 1), ('VER', 6, 1, 1),
+            # NOR
+            ('NOR', 3, 0, 2), ('NOR', 4, 0, 1), ('NOR', 5, 1, 1), ('NOR', 6, 0, 1),
+            # LEC
+            ('LEC', 3, 1, 2), ('LEC', 4, 0, 1), ('LEC', 5, 0, 1), ('LEC', 6, 0, 1),
+            # HAM (no wins)
+            ('HAM', 3, 0, 2), ('HAM', 4, 0, 1), ('HAM', 5, 0, 1), ('HAM', 6, 0, 1),
+            # RUS (no wins)
+            ('RUS', 3, 0, 2), ('RUS', 4, 0, 1), ('RUS', 5, 0, 1), ('RUS', 6, 0, 1),
+            # PIA (no wins)
+            ('PIA', 3, 0, 2), ('PIA', 4, 0, 1), ('PIA', 5, 0, 1), ('PIA', 6, 0, 1),
+        ]
+        db.executemany("""
+            INSERT INTO win_probability_cache (driver_code, num_races, win_count, total_at_length)
+            VALUES (?, ?, ?, ?)
+        """, prob_cache_data)
+
         db.commit()
 
     yield flask_app
