@@ -2,49 +2,29 @@ from typing import Any, Dict, List, Optional, Tuple
 from flask import (
     Blueprint, jsonify, request, url_for, Response
 )
-# Import db module - works with both package and standalone setup
-try:
-    from ..db import get_db
-    from .. import cache
-except ImportError:
-    import db
-    get_db = db.get_db
-    from __init__ import cache
 
-try:
-    from .models import ROUND_NAMES_2025, DRIVER_NAMES, DRIVERS
-    from .logic import get_round_points_for_championship
-    from .validators import (
-        ErrorCode,
-        ValidationError,
-        NotFoundError,
-        validate_pagination,
-        validate_driver_code,
-        validate_position,
-        validate_championship_id,
-        validate_rounds,
-        validate_boolean,
-        build_error_response,
-        format_validation_error,
-        format_not_found_error,
-    )
-except ImportError:
-    from championship.models import ROUND_NAMES_2025, DRIVER_NAMES, DRIVERS
-    from championship.logic import get_round_points_for_championship
-    from championship.validators import (
-        ErrorCode,
-        ValidationError,
-        NotFoundError,
-        validate_pagination,
-        validate_driver_code,
-        validate_position,
-        validate_championship_id,
-        validate_rounds,
-        validate_boolean,
-        build_error_response,
-        format_validation_error,
-        format_not_found_error,
-    )
+# Root-level modules (absolute imports - db.py and cache are at project root)
+from db import get_db
+import __init__ as app_root
+cache = app_root.cache
+
+# Sibling modules within championship package (relative imports)
+from .models import ROUND_NAMES_2025, DRIVER_NAMES, DRIVERS
+from .logic import get_round_points_for_championship
+from .validators import (
+    ErrorCode,
+    ValidationError,
+    NotFoundError,
+    validate_pagination,
+    validate_driver_code,
+    validate_position,
+    validate_championship_id,
+    validate_rounds,
+    validate_boolean,
+    build_error_response,
+    format_validation_error,
+    format_not_found_error,
+)
 
 # Cache key constants for consistent naming
 CACHE_KEY_HIGHEST_POSITION = 'highest_position'

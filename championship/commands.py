@@ -1,18 +1,16 @@
-import pandas as pd
-import itertools
-import numpy as np
-import sqlite3
-import click
-from flask.cli import with_appcontext
-# Import db module - works with both package and standalone setup
-try:
-    from ..db import get_db
-except ImportError:
-    import db
-    get_db = db.get_db
 import os
-from flask import current_app, Flask
+import itertools
+import sqlite3
 from typing import Tuple, List, Iterator
+
+import click
+import numpy as np
+import pandas as pd
+from flask import current_app, Flask
+from flask.cli import with_appcontext
+
+# Root-level module (absolute import - db.py is at project root)
+from db import get_db
 
 
 # Step 1: Read the CSV file and convert to NumPy for performance

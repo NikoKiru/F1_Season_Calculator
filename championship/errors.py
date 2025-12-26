@@ -7,24 +7,14 @@ from typing import Tuple, Union
 from flask import render_template, jsonify, request, Blueprint, Flask, Response
 from werkzeug.exceptions import HTTPException
 
-try:
-    from .validators import (
-        ErrorCode,
-        ValidationError,
-        NotFoundError,
-        build_error_response,
-        format_validation_error,
-        format_not_found_error,
-    )
-except ImportError:
-    from championship.validators import (
-        ErrorCode,
-        ValidationError,
-        NotFoundError,
-        build_error_response,
-        format_validation_error,
-        format_not_found_error,
-    )
+from .validators import (
+    ErrorCode,
+    ValidationError,
+    NotFoundError,
+    build_error_response,
+    format_validation_error,
+    format_not_found_error,
+)
 
 errors_bp = Blueprint('errors', __name__)
 
