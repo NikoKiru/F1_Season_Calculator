@@ -271,3 +271,6 @@ pyrightconfig.json
 claude/
 claude-tempfiles/
 .claude
+
+nul
+
