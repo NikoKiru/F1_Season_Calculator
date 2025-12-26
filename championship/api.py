@@ -449,30 +449,27 @@ def driver_positions() -> Response:
 
     db = get_db()
 
-    # This query extracts the driver from the specified position in the comma-separated standings string.
-    # The logic to extract the Nth element is complex in SQL.
-    # We will fetch all standings and process them in Python.
-    query = "SELECT standings FROM championship_results"
-    rows = db.execute(query).fetchall()
+    # OPTIMIZATION: Use indexed position_results table for instant queries
+    # The position_results table has an index on (driver_code, position) making this query fast
+    query = """
+        SELECT driver_code, COUNT(*) as count
+        FROM position_results
+        WHERE position = ?
+        GROUP BY driver_code
+        ORDER BY count DESC
+    """
+    rows = db.execute(query, (position,)).fetchall()
 
-    total_championships = len(rows)
-    position_counts = {}
-    for row in rows:
-        standings = row['standings'].split(',')
-        if len(standings) >= position:
-            driver = standings[position - 1].strip()
-            if driver:
-                position_counts[driver] = position_counts.get(driver, 0) + 1
-
-    # Sort by count descending
-    sorted_counts = sorted(position_counts.items(), key=lambda item: item[1], reverse=True)
+    # Calculate total championships from the sum of all counts
+    total_championships = sum(row['count'] for row in rows)
 
     # Format the data with percentages
     result_data = []
-    for driver, count in sorted_counts:
+    for row in rows:
+        count = row['count']
         percentage = (count / total_championships) * 100 if total_championships > 0 else 0
         result_data.append({
-            "driver": driver,
+            "driver": row['driver_code'],
             "count": count,
             "percentage": round(percentage, 2)
         })
