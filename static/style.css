@@ -950,6 +950,7 @@ footer {
 /* Team color bar styles - F1 official look */
 .driver-cell {
     /* Don't use display:flex on td/th - it breaks table layout */
+    text-align: left !important;
 }
 
 .driver-cell .color-bar {
