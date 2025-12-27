@@ -28,7 +28,7 @@
                     <span class="winner-label">Champion</span>
                     <div class="winner-name">
                         <span class="color-bar" style="background-color: {{ drivers[data.winner].color if data.winner in drivers else '#666' }};"></span>
-                        {{ drivers[data.winner].name if data.winner in drivers else data.winner }}
+                        <a href="{{ url_for('views.driver_page', driver_code=data.winner) }}">{{ drivers[data.winner].name if data.winner in drivers else data.winner }}</a>
                     </div>
                     <span class="winner-team">{{ drivers[data.winner].team if data.winner in drivers else '' }}</span>
                 </div>
@@ -61,10 +61,10 @@
                 <thead>
                     <tr>
                         <th>Driver</th>
+                        <th>Total Points</th>
                         {% for round_name in data.round_names %}
                             <th>{{ round_name }}</th>
                         {% endfor %}
-                        <th>Total Points</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -73,12 +73,12 @@
                             <tr>
                                 <td class="driver-cell" data-label="Driver">
                                     <span class="color-bar" style="background-color: {{ drivers[driver_code].color if driver_code in drivers else '#666' }};"></span>
-                                    {{ data.driver_names[driver_code] }}
+                                    <a href="{{ url_for('views.driver_page', driver_code=driver_code) }}">{{ data.driver_names[driver_code] }}</a>
                                 </td>
+                                <td data-label="Total Points"><strong>{{ data.round_points_data[driver_code].total_points }}</strong></td>
                                 {% for point in data.round_points_data[driver_code].round_points %}
                                     <td data-label="{{ data.round_names[loop.index0] }}">{{ point }}</td>
                                 {% endfor %}
-                                <td data-label="Total Points"><strong>{{ data.round_points_data[driver_code].total_points }}</strong></td>
                             </tr>
                         {% endif %}
                     {% endfor %}

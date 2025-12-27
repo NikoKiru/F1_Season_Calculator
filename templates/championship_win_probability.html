@@ -48,7 +48,7 @@
             <tr>
                 <th class="driver-cell" data-label="Driver">
                     <span class="color-bar" style="background-color: {{ drivers[driver.driver].color if driver.driver in drivers else '#666' }};"></span>
-                    {{ data.driver_names[driver.driver] }}
+                    <a href="{{ url_for('views.driver_page', driver_code=driver.driver) }}">{{ data.driver_names[driver.driver] }}</a>
                 </th>
                 {% for i in range(data.season_lengths|length) %}
                     {% if data.season_lengths[i] == 1 %}

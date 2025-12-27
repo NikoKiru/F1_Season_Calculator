@@ -455,6 +455,36 @@ a:hover {
     font-size: 1.1em;
 }
 
+/* Driver name links should look like normal text */
+a.driver-name,
+.driver-name a,
+.driver-cell a,
+.winner-name a,
+.driver-info a,
+.legend-item a,
+.driver-list a,
+td.driver-cell a,
+th.driver-cell a {
+    color: var(--text-primary) !important;
+    text-decoration: none !important;
+    background: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: inline !important;
+    font-size: inherit !important;
+    border-radius: 0 !important;
+}
+
+a.driver-name:hover,
+.driver-name a:hover,
+.driver-cell a:hover,
+.winner-name a:hover,
+.driver-info a:hover,
+.legend-item a:hover,
+.standings-table a:hover {
+    text-decoration: underline;
+}
+
 .driver-wins {
     color: var(--text-secondary);
     font-weight: 500;

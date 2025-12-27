@@ -69,7 +69,7 @@ async function fetchData(position) {
             html += `<li>
                 <span class="team-color-stripe" style="background-color: ${color};"></span>
                 <div class="driver-info">
-                    <span class="driver-name">${name}</span>
+                    <a href="/driver/${item.driver}" class="driver-name">${name}</a>
                     <span class="driver-team">${team}</span>
                 </div>
                 <span class="driver-wins">${item.count} times (${item.percentage}%)</span>
