@@ -154,26 +154,47 @@ def migrate_db() -> None:
     Adds season column to existing tables if they don't have it.
     Existing data is defaulted to season 2025.
     """
+    import time
     db = get_db()
+
+    # Get row count for progress estimation
+    count_result = db.execute("SELECT COUNT(*) FROM championship_results").fetchone()
+    total_rows = count_result[0] if count_result else 0
+    click.echo(f"Database has {total_rows:,} championship records")
 
     # Check if season column exists in championship_results
     cursor = db.execute("PRAGMA table_info(championship_results)")
     columns = [row[1] for row in cursor.fetchall()]
 
     if 'season' not in columns:
-        click.echo("Migrating database: Adding season column to championship_results...")
+        click.echo("\n[1/4] Migrating championship_results table...")
+        click.echo(f"      Adding season column to {total_rows:,} rows...")
+        start = time.time()
         db.execute("ALTER TABLE championship_results ADD COLUMN season INTEGER NOT NULL DEFAULT 2025")
+        click.echo(f"      Column added in {time.time() - start:.1f}s")
+
+        click.echo("      Creating index idx_season...")
+        start = time.time()
         db.execute("CREATE INDEX IF NOT EXISTS idx_season ON championship_results (season)")
+        click.echo(f"      Index created in {time.time() - start:.1f}s")
+
+        click.echo("      Creating index idx_season_winner...")
+        start = time.time()
         db.execute("CREATE INDEX IF NOT EXISTS idx_season_winner ON championship_results (season, winner)")
+        click.echo(f"      Index created in {time.time() - start:.1f}s")
+
         db.commit()
         click.echo("  [OK] championship_results migrated")
+    else:
+        click.echo("\n[1/4] championship_results already has season column - skipping")
 
     # Check driver_statistics table
     cursor = db.execute("PRAGMA table_info(driver_statistics)")
     columns = [row[1] for row in cursor.fetchall()]
 
     if 'season' not in columns:
-        click.echo("Migrating database: Adding season column to driver_statistics...")
+        click.echo("\n[2/4] Migrating driver_statistics table...")
+        start = time.time()
         # Need to recreate table since we're changing the primary key
         db.execute("""
             CREATE TABLE IF NOT EXISTS driver_statistics_new (
@@ -199,25 +220,40 @@ def migrate_db() -> None:
         db.execute("DROP TABLE driver_statistics")
         db.execute("ALTER TABLE driver_statistics_new RENAME TO driver_statistics")
         db.commit()
-        click.echo("  [OK] driver_statistics migrated")
+        click.echo(f"  [OK] driver_statistics migrated in {time.time() - start:.1f}s")
+    else:
+        click.echo("\n[2/4] driver_statistics already has season column - skipping")
 
     # Check position_results table
     cursor = db.execute("PRAGMA table_info(position_results)")
     columns = [row[1] for row in cursor.fetchall()]
 
     if 'season' not in columns:
-        click.echo("Migrating database: Adding season column to position_results...")
+        # Get row count for this table
+        pos_count = db.execute("SELECT COUNT(*) FROM position_results").fetchone()[0]
+        click.echo(f"\n[3/4] Migrating position_results table ({pos_count:,} rows)...")
+        click.echo("      Adding season column...")
+        start = time.time()
         db.execute("ALTER TABLE position_results ADD COLUMN season INTEGER NOT NULL DEFAULT 2025")
+        click.echo(f"      Column added in {time.time() - start:.1f}s")
+
+        click.echo("      Creating index idx_position_season (this may take a while)...")
+        start = time.time()
         db.execute("CREATE INDEX IF NOT EXISTS idx_position_season ON position_results (season, driver_code, position)")
+        click.echo(f"      Index created in {time.time() - start:.1f}s")
+
         db.commit()
         click.echo("  [OK] position_results migrated")
+    else:
+        click.echo("\n[3/4] position_results already has season column - skipping")
 
     # Check win_probability_cache table
     cursor = db.execute("PRAGMA table_info(win_probability_cache)")
     columns = [row[1] for row in cursor.fetchall()]
 
     if 'season' not in columns:
-        click.echo("Migrating database: Adding season column to win_probability_cache...")
+        click.echo("\n[4/4] Migrating win_probability_cache table...")
+        start = time.time()
         # Need to recreate table since we're changing the primary key
         db.execute("""
             CREATE TABLE IF NOT EXISTS win_probability_cache_new (
@@ -240,7 +276,9 @@ def migrate_db() -> None:
         db.execute("CREATE INDEX IF NOT EXISTS idx_prob_num_races ON win_probability_cache (num_races)")
         db.execute("CREATE INDEX IF NOT EXISTS idx_prob_season ON win_probability_cache (season)")
         db.commit()
-        click.echo("  [OK] win_probability_cache migrated")
+        click.echo(f"  [OK] win_probability_cache migrated in {time.time() - start:.1f}s")
+    else:
+        click.echo("\n[4/4] win_probability_cache already has season column - skipping")
 
 
 def init_db(clear_existing: bool = False) -> None:
