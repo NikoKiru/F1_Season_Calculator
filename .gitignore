@@ -267,6 +267,9 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
+# Application logs
+logs/
+
 # Custom additions for Claude
 claude/
 claude-tempfiles/

@@ -1,10 +1,43 @@
 import os
+import logging
+from logging.handlers import RotatingFileHandler
 from typing import Optional, Dict, Any
 from flask import Flask
 from flask_caching import Cache
 
 # Initialize cache instance (configured in create_app)
 cache: Cache = Cache()
+
+
+def configure_logging(app: Flask) -> None:
+    """Configure application logging with rotating file handler.
+
+    Sets up structured logging to a file with rotation when not in debug/testing mode.
+    Logs are written to logs/f1_calculator.log with a 10MB max size and 10 backup files.
+    The log directory can be configured via LOG_FOLDER in app config.
+
+    Args:
+        app: The Flask application instance.
+    """
+    if app.debug or app.testing:
+        return
+
+    # Use configured log folder or default to logs/ in app root
+    log_dir = app.config.get('LOG_FOLDER', os.path.join(app.root_path, 'logs'))
+    os.makedirs(log_dir, exist_ok=True)
+
+    log_file = os.path.join(log_dir, 'f1_calculator.log')
+    handler = RotatingFileHandler(
+        log_file,
+        maxBytes=10240000,  # 10MB
+        backupCount=10
+    )
+    handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    ))
+    handler.setLevel(logging.INFO)
+    app.logger.addHandler(handler)
+    app.logger.setLevel(logging.INFO)
 
 
 def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
@@ -73,5 +106,9 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
     app.register_blueprint(api_bp)
     init_errors(app)
     init_commands(app)
+
+    # Configure logging
+    configure_logging(app)
+    app.logger.info('F1 Calculator startup')
 
     return app
