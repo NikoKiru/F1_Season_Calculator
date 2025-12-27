@@ -1,6 +1,9 @@
 import json
 import os
-from typing import Dict, TypedDict
+from typing import Dict, TypedDict, Optional
+
+# Default season for the application
+DEFAULT_SEASON = 2025
 
 
 class DriverInfo(TypedDict):
@@ -12,13 +15,29 @@ class DriverInfo(TypedDict):
     color: str
 
 
-def _get_season_config_path(season: int = 2025) -> str:
+class SeasonData:
+    """Container for season-specific data."""
+
+    def __init__(self, season: int):
+        self.season = season
+        self._data = load_season_data(season)
+        self.team_colors = _build_team_colors(self._data)
+        self.drivers = _build_drivers(self._data, self.team_colors)
+        self.driver_names = _build_driver_names(self.drivers)
+        self.round_names = _build_round_names(self._data)
+
+
+# Cache for loaded season data
+_season_cache: Dict[int, SeasonData] = {}
+
+
+def _get_season_config_path(season: int = DEFAULT_SEASON) -> str:
     """Get the path to the season config file."""
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_dir, 'data', 'seasons', f'{season}.json')
 
 
-def load_season_data(season: int = 2025) -> dict:
+def load_season_data(season: int = DEFAULT_SEASON) -> dict:
     """
     Load season data from a JSON config file.
 
@@ -67,17 +86,41 @@ def _build_driver_names(drivers: Dict[str, Dict[str, str | int]]) -> Dict[str, s
     return {code: info['name'] for code, info in drivers.items()}
 
 
-# Load the default season data
+def get_season_data(season: Optional[int] = None) -> SeasonData:
+    """
+    Get season data for the specified year, with caching.
+
+    Args:
+        season: The year of the season to load. Defaults to DEFAULT_SEASON.
+
+    Returns:
+        SeasonData object containing all season information.
+    """
+    if season is None:
+        season = DEFAULT_SEASON
+
+    if season not in _season_cache:
+        _season_cache[season] = SeasonData(season)
+
+    return _season_cache[season]
+
+
+def clear_season_cache() -> None:
+    """Clear the season data cache."""
+    _season_cache.clear()
+
+
+# Load the default season data for backwards compatibility
 _season_data = load_season_data()
 
-# Build the exported dictionaries
+# Build the exported dictionaries (backwards compatibility - defaults to 2025)
 TEAM_COLORS: Dict[str, str] = _build_team_colors(_season_data)
 DRIVERS: Dict[str, Dict[str, str | int]] = _build_drivers(_season_data, TEAM_COLORS)
 DRIVER_NAMES: Dict[str, str] = _build_driver_names(DRIVERS)
 ROUND_NAMES_2025: Dict[int, str] = _build_round_names(_season_data)
 
 
-def reload_season_data(season: int = 2025) -> None:
+def reload_season_data(season: int = DEFAULT_SEASON) -> None:
     """
     Reload season data from config file.
 
@@ -95,13 +138,16 @@ def reload_season_data(season: int = 2025) -> None:
     DRIVER_NAMES = _build_driver_names(DRIVERS)
     ROUND_NAMES_2025 = _build_round_names(_season_data)
 
+    # Also update the cache
+    _season_cache[season] = SeasonData(season)
+
 
 def get_available_seasons() -> list[int]:
     """
     Get list of available season years.
 
     Returns:
-        List of season years that have config files
+        List of season years that have config files, sorted descending (newest first).
     """
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     seasons_dir = os.path.join(base_dir, 'data', 'seasons')
@@ -118,4 +164,4 @@ def get_available_seasons() -> list[int]:
             except ValueError:
                 continue
 
-    return sorted(seasons)
+    return sorted(seasons, reverse=True)

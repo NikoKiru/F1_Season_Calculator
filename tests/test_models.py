@@ -4,6 +4,10 @@ import pytest
 from championship.models import (
     load_season_data,
     get_available_seasons,
+    get_season_data,
+    clear_season_cache,
+    SeasonData,
+    DEFAULT_SEASON,
     DRIVERS,
     TEAM_COLORS,
     DRIVER_NAMES,
@@ -155,9 +159,9 @@ class TestGetAvailableSeasons:
         assert 2025 in seasons
 
     def test_get_available_seasons_sorted(self):
-        """Available seasons should be sorted."""
+        """Available seasons should be sorted descending (newest first)."""
         seasons = get_available_seasons()
-        assert seasons == sorted(seasons)
+        assert seasons == sorted(seasons, reverse=True)
 
 
 class TestSpecificDrivers:
@@ -186,3 +190,93 @@ class TestSpecificDrivers:
         assert ham['name'] == 'Lewis Hamilton'
         assert ham['team'] == 'Ferrari'
         assert ham['number'] == 44
+
+
+class TestSeasonDataClass:
+    """Test the SeasonData class for multi-season support."""
+
+    def test_season_data_loads_2025(self):
+        """SeasonData should load 2025 season correctly."""
+        season_data = SeasonData(2025)
+        assert season_data.season == 2025
+        assert len(season_data.drivers) == 20
+        assert len(season_data.round_names) == 24
+
+    def test_season_data_loads_2026(self):
+        """SeasonData should load 2026 season correctly."""
+        season_data = SeasonData(2026)
+        assert season_data.season == 2026
+        # 2026 has 11 teams with 21 or 22 drivers due to Cadillac expansion
+        assert len(season_data.drivers) >= 20
+        assert len(season_data.round_names) == 24
+
+    def test_season_data_has_team_colors(self):
+        """SeasonData should have team colors."""
+        season_data = SeasonData(2025)
+        assert len(season_data.team_colors) >= 10
+
+    def test_season_data_has_driver_names(self):
+        """SeasonData should have driver names."""
+        season_data = SeasonData(2025)
+        assert len(season_data.driver_names) == 20
+        assert 'VER' in season_data.driver_names
+
+
+class TestGetSeasonData:
+    """Test get_season_data function with caching."""
+
+    def test_get_season_data_default(self):
+        """get_season_data should return default season when no arg."""
+        clear_season_cache()
+        season_data = get_season_data()
+        assert season_data.season == DEFAULT_SEASON
+
+    def test_get_season_data_with_year(self):
+        """get_season_data should return specified season."""
+        clear_season_cache()
+        season_data = get_season_data(2026)
+        assert season_data.season == 2026
+
+    def test_get_season_data_caching(self):
+        """get_season_data should return cached instance."""
+        clear_season_cache()
+        data1 = get_season_data(2025)
+        data2 = get_season_data(2025)
+        assert data1 is data2
+
+    def test_get_season_data_different_seasons(self):
+        """get_season_data should return different instances for different seasons."""
+        clear_season_cache()
+        data_2025 = get_season_data(2025)
+        data_2026 = get_season_data(2026)
+        assert data_2025 is not data_2026
+        assert data_2025.season == 2025
+        assert data_2026.season == 2026
+
+
+class TestClearSeasonCache:
+    """Test clear_season_cache function."""
+
+    def test_clear_season_cache(self):
+        """clear_season_cache should clear the cache."""
+        get_season_data(2025)
+        get_season_data(2026)
+        clear_season_cache()
+        # After clearing, new calls should create new instances
+        data = get_season_data(2025)
+        assert data.season == 2025
+
+
+class TestMultiSeasonAvailability:
+    """Test that multiple seasons are available."""
+
+    def test_both_2025_and_2026_available(self):
+        """Both 2025 and 2026 seasons should be available."""
+        seasons = get_available_seasons()
+        assert 2025 in seasons
+        assert 2026 in seasons
+
+    def test_2026_is_first(self):
+        """2026 should be first in the list (newest first)."""
+        seasons = get_available_seasons()
+        assert seasons[0] == 2026

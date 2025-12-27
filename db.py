@@ -148,6 +148,101 @@ def dispose_all_engines() -> None:
     _engines.clear()
 
 
+def migrate_db() -> None:
+    """Apply database migrations for multi-season support.
+
+    Adds season column to existing tables if they don't have it.
+    Existing data is defaulted to season 2025.
+    """
+    db = get_db()
+
+    # Check if season column exists in championship_results
+    cursor = db.execute("PRAGMA table_info(championship_results)")
+    columns = [row[1] for row in cursor.fetchall()]
+
+    if 'season' not in columns:
+        click.echo("Migrating database: Adding season column to championship_results...")
+        db.execute("ALTER TABLE championship_results ADD COLUMN season INTEGER NOT NULL DEFAULT 2025")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_season ON championship_results (season)")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_season_winner ON championship_results (season, winner)")
+        db.commit()
+        click.echo("  [OK] championship_results migrated")
+
+    # Check driver_statistics table
+    cursor = db.execute("PRAGMA table_info(driver_statistics)")
+    columns = [row[1] for row in cursor.fetchall()]
+
+    if 'season' not in columns:
+        click.echo("Migrating database: Adding season column to driver_statistics...")
+        # Need to recreate table since we're changing the primary key
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS driver_statistics_new (
+                driver_code TEXT NOT NULL,
+                season INTEGER NOT NULL DEFAULT 2025,
+                highest_position INTEGER NOT NULL,
+                highest_position_max_races INTEGER,
+                highest_position_championship_id INTEGER,
+                best_margin INTEGER,
+                best_margin_championship_id INTEGER,
+                win_count INTEGER DEFAULT 0,
+                computed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (driver_code, season)
+            )
+        """)
+        db.execute("""
+            INSERT OR REPLACE INTO driver_statistics_new
+            SELECT driver_code, 2025, highest_position, highest_position_max_races,
+                   highest_position_championship_id, best_margin, best_margin_championship_id,
+                   win_count, computed_at
+            FROM driver_statistics
+        """)
+        db.execute("DROP TABLE driver_statistics")
+        db.execute("ALTER TABLE driver_statistics_new RENAME TO driver_statistics")
+        db.commit()
+        click.echo("  [OK] driver_statistics migrated")
+
+    # Check position_results table
+    cursor = db.execute("PRAGMA table_info(position_results)")
+    columns = [row[1] for row in cursor.fetchall()]
+
+    if 'season' not in columns:
+        click.echo("Migrating database: Adding season column to position_results...")
+        db.execute("ALTER TABLE position_results ADD COLUMN season INTEGER NOT NULL DEFAULT 2025")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_position_season ON position_results (season, driver_code, position)")
+        db.commit()
+        click.echo("  [OK] position_results migrated")
+
+    # Check win_probability_cache table
+    cursor = db.execute("PRAGMA table_info(win_probability_cache)")
+    columns = [row[1] for row in cursor.fetchall()]
+
+    if 'season' not in columns:
+        click.echo("Migrating database: Adding season column to win_probability_cache...")
+        # Need to recreate table since we're changing the primary key
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS win_probability_cache_new (
+                driver_code TEXT NOT NULL,
+                num_races INTEGER NOT NULL,
+                win_count INTEGER NOT NULL DEFAULT 0,
+                total_at_length INTEGER NOT NULL DEFAULT 0,
+                season INTEGER NOT NULL DEFAULT 2025,
+                PRIMARY KEY (driver_code, num_races, season)
+            )
+        """)
+        db.execute("""
+            INSERT OR REPLACE INTO win_probability_cache_new
+            SELECT driver_code, num_races, win_count, total_at_length, 2025
+            FROM win_probability_cache
+        """)
+        db.execute("DROP TABLE win_probability_cache")
+        db.execute("ALTER TABLE win_probability_cache_new RENAME TO win_probability_cache")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_prob_driver ON win_probability_cache (driver_code)")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_prob_num_races ON win_probability_cache (num_races)")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_prob_season ON win_probability_cache (season)")
+        db.commit()
+        click.echo("  [OK] win_probability_cache migrated")
+
+
 def init_db(clear_existing: bool = False) -> None:
     """Initialize the database with optimized settings and schema.
 
@@ -189,11 +284,12 @@ def init_db(clear_existing: bool = False) -> None:
     click.echo("  - journal_mode=WAL, synchronous=NORMAL")
     click.echo("  - temp_store=MEMORY, cache_size=50MB, mmap_size=256MB")
 
-    # Create table with a dedicated 'winner' column
+    # Create table with a dedicated 'winner' column and season support
     click.echo("Creating championship_results table...")
     db.execute("""
     CREATE TABLE IF NOT EXISTS championship_results (
         championship_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        season INTEGER NOT NULL DEFAULT 2025,
         num_races INTEGER NOT NULL,
         rounds TEXT NOT NULL,
         standings TEXT NOT NULL,
@@ -209,19 +305,23 @@ def init_db(clear_existing: bool = False) -> None:
     db.execute("CREATE INDEX IF NOT EXISTS idx_winner_num_races ON championship_results (winner, num_races);")
     db.execute("CREATE INDEX IF NOT EXISTS idx_points ON championship_results (points);")
     db.execute("CREATE INDEX IF NOT EXISTS idx_rounds ON championship_results (rounds);")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_season ON championship_results (season);")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_season_winner ON championship_results (season, winner);")
 
     # Create pre-computed driver statistics table for instant queries
     click.echo("Creating driver_statistics table...")
     db.execute("""
     CREATE TABLE IF NOT EXISTS driver_statistics (
-        driver_code TEXT PRIMARY KEY,
+        driver_code TEXT NOT NULL,
+        season INTEGER NOT NULL DEFAULT 2025,
         highest_position INTEGER NOT NULL,
         highest_position_max_races INTEGER,
         highest_position_championship_id INTEGER,
         best_margin INTEGER,
         best_margin_championship_id INTEGER,
         win_count INTEGER DEFAULT 0,
-        computed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        computed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (driver_code, season)
     );
     """)
 
@@ -233,11 +333,13 @@ def init_db(clear_existing: bool = False) -> None:
         driver_code TEXT NOT NULL,
         position INTEGER NOT NULL,
         points INTEGER NOT NULL,
+        season INTEGER NOT NULL DEFAULT 2025,
         PRIMARY KEY (championship_id, driver_code),
         FOREIGN KEY (championship_id) REFERENCES championship_results(championship_id)
     );
     """)
     db.execute("CREATE INDEX IF NOT EXISTS idx_driver_position ON position_results (driver_code, position);")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_position_season ON position_results (season, driver_code, position);")
 
     # Create win_probability_cache table for instant probability queries
     click.echo("Creating win_probability_cache table...")
@@ -247,11 +349,13 @@ def init_db(clear_existing: bool = False) -> None:
         num_races INTEGER NOT NULL,
         win_count INTEGER NOT NULL DEFAULT 0,
         total_at_length INTEGER NOT NULL DEFAULT 0,
-        PRIMARY KEY (driver_code, num_races)
+        season INTEGER NOT NULL DEFAULT 2025,
+        PRIMARY KEY (driver_code, num_races, season)
     );
     """)
     db.execute("CREATE INDEX IF NOT EXISTS idx_prob_driver ON win_probability_cache (driver_code);")
     db.execute("CREATE INDEX IF NOT EXISTS idx_prob_num_races ON win_probability_cache (num_races);")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_prob_season ON win_probability_cache (season);")
 
     db.commit()
 
@@ -272,6 +376,18 @@ def init_db_command(clear: bool) -> None:
     """
     init_db(clear_existing=clear)
     click.echo('[OK] Database initialization complete.')
+
+
+@click.command('migrate-db')
+@with_appcontext
+def migrate_db_command() -> None:
+    """Apply database migrations for multi-season support.
+
+    Adds season column to existing tables if they don't have it.
+    Run this command after upgrading to multi-season version.
+    """
+    migrate_db()
+    click.echo('[OK] Database migration complete.')
 
 
 @click.command('setup')
@@ -563,5 +679,6 @@ def init_app(app: "Flask") -> None:
     """Register database functions with the Flask app."""
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
+    app.cli.add_command(migrate_db_command)
     app.cli.add_command(setup_command)
     app.cli.add_command(compute_stats_command)

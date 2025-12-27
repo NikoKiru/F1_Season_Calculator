@@ -12,20 +12,29 @@
     <header>
         <div class="header-top">
             <h1><a href="{{ url_for('views.index') }}" class="header-link">F1 Scenario Explorer</a></h1>
-            <button class="nav-toggle" aria-label="Toggle navigation" id="nav-toggle">
-                <span class="hamburger"></span>
-            </button>
+            <div class="header-right">
+                <div class="season-selector">
+                    <select id="season-select" class="season-dropdown" onchange="changeSeason(this.value)">
+                        {% for s in seasons|default([2025]) %}
+                        <option value="{{ s }}" {% if s == season|default(2025) %}selected{% endif %}>{{ s }} Season</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button class="nav-toggle" aria-label="Toggle navigation" id="nav-toggle">
+                    <span class="hamburger"></span>
+                </button>
+            </div>
         </div>
         <nav class="main-nav" id="main-nav">
             <ul class="nav-list">
-                <li><a href="{{ url_for('views.index') }}" class="nav-link {% if request.endpoint == 'views.index' %}active{% endif %}">Home</a></li>
-                <li><a href="{{ url_for('views.drivers_page') }}" class="nav-link {% if request.endpoint in ['views.drivers_page', 'views.driver_page'] %}active{% endif %}">Drivers</a></li>
-                <li><a href="{{ url_for('views.create_championship_page') }}" class="nav-link {% if request.endpoint == 'views.create_championship_page' %}active{% endif %}">Create Championship</a></li>
-                <li><a href="{{ url_for('views.championship_win_probability_page') }}" class="nav-link {% if request.endpoint == 'views.championship_win_probability_page' %}active{% endif %}">Win Probability</a></li>
-                <li><a href="{{ url_for('views.all_championship_wins_page') }}" class="nav-link {% if request.endpoint == 'views.all_championship_wins_page' %}active{% endif %}">All Wins</a></li>
-                <li><a href="{{ url_for('views.head_to_head_page') }}" class="nav-link {% if request.endpoint == 'views.head_to_head_page' %}active{% endif %}">Head-to-Head</a></li>
-                <li><a href="{{ url_for('views.highest_position_page') }}" class="nav-link {% if request.endpoint == 'views.highest_position_page' %}active{% endif %}">Highest Position</a></li>
-                <li><a href="{{ url_for('views.driver_positions_page') }}" class="nav-link {% if request.endpoint == 'views.driver_positions_page' %}active{% endif %}">Driver Positions</a></li>
+                <li><a href="{{ url_for('views.index', season=season) }}" class="nav-link {% if request.endpoint == 'views.index' %}active{% endif %}">Home</a></li>
+                <li><a href="{{ url_for('views.drivers_page', season=season) }}" class="nav-link {% if request.endpoint in ['views.drivers_page', 'views.driver_page'] %}active{% endif %}">Drivers</a></li>
+                <li><a href="{{ url_for('views.create_championship_page', season=season) }}" class="nav-link {% if request.endpoint == 'views.create_championship_page' %}active{% endif %}">Create Championship</a></li>
+                <li><a href="{{ url_for('views.championship_win_probability_page', season=season) }}" class="nav-link {% if request.endpoint == 'views.championship_win_probability_page' %}active{% endif %}">Win Probability</a></li>
+                <li><a href="{{ url_for('views.all_championship_wins_page', season=season) }}" class="nav-link {% if request.endpoint == 'views.all_championship_wins_page' %}active{% endif %}">All Wins</a></li>
+                <li><a href="{{ url_for('views.head_to_head_page', season=season) }}" class="nav-link {% if request.endpoint == 'views.head_to_head_page' %}active{% endif %}">Head-to-Head</a></li>
+                <li><a href="{{ url_for('views.highest_position_page', season=season) }}" class="nav-link {% if request.endpoint == 'views.highest_position_page' %}active{% endif %}">Highest Position</a></li>
+                <li><a href="{{ url_for('views.driver_positions_page', season=season) }}" class="nav-link {% if request.endpoint == 'views.driver_positions_page' %}active{% endif %}">Driver Positions</a></li>
             </ul>
         </nav>
         {% block header_extra %}{% endblock %}
@@ -37,7 +46,7 @@
         {% block content %}{% endblock %}
     </main>
     <footer>
-        <p>&copy; 2025 F1 Season Calculator</p>
+        <p>&copy; {{ season|default(2025) }} F1 Season Calculator</p>
     </footer>
     <script>
         // Mobile navigation toggle
@@ -45,6 +54,13 @@
             document.getElementById('main-nav').classList.toggle('open');
             this.classList.toggle('open');
         });
+
+        // Season selector
+        function changeSeason(season) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('season', season);
+            window.location.href = url.toString();
+        }
     </script>
     {% block scripts %}{% endblock %}
 </body>
