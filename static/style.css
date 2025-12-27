@@ -1181,6 +1181,30 @@ footer {
     100% { transform: rotate(360deg); }
 }
 
+/* Standings and Chart Grid (side by side layout) */
+.standings-chart-grid {
+    display: grid;
+    grid-template-columns: minmax(250px, 350px) 1fr;
+    gap: 30px;
+    align-items: start;
+    margin: 20px 0;
+}
+
+.standings-chart-grid .table-wrapper {
+    margin: 0;
+}
+
+.standings-chart-grid .chart-container {
+    max-width: 100%;
+    margin: 0;
+}
+
+@media (max-width: 900px) {
+    .standings-chart-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Pie Chart Container */
 .chart-container {
     position: relative;

@@ -2,6 +2,10 @@
 
 {% block title %}F1 Championship Scenarios{% endblock %}
 
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
 {% block header_extra %}
 <form action="" method="get" id="search-form">
     <input type="search" id="search-input" name="championship_id" placeholder="Search for a Championship ID...">
@@ -20,18 +24,173 @@
     Below, you can explore the fascinating statistics that emerge from this huge dataset. Who is the most likely champion? What's the most common outcome for your favorite driver? Let's find out!
 </p>
 
-<div class="endpoint-list">
-    <a href="{{ url_for('views.drivers_page') }}" class="endpoint-link">Drivers</a>
-    <a href="{{ url_for('views.create_championship_page') }}" class="endpoint-link">Create Your Own Championship</a>
-    <a href="{{ url_for('views.championship_win_probability_page') }}" class="endpoint-link">Championship Win Probability</a>
-    <a href="{{ url_for('views.all_championship_wins_page') }}" class="endpoint-link">All Championship Wins</a>
-    <a href="{{ url_for('views.highest_position_page') }}" class="endpoint-link">Highest Position per Driver</a>
-    <a href="{{ url_for('views.driver_positions_page') }}" class="endpoint-link">Driver Positions</a>
-    <a href="{{ url_for('views.head_to_head_page') }}" class="endpoint-link">Head-to-Head Comparison</a>
-    <a href="{{ url_for('views.min_races_to_win_page') }}" class="endpoint-link">Minimum Races to Win</a>
+{% if real_life_data and real_life_data.round_points_data %}
+<h3 style="margin-top: 30px;">{{ season }} Season Standings</h3>
+
+<div class="standings-chart-grid">
+    <div class="table-wrapper">
+        <table class="standings-table">
+            <thead>
+                <tr>
+                    <th>Pos</th>
+                    <th>Driver</th>
+                    <th>Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for driver_code in real_life_data.standings.split(',')[:10] %}
+                    {% if real_life_data.round_points_data[driver_code] %}
+                        <tr>
+                            <td data-label="Pos">{{ loop.index }}</td>
+                            <td class="driver-cell" data-label="Driver">
+                                <span class="color-bar" style="background-color: {{ drivers[driver_code].color if driver_code in drivers else '#666' }};"></span>
+                                {{ real_life_data.driver_names[driver_code] }}
+                            </td>
+                            <td data-label="Points"><strong>{{ real_life_data.round_points_data[driver_code].total_points }}</strong></td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="progression-chart"></canvas>
+    </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+{% if real_life_data and real_life_data.round_points_data %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Data from template
+    const roundNames = {{ real_life_data.round_names | tojson }};
+    const standings = {{ real_life_data.standings.split(',') | tojson }};
+    const roundPointsData = {{ real_life_data.round_points_data | tojson }};
+    const driversInfo = {{ drivers | tojson }};
+
+    // Get top 5 drivers
+    const top5Drivers = standings.slice(0, 5);
+
+    // Build datasets for each driver
+    const datasets = [];
+
+    // Group drivers by team to identify teammates
+    const teamDrivers = {};
+    top5Drivers.forEach(code => {
+        const team = driversInfo[code]?.team || 'Unknown';
+        if (!teamDrivers[team]) teamDrivers[team] = [];
+        teamDrivers[team].push(code);
+    });
+
+    // Determine which driver in each team should be dashed (lower total points)
+    const dashedDrivers = new Set();
+    Object.values(teamDrivers).forEach(codes => {
+        if (codes.length > 1) {
+            // Find the teammate with lower total points
+            let lowestPoints = Infinity;
+            let lowestDriver = null;
+            codes.forEach(code => {
+                const total = roundPointsData[code]?.total_points || 0;
+                if (total < lowestPoints) {
+                    lowestPoints = total;
+                    lowestDriver = code;
+                }
+            });
+            if (lowestDriver) dashedDrivers.add(lowestDriver);
+        }
+    });
+
+    // Create datasets
+    top5Drivers.forEach(driverCode => {
+        const driverData = roundPointsData[driverCode];
+        if (!driverData) return;
+
+        // Calculate cumulative points
+        const cumulativePoints = [];
+        let runningTotal = 0;
+        driverData.round_points.forEach(points => {
+            runningTotal += points;
+            cumulativePoints.push(runningTotal);
+        });
+
+        const color = driversInfo[driverCode]?.color || '#666';
+        const driverName = driversInfo[driverCode]?.name || driverCode;
+        const isDashed = dashedDrivers.has(driverCode);
+
+        datasets.push({
+            label: driverName,
+            data: cumulativePoints,
+            borderColor: color,
+            backgroundColor: color,
+            borderWidth: 2,
+            borderDash: isDashed ? [5, 5] : [],
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            tension: 0.1,
+            fill: false
+        });
+    });
+
+    // Create chart
+    const ctx = document.getElementById('progression-chart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: roundNames,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.raw} pts`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Cumulative Points'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Round'
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            }
+        }
+    });
+});
+</script>
+{% endif %}
 {% endblock %}

@@ -39,7 +39,21 @@ def get_template_context(season: Optional[int] = None) -> dict:
 
 @bp.route('/')
 def index() -> str:
+    from db import get_db
     ctx = get_template_context()
+
+    # Fetch the "real life" championship (the one with the largest ID)
+    db = get_db()
+    row = db.execute("SELECT MAX(championship_id) as max_id FROM championship_results").fetchone()
+    if row and row['max_id']:
+        response = get_championship(row['max_id'])
+        if hasattr(response, 'get_json') and response.status_code == 200:
+            ctx['real_life_data'] = response.get_json()
+        else:
+            ctx['real_life_data'] = None
+    else:
+        ctx['real_life_data'] = None
+
     return render_template('index.html', **ctx)
 
 
