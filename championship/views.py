@@ -7,7 +7,7 @@ from .api import (
     championship_win_probability, min_races_to_win, driver_position_championships
 )
 from .models import (
-    ROUND_NAMES_2025, DRIVERS, DEFAULT_SEASON,
+    ROUND_NAMES, DRIVERS, DEFAULT_SEASON,
     get_season_data, get_available_seasons
 )
 
@@ -41,10 +41,14 @@ def get_template_context(season: Optional[int] = None) -> dict:
 def index() -> str:
     from db import get_db
     ctx = get_template_context()
+    season = ctx['season']
 
-    # Fetch the "real life" championship (the one with the largest ID)
+    # Fetch the "real life" championship for this season (the one with the most races)
     db = get_db()
-    row = db.execute("SELECT MAX(championship_id) as max_id FROM championship_results").fetchone()
+    row = db.execute(
+        "SELECT MAX(championship_id) as max_id FROM championship_results WHERE season = ?",
+        (season,)
+    ).fetchone()
     if row and row['max_id']:
         response = get_championship(row['max_id'])
         if hasattr(response, 'get_json') and response.status_code == 200:

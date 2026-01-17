@@ -253,7 +253,7 @@ for num_races in range(1, total_races + 1):
 
 **Contents:**
 - `DRIVER_NAMES` - Full driver names
-- `ROUND_NAMES_2025` - Race location names
+- `ROUND_NAMES` - Race location names (per season)
 
 ### 8. Error Handlers (`championship/errors.py`)
 

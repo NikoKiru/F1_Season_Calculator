@@ -713,6 +713,54 @@ def compute_stats_command() -> None:
         click.echo(f"  {row['driver_code']}: P{row['highest_position']} ({row['highest_position_max_races']} races), margin: {margin_str}, wins: {row['win_count']}")
 
 
+def clear_season_data(season: int) -> int:
+    """Clear all data for a specific season from the database.
+
+    This is used when reprocessing a season with updated race results.
+
+    Args:
+        season: The season year to clear data for.
+
+    Returns:
+        The number of championship records deleted.
+    """
+    db = get_db()
+
+    # Get count of records to delete
+    count_result = db.execute(
+        "SELECT COUNT(*) FROM championship_results WHERE season = ?",
+        (season,)
+    ).fetchone()
+    record_count = count_result[0] if count_result else 0
+
+    if record_count == 0:
+        click.echo(f"No data found for season {season}")
+        return 0
+
+    click.echo(f"Clearing {record_count:,} championship records for season {season}...")
+
+    # Delete from position_results first (foreign key constraint)
+    db.execute("DELETE FROM position_results WHERE season = ?", (season,))
+    click.echo("  Cleared position_results")
+
+    # Delete from driver_statistics
+    db.execute("DELETE FROM driver_statistics WHERE season = ?", (season,))
+    click.echo("  Cleared driver_statistics")
+
+    # Delete from win_probability_cache
+    db.execute("DELETE FROM win_probability_cache WHERE season = ?", (season,))
+    click.echo("  Cleared win_probability_cache")
+
+    # Delete from championship_results
+    db.execute("DELETE FROM championship_results WHERE season = ?", (season,))
+    click.echo("  Cleared championship_results")
+
+    db.commit()
+    click.echo(f"[OK] Cleared all data for season {season}")
+
+    return record_count
+
+
 def init_app(app: "Flask") -> None:
     """Register database functions with the Flask app."""
     app.teardown_appcontext(close_db)

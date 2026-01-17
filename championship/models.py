@@ -117,7 +117,7 @@ _season_data = load_season_data()
 TEAM_COLORS: Dict[str, str] = _build_team_colors(_season_data)
 DRIVERS: Dict[str, Dict[str, str | int]] = _build_drivers(_season_data, TEAM_COLORS)
 DRIVER_NAMES: Dict[str, str] = _build_driver_names(DRIVERS)
-ROUND_NAMES_2025: Dict[int, str] = _build_round_names(_season_data)
+ROUND_NAMES: Dict[int, str] = _build_round_names(_season_data)
 
 
 def reload_season_data(season: int = DEFAULT_SEASON) -> None:
@@ -130,13 +130,13 @@ def reload_season_data(season: int = DEFAULT_SEASON) -> None:
     Args:
         season: The year of the season to load
     """
-    global TEAM_COLORS, DRIVERS, DRIVER_NAMES, ROUND_NAMES_2025, _season_data
+    global TEAM_COLORS, DRIVERS, DRIVER_NAMES, ROUND_NAMES, _season_data
 
     _season_data = load_season_data(season)
     TEAM_COLORS = _build_team_colors(_season_data)
     DRIVERS = _build_drivers(_season_data, TEAM_COLORS)
     DRIVER_NAMES = _build_driver_names(DRIVERS)
-    ROUND_NAMES_2025 = _build_round_names(_season_data)
+    ROUND_NAMES = _build_round_names(_season_data)
 
     # Also update the cache
     _season_cache[season] = SeasonData(season)

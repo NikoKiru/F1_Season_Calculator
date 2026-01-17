@@ -11,7 +11,7 @@ from championship.models import (
     DRIVERS,
     TEAM_COLORS,
     DRIVER_NAMES,
-    ROUND_NAMES_2025,
+    ROUND_NAMES,
     _build_team_colors,
     _build_drivers,
     _build_round_names,
@@ -82,14 +82,14 @@ class TestBuiltData:
             assert DRIVERS[code]['name'] == name
 
     def test_round_names_has_24_races(self):
-        """ROUND_NAMES_2025 should have 24 races."""
-        assert len(ROUND_NAMES_2025) == 24
+        """ROUND_NAMES should have 24 races."""
+        assert len(ROUND_NAMES) == 24
 
     def test_round_names_has_consecutive_numbers(self):
         """Round numbers should be consecutive from 1 to 24."""
         for i in range(1, 25):
-            assert i in ROUND_NAMES_2025
-            assert isinstance(ROUND_NAMES_2025[i], str)
+            assert i in ROUND_NAMES
+            assert isinstance(ROUND_NAMES[i], str)
 
 
 class TestDataBuilders:

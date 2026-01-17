@@ -57,42 +57,67 @@ def calculate_standings(
 def save_to_database(
     db: sqlite3.Connection,
     table_name: str,
-    championship_data: List[Tuple[int, str, str, str, str]]
+    championship_data: List[Tuple[int, str, str, str, str]],
+    season: int = 2025
 ) -> None:
     """Insert a batch of championship rows into the database.
 
     Uses a single executemany call for efficiency.
+
+    Args:
+        db: Database connection
+        table_name: Name of the table to insert into
+        championship_data: List of tuples (num_races, rounds, standings, winner, points)
+        season: The season year for the data (default: 2025)
     """
     if not championship_data:
         return
 
+    # Add season to each row
+    data_with_season = [
+        (season, num_races, rounds, standings, winner, points)
+        for num_races, rounds, standings, winner, points in championship_data
+    ]
+
     db.executemany(
         f"""
-    INSERT INTO {table_name} (num_races, rounds, standings, winner, points)
-    VALUES (?, ?, ?, ?, ?);
+    INSERT INTO {table_name} (season, num_races, rounds, standings, winner, points)
+    VALUES (?, ?, ?, ?, ?, ?);
     """,
-        championship_data,
+        data_with_season,
     )
     # Commit handled by caller for larger transactional control
 
 
 def save_position_results(
     db: sqlite3.Connection,
-    position_data: List[Tuple[int, str, int, int]]
+    position_data: List[Tuple[int, str, int, int]],
+    season: int = 2025
 ) -> None:
     """Insert a batch of position results into the database.
 
     Each entry maps a championship_id to a driver's position and points.
+
+    Args:
+        db: Database connection
+        position_data: List of tuples (championship_id, driver_code, position, points)
+        season: The season year for the data (default: 2025)
     """
     if not position_data:
         return
 
+    # Add season to each row
+    data_with_season = [
+        (champ_id, driver, pos, pts, season)
+        for champ_id, driver, pos, pts in position_data
+    ]
+
     db.executemany(
         """
-    INSERT INTO position_results (championship_id, driver_code, position, points)
-    VALUES (?, ?, ?, ?);
+    INSERT INTO position_results (championship_id, driver_code, position, points, season)
+    VALUES (?, ?, ?, ?, ?);
     """,
-        position_data,
+        data_with_season,
     )
 
 

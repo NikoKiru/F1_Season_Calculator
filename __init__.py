@@ -101,11 +101,11 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
     Swagger(app)
 
     # Register blueprints and commands from the championship module
-    from championship import api_bp, views_bp, init_errors, init_commands
+    from championship import api_bp, views_bp, init_errors, init_all_commands
     app.register_blueprint(views_bp)
     app.register_blueprint(api_bp)
     init_errors(app)
-    init_commands(app)
+    init_all_commands(app)
 
     # Configure logging
     configure_logging(app)

@@ -9,7 +9,7 @@ import __init__ as app_root
 cache = app_root.cache
 
 # Sibling modules within championship package (relative imports)
-from .models import ROUND_NAMES_2025, DRIVER_NAMES, DRIVERS
+from .models import ROUND_NAMES, DRIVER_NAMES, DRIVERS, DEFAULT_SEASON, get_season_data
 from .logic import get_round_points_for_championship
 from .validators import (
     ErrorCode,
@@ -24,35 +24,52 @@ from .validators import (
     format_not_found_error,
 )
 
-# Cache key constants for consistent naming
-CACHE_KEY_HIGHEST_POSITION = 'highest_position'
-CACHE_KEY_HEAD_TO_HEAD = 'head_to_head_{driver1}_{driver2}'
-CACHE_KEY_DRIVER_POSITIONS = 'driver_positions_{position}'
-CACHE_KEY_DRIVER_STATS = 'driver_stats_{driver_code}'
+
+def get_current_season() -> int:
+    """Get the current season from query parameter or default."""
+    season = request.args.get('season', type=int)
+    if season is None:
+        season = DEFAULT_SEASON
+    return season
+
+# Cache key constants for consistent naming (include season for isolation)
+CACHE_KEY_HIGHEST_POSITION = 'highest_position_{season}'
+CACHE_KEY_HEAD_TO_HEAD = 'head_to_head_{driver1}_{driver2}_{season}'
+CACHE_KEY_DRIVER_POSITIONS = 'driver_positions_{position}_{season}'
+CACHE_KEY_DRIVER_STATS = 'driver_stats_{driver_code}_{season}'
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
 
 def format_championship_data(
     row: Optional[Any],
-    with_round_points: bool = False
+    with_round_points: bool = False,
+    season: Optional[int] = None
 ) -> Optional[Dict[str, Any]]:
     """Formats a championship row from the database into a dictionary."""
     if not row:
         return None
 
+    if season is None:
+        season = DEFAULT_SEASON
+
+    # Get season-specific data
+    season_data = get_season_data(season)
+    round_names_dict = season_data.round_names
+    driver_names_dict = season_data.driver_names
+
     championship_data = dict(row)
 
     if championship_data.get('rounds'):
         round_numbers = [int(r) for r in championship_data['rounds'].split(',')]
-        round_names = [ROUND_NAMES_2025.get(r, 'Unknown') for r in round_numbers]
+        round_names = [round_names_dict.get(r, 'Unknown') for r in round_numbers]
         championship_data['round_names'] = round_names
 
     if championship_data.get('standings') and championship_data.get('points'):
         drivers = championship_data['standings'].split(',')
         points = [int(p) for p in championship_data['points'].split(',')]
         championship_data['driver_points'] = dict(zip(drivers, points))
-        championship_data['driver_names'] = {driver: DRIVER_NAMES.get(driver, 'Unknown') for driver in drivers}
+        championship_data['driver_names'] = {driver: driver_names_dict.get(driver, 'Unknown') for driver in drivers}
 
         if with_round_points and championship_data.get('rounds'):
             round_numbers = [int(r) for r in championship_data['rounds'].split(',')]
@@ -65,22 +82,32 @@ def format_championship_data(
 # Function to query all data from the SQLite database
 def get_all_data(
     page: int = 1,
-    per_page: int = 100
+    per_page: int = 100,
+    season: Optional[int] = None
 ) -> Tuple[List[Optional[Dict[str, Any]]], int]:
+    if season is None:
+        season = DEFAULT_SEASON
+
     db = get_db()
     table_name = 'championship_results'
 
-    # Get total count for pagination metadata
-    total_count = db.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+    # Get total count for pagination metadata (filtered by season)
+    total_count = db.execute(
+        f"SELECT COUNT(*) FROM {table_name} WHERE season = ?",
+        (season,)
+    ).fetchone()[0]
 
     # Calculate offset
     offset = (page - 1) * per_page
 
-    # Fetch paginated data from the table
-    rows = db.execute(f"SELECT * FROM {table_name} LIMIT ? OFFSET ?", (per_page, offset)).fetchall()
+    # Fetch paginated data from the table (filtered by season)
+    rows = db.execute(
+        f"SELECT * FROM {table_name} WHERE season = ? LIMIT ? OFFSET ?",
+        (season, per_page, offset)
+    ).fetchall()
 
     # Format data using the helper function
-    data = [format_championship_data(row) for row in rows]
+    data = [format_championship_data(row, season=season) for row in rows]
 
     return data, total_count
 
@@ -103,6 +130,10 @@ def get_data_route() -> Response:
         type: integer
         default: 100
         description: The number of results to retrieve per page (max 1000).
+      - name: season
+        in: query
+        type: integer
+        description: The season year to filter by (default current season).
     responses:
       200:
         description: A paginated list of all championship results.
@@ -118,7 +149,8 @@ def get_data_route() -> Response:
         response, status = format_validation_error(e)
         return jsonify(response), status
 
-    data, total_count = get_all_data(page, per_page)
+    season = get_current_season()
+    data, total_count = get_all_data(page, per_page, season=season)
 
     total_pages = (total_count + per_page - 1) // per_page
 
@@ -127,8 +159,9 @@ def get_data_route() -> Response:
         "total_pages": total_pages,
         "current_page": page,
         "per_page": per_page,
-        "next_page": f"/api/data?page={page + 1}&per_page={per_page}" if page < total_pages else None,
-        "prev_page": f"/api/data?page={page - 1}&per_page={per_page}" if page > 1 else None,
+        "season": season,
+        "next_page": f"/api/data?page={page + 1}&per_page={per_page}&season={season}" if page < total_pages else None,
+        "prev_page": f"/api/data?page={page - 1}&per_page={per_page}&season={season}" if page > 1 else None,
         "results": data
     }
 
@@ -159,7 +192,9 @@ def get_championship(id: int) -> Response:
         (id,)
     ).fetchone()
 
-    championship_data = format_championship_data(row, with_round_points=True)
+    # Get season from the row itself (ID is unique across seasons)
+    season = row['season'] if row else DEFAULT_SEASON
+    championship_data = format_championship_data(row, with_round_points=True, season=season)
 
     if championship_data:
         return jsonify(championship_data)
@@ -172,28 +207,37 @@ def get_championship(id: int) -> Response:
         return jsonify(response), status
 
 
-def all_championship_wins() -> Response:
+def all_championship_wins(season: Optional[int] = None) -> Response:
     """
     Get All Championship Wins for All Drivers
     This endpoint returns a summary of championship wins for every driver.
     ---
+    parameters:
+      - name: season
+        in: query
+        type: integer
+        description: The season year to filter by (default current season).
     responses:
       200:
         description: >
           A JSON object where keys are driver abbreviations
           and values are their total wins.
     """
+    if season is None:
+        season = get_current_season()
+
     db = get_db()
 
-    # Query to group by the indexed 'winner' column
+    # Query to group by the indexed 'winner' column (filtered by season)
     query = """
         SELECT winner, COUNT(*) as wins
         FROM championship_results
+        WHERE season = ?
         GROUP BY winner
         ORDER BY wins DESC
     """
 
-    rows = db.execute(query).fetchall()
+    rows = db.execute(query, (season,)).fetchall()
 
     # Format as a dictionary
     championship_wins = {row['winner']: row['wins'] for row in rows}
@@ -222,32 +266,43 @@ def highest_position() -> Response:
     INSTANT: Uses pre-computed driver_statistics table.
     Run 'flask compute-stats' to update statistics after data changes.
     ---
+    parameters:
+      - name: season
+        in: query
+        type: integer
+        description: The season year to filter by (default current season).
     responses:
       200:
         description: >
           A JSON array of driver statistics including position, max races,
           winning margin (for winners), and championship details.
     """
+    season = get_current_season()
     db = get_db()
 
-    # Query the pre-computed statistics table (instant!)
+    # Query the pre-computed statistics table (instant!) filtered by season
     rows = db.execute("""
         SELECT driver_code, highest_position, highest_position_max_races,
                highest_position_championship_id, best_margin, best_margin_championship_id,
                win_count
         FROM driver_statistics
+        WHERE season = ?
         ORDER BY highest_position ASC, win_count DESC
-    """).fetchall()
+    """, (season,)).fetchall()
 
     # If no pre-computed stats exist, return empty and warn
     if not rows:
-        # Check if championship_results has data
-        count = db.execute("SELECT COUNT(*) FROM championship_results").fetchone()[0]
+        # Check if championship_results has data for this season
+        count = db.execute(
+            "SELECT COUNT(*) FROM championship_results WHERE season = ?",
+            (season,)
+        ).fetchone()[0]
         if count > 0:
             # Data exists but stats not computed - return error message
             return jsonify({
                 "error": "Statistics not computed. Run 'flask compute-stats' first.",
-                "championship_count": count
+                "championship_count": count,
+                "season": season
             }), 503
 
         return jsonify([])
@@ -300,15 +355,22 @@ def head_to_head(driver1: str, driver2: str) -> Response:
         type: string
         required: true
         description: The abbreviation for the second driver (3-letter code).
+      - name: season
+        in: query
+        type: integer
+        description: The season year to filter by (default current season).
     responses:
       200:
         description: A JSON object showing the win count for each driver in the head-to-head comparison.
       400:
         description: Invalid driver code or same driver provided twice.
     """
+    season = get_current_season()
+    season_data = get_season_data(season)
+
     try:
-        d1_upper = validate_driver_code(driver1, DRIVER_NAMES, "driver1")
-        d2_upper = validate_driver_code(driver2, DRIVER_NAMES, "driver2")
+        d1_upper = validate_driver_code(driver1, season_data.driver_names, "driver1")
+        d2_upper = validate_driver_code(driver2, season_data.driver_names, "driver2")
     except NotFoundError as e:
         response, status = format_not_found_error(e)
         return jsonify(response), status
@@ -324,9 +386,11 @@ def head_to_head(driver1: str, driver2: str) -> Response:
         )
         return jsonify(response), status
 
-    # Create a cache key (normalize order so VER-NOR == NOR-VER)
+    # Create a cache key (normalize order so VER-NOR == NOR-VER, include season)
     sorted_drivers = sorted([d1_upper, d2_upper])
-    cache_key = CACHE_KEY_HEAD_TO_HEAD.format(driver1=sorted_drivers[0], driver2=sorted_drivers[1])
+    cache_key = CACHE_KEY_HEAD_TO_HEAD.format(
+        driver1=sorted_drivers[0], driver2=sorted_drivers[1], season=season
+    )
 
     # Check cache first (thread-safe)
     cached_data = cache.get(cache_key)
@@ -340,7 +404,7 @@ def head_to_head(driver1: str, driver2: str) -> Response:
     db = get_db()
 
     # This query is complex. It adds commas to the start and end of the standings string
-    # to safely find the position of a driver's abbreviation.
+    # to safely find the position of a driver's abbreviation. Filtered by season.
     query = """
         SELECT
             SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',')
@@ -350,16 +414,16 @@ def head_to_head(driver1: str, driver2: str) -> Response:
                 > INSTR(',' || standings || ',', ',' || ? || ',')
                 THEN 1 ELSE 0 END) as driver2_wins
         FROM championship_results
-        WHERE INSTR(standings, ?) > 0 AND INSTR(standings, ?) > 0;
+        WHERE season = ? AND INSTR(standings, ?) > 0 AND INSTR(standings, ?) > 0;
     """
     result = db.execute(
         query,
-        (d1_upper, d2_upper, d1_upper, d2_upper, d1_upper, d2_upper)
+        (d1_upper, d2_upper, d1_upper, d2_upper, season, d1_upper, d2_upper)
     ).fetchone()
 
     response_data = {
-        d1_upper: result['driver1_wins'],
-        d2_upper: result['driver2_wins']
+        d1_upper: result['driver1_wins'] or 0,
+        d2_upper: result['driver2_wins'] or 0
     }
 
     # Cache the result (thread-safe)
@@ -374,20 +438,26 @@ def min_races_to_win() -> Response:
     Minimum Races Needed for a Driver to Win a Championship
     Calculates the smallest number of races a driver needed to win a championship.
     ---
+    parameters:
+      - name: season
+        in: query
+        type: integer
+        description: The season year to filter by (default current season).
     responses:
       200:
         description: The minimum number of races for a championship win for each driver.
     """
+    season = get_current_season()
     db = get_db()
 
     query = """
         SELECT winner, MIN(num_races) as min_races
         FROM championship_results
-        WHERE winner IS NOT NULL
+        WHERE winner IS NOT NULL AND season = ?
         GROUP BY winner
         ORDER BY min_races ASC
     """
-    results = db.execute(query).fetchall()
+    results = db.execute(query, (season,)).fetchall()
 
     data = {row['winner']: row['min_races'] for row in results}
 
@@ -407,6 +477,10 @@ def driver_positions() -> Response:
         type: integer
         required: true
         description: The championship position to count (1-24).
+      - name: season
+        in: query
+        type: integer
+        description: The season year to filter by (default current season).
     responses:
       200:
         description: A JSON object with drivers and their count of finishes in the specified position.
@@ -419,8 +493,10 @@ def driver_positions() -> Response:
         response, status = format_validation_error(e)
         return jsonify(response), status
 
+    season = get_current_season()
+
     # Check cache first (thread-safe)
-    cache_key = CACHE_KEY_DRIVER_POSITIONS.format(position=position)
+    cache_key = CACHE_KEY_DRIVER_POSITIONS.format(position=position, season=season)
     cached_result = cache.get(cache_key)
     if cached_result is not None:
         return jsonify(cached_result)
@@ -432,11 +508,11 @@ def driver_positions() -> Response:
     query = """
         SELECT driver_code, COUNT(*) as count
         FROM position_results
-        WHERE position = ?
+        WHERE position = ? AND season = ?
         GROUP BY driver_code
         ORDER BY count DESC
     """
-    rows = db.execute(query, (position,)).fetchall()
+    rows = db.execute(query, (position, season)).fetchall()
 
     # Calculate total championships from the sum of all counts
     total_championships = sum(row['count'] for row in rows)
@@ -464,18 +540,26 @@ def championship_win_probability() -> Response:
     Calculate the probability of winning a championship for each driver based on season length.
     Uses pre-computed win_probability_cache for instant performance.
     ---
+    parameters:
+      - name: season
+        in: query
+        type: integer
+        description: The season year to filter by (default current season).
     responses:
       200:
         description: A JSON object with win probabilities for each driver.
     """
+    season = get_current_season()
+    season_data = get_season_data(season)
     db = get_db()
 
-    # Try to use the pre-computed cache first
+    # Try to use the pre-computed cache first (filtered by season)
     cache_rows = db.execute("""
         SELECT driver_code, num_races, win_count, total_at_length
         FROM win_probability_cache
+        WHERE season = ?
         ORDER BY driver_code, num_races
-    """).fetchall()
+    """, (season,)).fetchall()
 
     if cache_rows:
         # Build data structures from cache (instant - no aggregation needed)
@@ -502,22 +586,22 @@ def championship_win_probability() -> Response:
                 driver_total_wins[driver] = 0
             driver_total_wins[driver] += win_count
     else:
-        # Fallback to original queries if cache is empty
+        # Fallback to original queries if cache is empty (filtered by season)
         # Get total wins for each driver
-        query_wins = "SELECT winner, COUNT(*) as wins FROM championship_results GROUP BY winner"
-        driver_total_wins = {row['winner']: row['wins'] for row in db.execute(query_wins).fetchall()}
+        query_wins = "SELECT winner, COUNT(*) as wins FROM championship_results WHERE season = ? GROUP BY winner"
+        driver_total_wins = {row['winner']: row['wins'] for row in db.execute(query_wins, (season,)).fetchall()}
 
         # Get wins per season length for each driver
-        query_wins_per_length = "SELECT winner, num_races, COUNT(*) as wins FROM championship_results GROUP BY winner, num_races"
+        query_wins_per_length = "SELECT winner, num_races, COUNT(*) as wins FROM championship_results WHERE season = ? GROUP BY winner, num_races"
         wins_per_length = {}
-        for row in db.execute(query_wins_per_length).fetchall():
+        for row in db.execute(query_wins_per_length, (season,)).fetchall():
             if row['winner'] not in wins_per_length:
                 wins_per_length[row['winner']] = {}
             wins_per_length[row['winner']][row['num_races']] = row['wins']
 
         # Get total seasons per length
-        query_seasons_per_length = "SELECT num_races, COUNT(*) as total FROM championship_results GROUP BY num_races"
-        seasons_per_length = {row['num_races']: row['total'] for row in db.execute(query_seasons_per_length).fetchall()}
+        query_seasons_per_length = "SELECT num_races, COUNT(*) as total FROM championship_results WHERE season = ? GROUP BY num_races"
+        seasons_per_length = {row['num_races']: row['total'] for row in db.execute(query_seasons_per_length, (season,)).fetchall()}
 
     season_lengths = sorted(seasons_per_length.keys())
 
@@ -547,7 +631,8 @@ def championship_win_probability() -> Response:
         "season_lengths": season_lengths,
         "possible_seasons": [seasons_per_length.get(length, 0) for length in season_lengths],
         "drivers_data": driver_data,
-        "driver_names": DRIVER_NAMES
+        "driver_names": season_data.driver_names,
+        "season": season
     }
 
     return jsonify(response_data)
@@ -566,6 +651,10 @@ def driver_stats(driver_code: str) -> Response:
         type: string
         required: true
         description: The driver abbreviation (3-letter code, e.g., VER, NOR, HAM)
+      - name: season
+        in: query
+        type: integer
+        description: The season year to filter by (default current season).
     responses:
       200:
         description: Aggregated driver statistics
@@ -574,8 +663,11 @@ def driver_stats(driver_code: str) -> Response:
       404:
         description: Driver not found
     """
+    season = get_current_season()
+    season_data = get_season_data(season)
+
     try:
-        driver_code = validate_driver_code(driver_code, DRIVER_NAMES)
+        driver_code = validate_driver_code(driver_code, season_data.driver_names)
     except NotFoundError as e:
         response, status = format_not_found_error(e)
         return jsonify(response), status
@@ -584,25 +676,25 @@ def driver_stats(driver_code: str) -> Response:
         return jsonify(response), status
 
     # Check cache first (thread-safe)
-    cache_key = CACHE_KEY_DRIVER_STATS.format(driver_code=driver_code)
+    cache_key = CACHE_KEY_DRIVER_STATS.format(driver_code=driver_code, season=season)
     cached_result = cache.get(cache_key)
     if cached_result is not None:
         return jsonify(cached_result)
 
     db = get_db()
 
-    # Get pre-computed stats from driver_statistics table (INSTANT!)
+    # Get pre-computed stats from driver_statistics table (INSTANT!) filtered by season
     stats_row = db.execute("""
         SELECT highest_position, highest_position_max_races,
                highest_position_championship_id, best_margin,
                best_margin_championship_id, win_count
         FROM driver_statistics
-        WHERE driver_code = ?
-    """, (driver_code,)).fetchone()
+        WHERE driver_code = ? AND season = ?
+    """, (driver_code, season)).fetchone()
 
-    # Get total championships count for percentage
-    total_query = "SELECT COUNT(*) as total FROM championship_results"
-    total_result = db.execute(total_query).fetchone()
+    # Get total championships count for percentage (filtered by season)
+    total_query = "SELECT COUNT(*) as total FROM championship_results WHERE season = ?"
+    total_result = db.execute(total_query, (season,)).fetchone()
     total_championships = total_result['total'] if total_result else 1
 
     # Use pre-computed data if available
@@ -612,8 +704,8 @@ def driver_stats(driver_code: str) -> Response:
         highest_position_championship = stats_row['highest_position_championship_id']
     else:
         # Fallback to indexed query for wins
-        wins_query = "SELECT COUNT(*) as wins FROM championship_results WHERE winner = ?"
-        wins_result = db.execute(wins_query, (driver_code,)).fetchone()
+        wins_query = "SELECT COUNT(*) as wins FROM championship_results WHERE winner = ? AND season = ?"
+        wins_result = db.execute(wins_query, (driver_code, season)).fetchone()
         total_wins = wins_result['wins'] if wins_result else 0
         highest_position = 20
         highest_position_championship = None
@@ -621,19 +713,19 @@ def driver_stats(driver_code: str) -> Response:
     win_percentage = round((total_wins / total_championships) * 100, 2) if total_championships > 0 else 0
 
     # Get minimum races to win (fast - uses indexed winner column)
-    min_races_query = "SELECT MIN(num_races) as min_races FROM championship_results WHERE winner = ?"
-    min_races_result = db.execute(min_races_query, (driver_code,)).fetchone()
-    min_races_to_win = min_races_result['min_races'] if min_races_result and min_races_result['min_races'] else None
+    min_races_query = "SELECT MIN(num_races) as min_races FROM championship_results WHERE winner = ? AND season = ?"
+    min_races_result = db.execute(min_races_query, (driver_code, season)).fetchone()
+    min_races_to_win_val = min_races_result['min_races'] if min_races_result and min_races_result['min_races'] else None
 
     # Get win probability by season length (fast - indexed winner column)
     win_prob_by_length = {}
-    query = "SELECT num_races, COUNT(*) as wins FROM championship_results WHERE winner = ? GROUP BY num_races"
-    for row in db.execute(query, (driver_code,)).fetchall():
+    query = "SELECT num_races, COUNT(*) as wins FROM championship_results WHERE winner = ? AND season = ? GROUP BY num_races"
+    for row in db.execute(query, (driver_code, season)).fetchall():
         win_prob_by_length[row['num_races']] = row['wins']
 
     # Get total seasons per length for percentage calculation
     seasons_per_length = {}
-    for row in db.execute("SELECT num_races, COUNT(*) as total FROM championship_results GROUP BY num_races").fetchall():
+    for row in db.execute("SELECT num_races, COUNT(*) as total FROM championship_results WHERE season = ? GROUP BY num_races", (season,)).fetchall():
         seasons_per_length[row['num_races']] = row['total']
 
     win_prob_percentages = {}
@@ -647,17 +739,18 @@ def driver_stats(driver_code: str) -> Response:
 
     response = {
         "driver_code": driver_code,
-        "driver_name": DRIVER_NAMES[driver_code],
-        "driver_info": DRIVERS[driver_code],
+        "driver_name": season_data.driver_names[driver_code],
+        "driver_info": season_data.drivers[driver_code],
         "total_wins": total_wins,
         "total_championships": total_championships,
         "win_percentage": win_percentage,
         "highest_position": highest_position,
         "highest_position_championship_id": highest_position_championship,
-        "min_races_to_win": min_races_to_win,
+        "min_races_to_win": min_races_to_win_val,
         "position_distribution": position_counts,
         "win_probability_by_length": win_prob_percentages,
-        "seasons_per_length": seasons_per_length
+        "seasons_per_length": seasons_per_length,
+        "season": season
     }
 
     # Cache the result (thread-safe)
@@ -694,6 +787,10 @@ def driver_position_championships(driver_code: str, position: int) -> Response:
         type: integer
         default: 100
         description: Results per page (max 500)
+      - name: season
+        in: query
+        type: integer
+        description: The season year to filter by (default current season).
     responses:
       200:
         description: Paginated list of championships where driver finished in position
@@ -702,8 +799,11 @@ def driver_position_championships(driver_code: str, position: int) -> Response:
       404:
         description: Driver not found
     """
+    season = get_current_season()
+    season_data = get_season_data(season)
+
     try:
-        driver_code = validate_driver_code(driver_code, DRIVER_NAMES)
+        driver_code = validate_driver_code(driver_code, season_data.driver_names)
     except NotFoundError as e:
         response, status = format_not_found_error(e)
         return jsonify(response), status
@@ -735,22 +835,22 @@ def driver_position_championships(driver_code: str, position: int) -> Response:
 
     # OPTIMIZATION: For position 1, use the indexed 'winner' column (instant!)
     if position == 1:
-        # Get total count using indexed query
+        # Get total count using indexed query (filtered by season)
         count_result = db.execute(
-            "SELECT COUNT(*) as cnt FROM championship_results WHERE winner = ?",
-            (driver_code,)
+            "SELECT COUNT(*) as cnt FROM championship_results WHERE winner = ? AND season = ?",
+            (driver_code, season)
         ).fetchone()
         total_count = count_result['cnt'] if count_result else 0
 
-        # Get paginated results using indexed query
+        # Get paginated results using indexed query (filtered by season)
         query = """
             SELECT championship_id, num_races, rounds, standings, points
             FROM championship_results
-            WHERE winner = ?
+            WHERE winner = ? AND season = ?
             ORDER BY num_races DESC, championship_id DESC
             LIMIT ? OFFSET ?
         """
-        rows = db.execute(query, (driver_code, per_page, offset)).fetchall()
+        rows = db.execute(query, (driver_code, season, per_page, offset)).fetchall()
 
         championships = []
         for row in rows:
@@ -768,24 +868,24 @@ def driver_position_championships(driver_code: str, position: int) -> Response:
             })
     else:
         # OPTIMIZATION: Use indexed position_results table for instant queries
-        # Get total count using indexed query
+        # Get total count using indexed query (filtered by season)
         count_result = db.execute(
-            "SELECT COUNT(*) as cnt FROM position_results WHERE driver_code = ? AND position = ?",
-            (driver_code, position)
+            "SELECT COUNT(*) as cnt FROM position_results WHERE driver_code = ? AND position = ? AND season = ?",
+            (driver_code, position, season)
         ).fetchone()
         total_count = count_result['cnt'] if count_result else 0
 
-        # Get paginated results using indexed join
+        # Get paginated results using indexed join (filtered by season)
         query = """
             SELECT cr.championship_id, cr.num_races, cr.rounds, cr.standings, cr.points,
                    pr.points as driver_points
             FROM position_results pr
             JOIN championship_results cr ON pr.championship_id = cr.championship_id
-            WHERE pr.driver_code = ? AND pr.position = ?
+            WHERE pr.driver_code = ? AND pr.position = ? AND pr.season = ?
             ORDER BY cr.num_races DESC, cr.championship_id DESC
             LIMIT ? OFFSET ?
         """
-        rows = db.execute(query, (driver_code, position, per_page, offset)).fetchall()
+        rows = db.execute(query, (driver_code, position, season, per_page, offset)).fetchall()
 
         championships = []
         for row in rows:
@@ -807,13 +907,14 @@ def driver_position_championships(driver_code: str, position: int) -> Response:
 
     return jsonify({
         'driver_code': driver_code,
-        'driver_name': DRIVER_NAMES.get(driver_code, driver_code),
+        'driver_name': season_data.driver_names.get(driver_code, driver_code),
         'position': position,
         'total_count': total_count,
         'page': page,
         'per_page': per_page,
         'total_pages': total_pages,
-        'championships': championships
+        'championships': championships,
+        'season': season
     })
 
 
@@ -828,6 +929,10 @@ def create_championship() -> Response:
         type: string
         required: true
         description: Comma-separated list of round numbers (1-24, no duplicates)
+      - name: season
+        in: query
+        type: integer
+        description: The season year to filter by (default current season).
     responses:
       200:
         description: URL to the championship page
@@ -842,12 +947,13 @@ def create_championship() -> Response:
         response, status = format_validation_error(e)
         return jsonify(response), status
 
+    season = get_current_season()
     sorted_rounds_str = ','.join(map(str, round_numbers))
 
     db = get_db()
     row = db.execute(
-        "SELECT championship_id FROM championship_results WHERE rounds = ?",
-        (sorted_rounds_str,),
+        "SELECT championship_id FROM championship_results WHERE rounds = ? AND season = ?",
+        (sorted_rounds_str, season),
     ).fetchone()
 
     if row:
@@ -857,6 +963,6 @@ def create_championship() -> Response:
         response, status = build_error_response(
             code=ErrorCode.CHAMPIONSHIP_NOT_FOUND,
             message="Championship with this combination of rounds not found",
-            details={"rounds": round_numbers}
+            details={"rounds": round_numbers, "season": season}
         )
         return jsonify(response), status
