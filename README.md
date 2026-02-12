@@ -86,7 +86,6 @@ flask run
    git clone https://github.com/NikoKiru/F1_Season_Calculator.git
    cd F1_Season_Calculator
    ```
-
 2. **Set up virtual environment** (recommended)
 
    ```powershell
@@ -100,7 +99,6 @@ flask run
    python3 -m venv .venv
    source .venv/bin/activate
    ```
-
 3. **Install the package in development mode**
 
    ```bash
@@ -108,12 +106,12 @@ flask run
    ```
 
    This installs:
+
    - Flask (web framework)
    - Pandas (data processing)
    - NumPy (high-performance arrays)
    - Flasgger (Swagger/OpenAPI docs)
    - python-dotenv (environment variables)
-
 4. **Run the setup wizard**
 
    ```bash
@@ -121,6 +119,7 @@ flask run
    ```
 
    This automatically:
+
    - ✅ Creates `data/` folder for CSV files
    - ✅ Creates `instance/` folder for database
    - ✅ Initializes SQLite database with optimizations
@@ -142,6 +141,7 @@ LEC,15,15,15,18,15,15,15,15,12,15,15,15,15,15,12,15,15,12,15,15,15,15,12,15
 ```
 
 **Format:**
+
 - First column: Driver abbreviation (e.g., VER, NOR, LEC)
 - Subsequent columns: Points for each race (numbered 1, 2, 3, ...)
 
@@ -156,6 +156,7 @@ flask process-data --batch-size 200000
 ```
 
 **Processing Time:**
+
 - 24 races → ~2-5 minutes
 - Generates 16,777,215 championships (2^24 - 1)
 
@@ -166,20 +167,21 @@ flask run
 ```
 
 Then open your browser to:
+
 - **Web Interface:** [http://127.0.0.1:5000](http://127.0.0.1:5000)
 - **API Docs:** [http://127.0.0.1:5000/apidocs](http://127.0.0.1:5000/apidocs)
 
 ### Available Commands
 
-| Command | Description |
-|---------|-------------|
-| `flask setup` | First-time setup (creates folders, database, sample CSV) |
-| `flask init-db` | Initialize or update database schema |
-| `flask init-db --clear` | Reset database (deletes all data) |
-| `flask process-data` | Process CSV and generate championships |
-| `flask process-data --batch-size N` | Process with custom batch size |
-| `flask compute-stats` | Pre-compute driver statistics for instant queries |
-| `flask run` | Start the development server |
+| Command                               | Description                                              |
+| ------------------------------------- | -------------------------------------------------------- |
+| `flask setup`                       | First-time setup (creates folders, database, sample CSV) |
+| `flask init-db`                     | Initialize or update database schema                     |
+| `flask init-db --clear`             | Reset database (deletes all data)                        |
+| `flask process-data`                | Process CSV and generate championships                   |
+| `flask process-data --batch-size N` | Process with custom batch size                           |
+| `flask compute-stats`               | Pre-compute driver statistics for instant queries        |
+| `flask run`                         | Start the development server                             |
 
 > **Performance Note**: After processing data, run `flask compute-stats` to pre-compute driver statistics. This makes the Highest Position page load instantly (~20ms vs 50+ seconds).
 
@@ -189,24 +191,25 @@ Then open your browser to:
 
 The application provides a comprehensive REST API with the following endpoints:
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/data` | GET | Paginated championship data |
-| `/api/championship/<id>` | GET | Specific championship details |
-| `/api/all_championship_wins` | GET | Championship wins per driver |
-| `/api/highest_position` | GET | Best position achieved by each driver with enriched stats |
-| `/api/head_to_head/<driver1>/<driver2>` | GET | Compare two drivers |
-| `/api/min_races_to_win` | GET | Minimum races needed to win |
-| `/api/driver_positions?position=N` | GET | How many times each driver finished in position N |
-| `/api/championship_win_probability` | GET | Win probability based on number of races |
-| `/api/driver/<code>/stats` | GET | Aggregated statistics for a specific driver |
-| `/api/driver/<code>/position/<n>` | GET | All championships where driver finished in position N |
-| `/api/create_championship` | POST | Find championship by specific rounds |
-| `/api/clear_cache` | POST | Clear API caches |
+| Endpoint                                  | Method | Description                                               |
+| ----------------------------------------- | ------ | --------------------------------------------------------- |
+| `/api/data`                             | GET    | Paginated championship data                               |
+| `/api/championship/<id>`                | GET    | Specific championship details                             |
+| `/api/all_championship_wins`            | GET    | Championship wins per driver                              |
+| `/api/highest_position`                 | GET    | Best position achieved by each driver with enriched stats |
+| `/api/head_to_head/<driver1>/<driver2>` | GET    | Compare two drivers                                       |
+| `/api/min_races_to_win`                 | GET    | Minimum races needed to win                               |
+| `/api/driver_positions?position=N`      | GET    | How many times each driver finished in position N         |
+| `/api/championship_win_probability`     | GET    | Win probability based on number of races                  |
+| `/api/driver/<code>/stats`              | GET    | Aggregated statistics for a specific driver               |
+| `/api/driver/<code>/position/<n>`       | GET    | All championships where driver finished in position N     |
+| `/api/create_championship`              | POST   | Find championship by specific rounds                      |
+| `/api/clear_cache`                      | POST   | Clear API caches                                          |
 
 ### Interactive Documentation
 
 Visit [http://127.0.0.1:5000/apidocs](http://127.0.0.1:5000/apidocs) when the server is running for:
+
 - 📝 Complete API reference
 - 🧪 Try-it-out functionality
 - 📊 Request/response examples
@@ -249,10 +252,10 @@ NOR,18,25,18,25,25,18,25,18,25,18,25,18,25,18,25,18,25,18,25,18,25,18,25,18
 
 ### Field Specifications
 
-| Field | Type | Description | Required |
-|-------|------|-------------|----------|
-| `Driver` | String | Three-letter driver code (e.g., VER, NOR) | Yes |
-| `1..N` | Integer | Points scored in each race | Yes |
+| Field      | Type    | Description                               | Required |
+| ---------- | ------- | ----------------------------------------- | -------- |
+| `Driver` | String  | Three-letter driver code (e.g., VER, NOR) | Yes      |
+| `1..N`   | Integer | Points scored in each race                | Yes      |
 
 ### Season Configuration
 
@@ -355,33 +358,34 @@ For detailed architecture information, see [docs/architecture/ARCHITECTURE.md](d
 
 ### Technology Stack
 
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| **Backend** | Flask 3.1.2 | Web framework |
-| **Data Processing** | Pandas, NumPy | Fast data manipulation |
-| **Database** | SQLite 3 | Embedded database |
-| **API Docs** | Flasgger | Swagger/OpenAPI |
-| **Frontend** | HTML5, CSS3, Vanilla JS | Responsive UI |
-| **Styling** | Custom CSS | Modern design system |
+| Layer                     | Technology              | Purpose                |
+| ------------------------- | ----------------------- | ---------------------- |
+| **Backend**         | Flask 3.1.2             | Web framework          |
+| **Data Processing** | Pandas, NumPy           | Fast data manipulation |
+| **Database**        | SQLite 3                | Embedded database      |
+| **API Docs**        | Flasgger                | Swagger/OpenAPI        |
+| **Frontend**        | HTML5, CSS3, Vanilla JS | Responsive UI          |
+| **Styling**         | Custom CSS              | Modern design system   |
 
 ## ⚡ Performance
 
 ### Optimizations Implemented
 
 - **Database Level**
+
   - WAL (Write-Ahead Logging) mode
   - Memory-mapped I/O (256MB)
   - Optimized cache size (50MB)
   - Strategic indexes on frequently queried columns
   - Batch inserts with transactions
-
 - **Application Level**
+
   - In-memory caching for expensive queries
   - Smart heuristic-based algorithms
   - Early termination strategies
   - Lazy loading of data
-
 - **Frontend Level**
+
   - Responsive, mobile-first design
   - Debounced API calls
   - Optimistic UI updates
@@ -389,17 +393,18 @@ For detailed architecture information, see [docs/architecture/ARCHITECTURE.md](d
 
 ### Performance Benchmarks
 
-| Operation | Before | After | Improvement |
-|-----------|--------|-------|-------------|
-| `/api/highest_position` | 50+ seconds | 20ms | **2,600x faster** |
-| `/api/driver/<code>/stats` | 2+ minutes | <100ms | **1,200x faster** |
-| `/api/driver/<code>/position/1` | 3+ minutes | <200ms | **900x faster** |
-| Pre-computed stats | N/A | ~95s (one-time) | Instant queries |
-| Cached requests | N/A | <1ms | Instant |
-| Data import (24 races) | ~10 min | ~3 min | 3.3x faster |
-| Database size | N/A | ~6GB | 16.7M championships |
+| Operation                         | Before      | After           | Improvement             |
+| --------------------------------- | ----------- | --------------- | ----------------------- |
+| `/api/highest_position`         | 50+ seconds | 20ms            | **2,600x faster** |
+| `/api/driver/<code>/stats`      | 2+ minutes  | <100ms          | **1,200x faster** |
+| `/api/driver/<code>/position/1` | 3+ minutes  | <200ms          | **900x faster**   |
+| Pre-computed stats                | N/A         | ~95s (one-time) | Instant queries         |
+| Cached requests                   | N/A         | <1ms            | Instant                 |
+| Data import (24 races)            | ~10 min     | ~3 min          | 3.3x faster             |
+| Database size                     | N/A         | ~6GB            | 16.7M championships     |
 
 **Key optimizations:**
+
 - Pre-computed driver statistics table for instant highest position queries
 - Indexed `winner` column for P1 position queries (uses index instead of LIKE)
 - Normalized `position_results` table for instant P2-P20 position queries
@@ -450,12 +455,12 @@ This project uses GitHub Actions for continuous integration and deployment.
 
 ### Workflows
 
-| Workflow | Trigger | Description |
-|----------|---------|-------------|
-| **CI** | Push/PR to main | Lint, security scan, test (Python 3.10-3.12), build |
-| **CD - Staging** | Push to main | Auto-deploy to staging after CI passes |
-| **CD - Production** | Manual | Deploy specific version with approval |
-| **Release** | Manual | Create semantic version releases with changelog |
+| Workflow                  | Trigger         | Description                                         |
+| ------------------------- | --------------- | --------------------------------------------------- |
+| **CI**              | Push/PR to main | Lint, security scan, test (Python 3.10-3.12), build |
+| **CD - Staging**    | Push to main    | Auto-deploy to staging after CI passes              |
+| **CD - Production** | Manual          | Deploy specific version with approval               |
+| **Release**         | Manual          | Create semantic version releases with changelog     |
 
 ### CI Pipeline
 
