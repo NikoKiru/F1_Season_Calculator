@@ -48,6 +48,7 @@
     <footer>
         <p>&copy; {{ season|default(2025) }} F1 Season Calculator</p>
     </footer>
+    <script>const CURRENT_SEASON = {{ season|default(2026) }};</script>
     <script>
         // Mobile navigation toggle
         document.getElementById('nav-toggle').addEventListener('click', function() {

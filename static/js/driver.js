@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadDriverStats() {
     try {
-        const response = await fetch(`/api/driver/${DRIVER_CODE}/stats`);
+        const response = await fetch(`/api/driver/${DRIVER_CODE}/stats?season=${CURRENT_SEASON}`);
         if (!response.ok) {
             throw new Error('Failed to load driver stats');
         }

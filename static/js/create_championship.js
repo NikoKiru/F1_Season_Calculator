@@ -2,7 +2,7 @@ document.getElementById('search-form').addEventListener('submit', function(event
     event.preventDefault();
     const championshipId = document.getElementById('search-input').value;
     if (championshipId) {
-        window.location.href = `/championship/${championshipId}`;
+        window.location.href = `/championship/${championshipId}?season=${CURRENT_SEASON}`;
     }
 });
 
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         const roundsArray = Array.from(selectedRounds);
         
-        const url = `/api/create_championship?rounds=${roundsArray.join(',')}`;
+        const url = `/api/create_championship?rounds=${roundsArray.join(',')}&season=${CURRENT_SEASON}`;
 
         fetch(url)
             .then(response => {

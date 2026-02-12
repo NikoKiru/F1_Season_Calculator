@@ -40,7 +40,7 @@ document.getElementById('head-to-head-form').addEventListener('submit', function
             chartInstance = null;
         }
 
-        fetch(`/api/head_to_head/${driver1}/${driver2}`)
+        fetch(`/api/head_to_head/${driver1}/${driver2}?season=${CURRENT_SEASON}`)
             .then(response => {
                 if (!response.ok) {
                     return response.json().then(err => { throw new Error(err.error || 'Server error'); });
@@ -131,7 +131,7 @@ document.getElementById('head-to-head-form').addEventListener('submit', function
                 const d1Percentage = total > 0 ? ((d1Wins / total) * 100).toFixed(1) : 0;
                 legend1.innerHTML = `
                     ${colorBox1.outerHTML}
-                    <span><a href="/driver/${d1Code}"><strong>${d1Data.name || d1Code}</strong></a>: ${d1Wins} wins (${d1Percentage}%)</span>
+                    <span><a href="/driver/${d1Code}?season=${CURRENT_SEASON}"><strong>${d1Data.name || d1Code}</strong></a>: ${d1Wins} wins (${d1Percentage}%)</span>
                 `;
 
                 const legend2 = document.createElement('div');
@@ -142,7 +142,7 @@ document.getElementById('head-to-head-form').addEventListener('submit', function
                 const d2Percentage = total > 0 ? ((d2Wins / total) * 100).toFixed(1) : 0;
                 legend2.innerHTML = `
                     ${colorBox2.outerHTML}
-                    <span><a href="/driver/${d2Code}"><strong>${d2Data.name || d2Code}</strong></a>: ${d2Wins} wins (${d2Percentage}%)${areTeammates ? ' (Teammate)' : ''}</span>
+                    <span><a href="/driver/${d2Code}?season=${CURRENT_SEASON}"><strong>${d2Data.name || d2Code}</strong></a>: ${d2Wins} wins (${d2Percentage}%)${areTeammates ? ' (Teammate)' : ''}</span>
                 `;
 
                 legendDiv.appendChild(legend1);

@@ -42,7 +42,7 @@ async function fetchData(position) {
     positionHeader.textContent = `Position: ${position}${getPositionSuffix(position)}`;
 
     try {
-        const response = await fetch(`/api/driver_positions?position=${position}`, { signal });
+        const response = await fetch(`/api/driver_positions?position=${position}&season=${CURRENT_SEASON}`, { signal });
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
@@ -69,7 +69,7 @@ async function fetchData(position) {
             html += `<li>
                 <span class="team-color-stripe" style="background-color: ${color};"></span>
                 <div class="driver-info">
-                    <a href="/driver/${item.driver}" class="driver-name">${name}</a>
+                    <a href="/driver/${item.driver}?season=${CURRENT_SEASON}" class="driver-name">${name}</a>
                     <span class="driver-team">${team}</span>
                 </div>
                 <span class="driver-wins">${item.count} times (${item.percentage}%)</span>
