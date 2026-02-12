@@ -128,31 +128,54 @@ flask run
 
 ## 🚀 Usage
 
-### Preparing Your Data
+### Adding Race Data During a Season
 
-Create a `championships.csv` file in the `data/` directory:
-
-```csv
-Driver,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24
-VER,25,18,25,15,18,25,18,25,18,25,18,25,18,25,18,25,18,25,18,25,18,25,18,25
-NOR,18,25,18,25,25,18,25,18,25,18,25,18,25,18,25,18,25,18,25,18,25,18,25,18
-LEC,15,15,15,18,15,15,15,15,12,15,15,15,15,15,12,15,15,12,15,15,15,15,12,15
-...
-```
-
-**Format:**
-
-- First column: Driver abbreviation (e.g., VER, NOR, LEC)
-- Subsequent columns: Points for each race (numbered 1, 2, 3, ...)
-
-### Processing the Data
+The easiest way to track a live season is to add results after each race:
 
 ```bash
-# Standard processing (recommended)
-flask process-data
+# After Race 1 (Australia)
+flask add-race --season 2026 --race 1 --results "VER:25,NOR:18,LEC:15,PIA:12,HAM:10,RUS:8"
 
-# Custom batch size for large datasets
-flask process-data --batch-size 200000
+# After Race 2 (China)
+flask add-race --season 2026 --race 2 --results "NOR:25,VER:18,LEC:15,HAM:12,PIA:10,RUS:8"
+
+# Check your progress
+flask season-status --season 2026
+```
+
+Each `add-race` command automatically reprocesses all championship combinations and recomputes statistics. The app is ready to use immediately after.
+
+> **Tip:** Include all drivers who scored points. Drivers not listed get 0 points for that race. All drivers from the season config (`data/seasons/2026.json`) are included in calculations.
+
+### Importing Multiple Races at Once
+
+If you need to catch up on several races, create a CSV and batch import:
+
+```csv
+Driver,1,2,3
+VER,25,18,25
+NOR,18,25,18
+LEC,15,15,15
+```
+
+```bash
+flask add-races-batch --season 2026 --csv path/to/races.csv
+```
+
+### Processing a Complete Season
+
+For a full season dataset (like the completed 2025 season):
+
+```bash
+# 1. Place your CSV data file
+#    data/championships.csv       (default)
+#    data/championships_2025.csv  (season-specific)
+
+# 2. Process all championship combinations
+flask process-data --season 2025
+
+# 3. Pre-compute statistics for instant page loads
+flask compute-stats --season 2025
 ```
 
 **Processing Time:**
@@ -170,6 +193,8 @@ Then open your browser to:
 
 - **Web Interface:** [http://127.0.0.1:5000](http://127.0.0.1:5000)
 - **API Docs:** [http://127.0.0.1:5000/apidocs](http://127.0.0.1:5000/apidocs)
+
+The app defaults to the 2026 season. Use the season dropdown or add `?season=2025` to any URL to view other seasons.
 
 ### Available Commands
 
