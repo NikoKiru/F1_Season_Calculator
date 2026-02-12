@@ -179,9 +179,20 @@ Then open your browser to:
 | `flask init-db`                     | Initialize or update database schema                     |
 | `flask init-db --clear`             | Reset database (deletes all data)                        |
 | `flask process-data`                | Process CSV and generate championships                   |
-| `flask process-data --batch-size N` | Process with custom batch size                           |
-| `flask compute-stats`               | Pre-compute driver statistics for instant queries        |
+| `flask process-data --season YYYY`  | Process season-specific CSV file                         |
+| `flask compute-stats`               | Pre-compute driver statistics for all seasons            |
+| `flask compute-stats --season YYYY` | Pre-compute statistics for a specific season             |
 | `flask run`                         | Start the development server                             |
+
+#### Season Management Commands
+
+| Command                                                            | Description                                   |
+| ------------------------------------------------------------------ | --------------------------------------------- |
+| `flask add-race --season YYYY --race N --results "VER:25,NOR:18"`| Add a single race result for a season         |
+| `flask add-races-batch --season YYYY --csv path/to/file.csv`    | Import multiple races from a CSV file         |
+| `flask season-status`                                            | Show data status for all seasons              |
+| `flask season-status --season YYYY`                              | Show data status for a specific season        |
+| `flask clear-season --season YYYY --confirm`                     | Delete all data for a season                  |
 
 > **Performance Note**: After processing data, run `flask compute-stats` to pre-compute driver statistics. This makes the Highest Position page load instantly (~20ms vs 50+ seconds).
 
@@ -283,7 +294,7 @@ Season data (drivers, teams, races) is stored in JSON config files at `data/seas
 }
 ```
 
-To add a new season, create a new JSON file (e.g., `data/seasons/2026.json`) following this format.
+Season configs for 2025 and 2026 are included. To add a new season, create a new JSON file (e.g., `data/seasons/2027.json`) following this format. The app defaults to the most recent season (currently 2026). Use `?season=YYYY` in the URL to view other seasons.
 
 ### Database Schema
 

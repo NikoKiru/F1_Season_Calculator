@@ -17,7 +17,7 @@ from .commands import (
     read_csv, generate_race_combinations, calculate_standings,
     save_to_database, save_position_results
 )
-from .models import get_season_data, DEFAULT_SEASON
+from .models import get_season_data
 
 
 def parse_race_results(results_str: str) -> Dict[str, int]:
@@ -150,8 +150,6 @@ def process_season_data(season: int, csv_path: str, batch_size: int = 100000) ->
     Returns:
         Total number of championship combinations processed
     """
-    import numpy as np
-
     db = get_db()
     table_name = "championship_results"
 
@@ -474,7 +472,8 @@ def add_race_command(season: int, race_num: int, results: str, skip_reprocess: b
         race_data = {d: {} for d in drivers}
         click.echo(f"  Creating new season data with {len(drivers)} drivers from config")
     else:
-        click.echo(f"  Loaded existing data: {len(drivers)} drivers, {max(max(race_data[d].keys(), default=0) for d in drivers)} races")
+        max_race = max(max(race_data[d].keys(), default=0) for d in drivers)
+        click.echo(f"  Loaded existing data: {len(drivers)} drivers, {max_race} races")
 
     # Update race data
     for driver, points in race_results.items():
@@ -506,12 +505,12 @@ def add_race_command(season: int, race_num: int, results: str, skip_reprocess: b
     clear_season_data(season)
 
     # Reprocess championship combinations
-    click.echo(f"\nProcessing championship combinations...")
+    click.echo("\nProcessing championship combinations...")
     total_processed = process_season_data(season, csv_path)
     click.echo(f"  Processed {total_processed:,} combinations")
 
     # Recompute statistics
-    click.echo(f"\nComputing statistics...")
+    click.echo("\nComputing statistics...")
     compute_season_stats(season)
 
     elapsed = time.time() - start_time
@@ -538,7 +537,233 @@ def clear_season_command(season: int, confirm: bool) -> None:
     click.echo(f"[OK] Cleared {deleted:,} records for season {season}")
 
 
+@click.command('add-races-batch')
+@click.option('--season', type=int, required=True, help='Season year (e.g., 2026)')
+@click.option('--csv', 'csv_path', type=click.Path(exists=True), required=True,
+              help='Path to CSV file with race data (same format as championships.csv)')
+@click.option('--skip-reprocess', is_flag=True, help='Skip reprocessing (just import CSV)')
+@with_appcontext
+def add_races_batch_command(season: int, csv_path: str, skip_reprocess: bool) -> None:
+    """Import multiple races from a CSV file for a season.
+
+    The CSV should use the standard championships.csv format:
+        Driver,1,2,3,...
+        VER,25,18,25,...
+        NOR,18,25,18,...
+
+    This command merges the CSV data into the season's existing data,
+    then reprocesses all championship combinations.
+
+    Example:
+        flask add-races-batch --season 2026 --csv path/to/races.csv
+    """
+    import time
+    start_time = time.time()
+
+    # Validate season config exists
+    try:
+        season_data = get_season_data(season)
+    except FileNotFoundError:
+        click.echo(f"[ERROR] Season config not found for {season}. "
+                   f"Create data/seasons/{season}.json first.", err=True)
+        return
+
+    # Read the input CSV
+    click.echo(f"\nImporting race data for season {season} from: {csv_path}")
+
+    try:
+        import pandas as pd
+        df = pd.read_csv(csv_path)
+    except Exception as e:
+        click.echo(f"[ERROR] Could not read CSV: {e}", err=True)
+        return
+
+    if 'Driver' not in df.columns:
+        click.echo("[ERROR] CSV must have a 'Driver' column.", err=True)
+        return
+
+    race_cols = [col for col in df.columns if col != 'Driver']
+    if not race_cols:
+        click.echo("[ERROR] CSV has no race columns.", err=True)
+        return
+
+    click.echo(f"  Found {len(df)} drivers, {len(race_cols)} races in CSV")
+
+    # Load existing season data
+    existing_drivers, existing_data = load_season_csv(season)
+
+    # Merge: input CSV overwrites existing data for matching races
+    config_drivers = list(season_data.drivers.keys())
+    all_drivers = list(dict.fromkeys(config_drivers + existing_drivers))  # preserve order, dedupe
+
+    merged_data: Dict[str, Dict[int, int]] = {d: {} for d in all_drivers}
+
+    # Copy existing data
+    for driver in all_drivers:
+        if driver in existing_data:
+            merged_data[driver].update(existing_data[driver])
+
+    # Overlay new CSV data
+    for _, row in df.iterrows():
+        driver = str(row['Driver']).strip().upper()
+        if driver not in merged_data:
+            all_drivers.append(driver)
+            merged_data[driver] = {}
+        for col in race_cols:
+            try:
+                round_num = int(col)
+                points = int(row[col]) if pd.notna(row[col]) else 0
+                merged_data[driver][round_num] = points
+            except (ValueError, TypeError):
+                continue
+
+    # Determine max round
+    max_round = 0
+    for d in all_drivers:
+        if merged_data[d]:
+            max_round = max(max_round, max(merged_data[d].keys()))
+
+    if max_round == 0:
+        click.echo("[ERROR] No valid race data found.", err=True)
+        return
+
+    # Ensure all drivers have 0 for missing races
+    for driver in all_drivers:
+        for r in range(1, max_round + 1):
+            if r not in merged_data[driver]:
+                merged_data[driver][r] = 0
+
+    # Save merged CSV
+    csv_out = save_season_csv(season, all_drivers, merged_data, max_round)
+    click.echo(f"  Saved merged data to: {csv_out}")
+    click.echo(f"  {len(all_drivers)} drivers, {max_round} races")
+
+    if skip_reprocess:
+        click.echo("\n[OK] CSV imported. Skipping reprocess as requested.")
+        return
+
+    # Clear and reprocess
+    click.echo(f"\nClearing existing data for season {season}...")
+    clear_season_data(season)
+
+    click.echo("\nProcessing championship combinations...")
+    total_processed = process_season_data(season, csv_out)
+    click.echo(f"  Processed {total_processed:,} combinations")
+
+    click.echo("\nComputing statistics...")
+    compute_season_stats(season)
+
+    elapsed = time.time() - start_time
+    click.echo(f"\n[OK] Batch import complete for season {season} in {elapsed:.1f}s")
+
+
+@click.command('season-status')
+@click.option('--season', type=int, default=None,
+              help='Season year to check. If not specified, shows all seasons.')
+@with_appcontext
+def season_status_command(season: int) -> None:
+    """Show the current state of a season's data.
+
+    Displays which races have data, how many combinations are processed,
+    and whether statistics have been computed.
+
+    Example:
+        flask season-status --season 2026
+        flask season-status
+    """
+    from db import get_db
+    from .models import get_available_seasons
+    from .models import DEFAULT_SEASON as _default_season
+
+    db = get_db()
+
+    if season is not None:
+        seasons_to_check = [season]
+    else:
+        seasons_to_check = get_available_seasons()
+        if not seasons_to_check:
+            click.echo("No season configurations found.")
+            return
+
+    for s in seasons_to_check:
+        click.echo(f"\n{'='*50}")
+        click.echo(f"Season {s}" + (" (default)" if s == _default_season else ""))
+        click.echo(f"{'='*50}")
+
+        # Check season config
+        try:
+            season_data = get_season_data(s)
+            click.echo(f"  Config: {len(season_data.drivers)} drivers, "
+                       f"{len(season_data.round_names)} rounds")
+        except FileNotFoundError:
+            click.echo(f"  Config: NOT FOUND (data/seasons/{s}.json)")
+            continue
+
+        # Check CSV data
+        data_folder = current_app.config['DATA_FOLDER']
+        season_csv = os.path.join(data_folder, f'championships_{s}.csv')
+        if os.path.exists(season_csv):
+            drivers, race_data = load_season_csv(s)
+            races_with_data = set()
+            for d in drivers:
+                for r, pts in race_data.get(d, {}).items():
+                    if pts > 0:
+                        races_with_data.add(r)
+            race_list = sorted(races_with_data)
+            race_names = [season_data.round_names.get(r, str(r)) for r in race_list]
+            click.echo(f"  CSV: {len(drivers)} drivers, {len(race_list)} races with data")
+            if race_names:
+                click.echo(f"  Races: {', '.join(race_names)}")
+        else:
+            # Check generic CSV
+            generic_csv = os.path.join(data_folder, 'championships.csv')
+            if os.path.exists(generic_csv):
+                click.echo("  CSV: Using generic championships.csv")
+            else:
+                click.echo("  CSV: No data file found")
+
+        # Check database records
+        count_row = db.execute(
+            "SELECT COUNT(*) as cnt FROM championship_results WHERE season = ?",
+            (s,)
+        ).fetchone()
+        record_count = count_row['cnt'] if count_row else 0
+
+        if record_count > 0:
+            max_races_row = db.execute(
+                "SELECT MAX(num_races) as max_races, MIN(num_races) as min_races "
+                "FROM championship_results WHERE season = ?",
+                (s,)
+            ).fetchone()
+            click.echo(f"  Database: {record_count:,} championship combinations")
+            click.echo(f"  Race range: {max_races_row['min_races']}-{max_races_row['max_races']} races")
+        else:
+            click.echo("  Database: No processed data")
+
+        # Check statistics
+        stats_row = db.execute(
+            "SELECT COUNT(*) as cnt FROM driver_statistics WHERE season = ?",
+            (s,)
+        ).fetchone()
+        stats_count = stats_row['cnt'] if stats_row else 0
+
+        prob_row = db.execute(
+            "SELECT COUNT(*) as cnt FROM win_probability_cache WHERE season = ?",
+            (s,)
+        ).fetchone()
+        prob_count = prob_row['cnt'] if prob_row else 0
+
+        if stats_count > 0:
+            click.echo(f"  Statistics: {stats_count} driver stats, {prob_count} probability entries")
+        else:
+            click.echo("  Statistics: Not computed")
+
+    click.echo("")
+
+
 def init_app(app: Flask) -> None:
     """Register season management CLI commands."""
     app.cli.add_command(add_race_command)
     app.cli.add_command(clear_season_command)
+    app.cli.add_command(add_races_batch_command)
+    app.cli.add_command(season_status_command)

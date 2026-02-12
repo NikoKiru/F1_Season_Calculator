@@ -17,14 +17,20 @@
 <h2>Explore the Data</h2>
 <p>
     Welcome to the F1 Championship Scenario Explorer! This project explores the vast possibilities of an F1 season.
-    Think of each of the 24 possible races in the 2025 season as a card in a deck. This application shuffles that deck and deals out different sized hands, from 1 to 24 races, calculating the championship outcome for each unique combination.
+    Think of each of the 24 possible races in the {{ season }} season as a card in a deck. This application shuffles that deck and deals out different sized hands, from 1 to 24 races, calculating the championship outcome for each unique combination.
     This process generates a massive database of over 16.7 million possible F1 seasons.
 </p>
 <p>
     Below, you can explore the fascinating statistics that emerge from this huge dataset. Who is the most likely champion? What's the most common outcome for your favorite driver? Let's find out!
 </p>
 
-{% if real_life_data and real_life_data.round_points_data %}
+{% if not season_has_data %}
+<div class="info-box" style="background: var(--card-bg, #1a1a2e); border: 1px solid var(--accent-color, #4781D7); border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+    <h3>{{ season }} Season - Coming Soon</h3>
+    <p>No race data has been added for the {{ season }} season yet. Once the season begins, standings and statistics will appear here.</p>
+    <p style="font-size: 0.9em; opacity: 0.7;">Switch to a previous season using the dropdown above to view historical data.</p>
+</div>
+{% elif real_life_data and real_life_data.round_points_data %}
 <h3 style="margin-top: 30px;">{{ season }} Season Standings</h3>
 
 <div class="standings-chart-grid">

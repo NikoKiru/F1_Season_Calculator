@@ -73,7 +73,7 @@ def format_championship_data(
 
         if with_round_points and championship_data.get('rounds'):
             round_numbers = [int(r) for r in championship_data['rounds'].split(',')]
-            round_points_data = get_round_points_for_championship(drivers, round_numbers)
+            round_points_data = get_round_points_for_championship(drivers, round_numbers, season=season)
             championship_data['round_points_data'] = round_points_data
 
     return championship_data

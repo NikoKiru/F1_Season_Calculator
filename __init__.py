@@ -109,6 +109,21 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
 
     # Configure logging
     configure_logging(app)
+
+    # Static file caching - set long cache for CSS/JS/images
+    app.config.setdefault('SEND_FILE_MAX_AGE_DEFAULT', 43200)  # 12 hours
+
+    # Response compression for JSON and HTML
+    @app.after_request
+    def add_cache_and_compression_headers(response):
+        # Add gzip hint for reverse proxies
+        if response.content_type and (
+            'application/json' in response.content_type
+            or 'text/html' in response.content_type
+        ):
+            response.headers.setdefault('Vary', 'Accept-Encoding')
+        return response
+
     app.logger.info('F1 Calculator startup')
 
     return app

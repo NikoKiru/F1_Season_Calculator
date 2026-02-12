@@ -1,12 +1,42 @@
 import pandas as pd
 import os
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from flask import current_app
+
+from .models import DEFAULT_SEASON
+
+
+def _get_csv_path(season: Optional[int] = None) -> Optional[str]:
+    """Get the CSV path for a season, trying season-specific file first.
+
+    Args:
+        season: The season year. Defaults to DEFAULT_SEASON.
+
+    Returns:
+        Path to the CSV file, or None if no file exists.
+    """
+    if season is None:
+        season = DEFAULT_SEASON
+
+    data_folder = current_app.config['DATA_FOLDER']
+
+    # Try season-specific CSV first
+    season_csv = os.path.join(data_folder, f"championships_{season}.csv")
+    if os.path.exists(season_csv):
+        return season_csv
+
+    # Fall back to generic championships.csv
+    generic_csv = os.path.join(data_folder, "championships.csv")
+    if os.path.exists(generic_csv):
+        return generic_csv
+
+    return None
 
 
 def get_round_points_for_championship(
     drivers: List[str],
-    round_numbers: List[int]
+    round_numbers: List[int],
+    season: Optional[int] = None
 ) -> Dict[str, Dict[str, Any]]:
     """
     Gets the points for each driver for each round in a given championship.
@@ -14,14 +44,15 @@ def get_round_points_for_championship(
     Args:
         drivers (list): A list of driver abbreviations.
         round_numbers (list): A list of round numbers (1-based).
+        season (int, optional): The season year. Defaults to DEFAULT_SEASON.
 
     Returns:
         dict: A dictionary where keys are driver abbreviations and values are
               another dictionary containing 'round_points' (a list of points for each round)
               and 'total_points'.
     """
-    csv_path = os.path.join(current_app.config['DATA_FOLDER'], "championships.csv")
-    if not os.path.exists(csv_path):
+    csv_path = _get_csv_path(season)
+    if csv_path is None:
         return {}
 
     df = pd.read_csv(csv_path)
@@ -46,19 +77,21 @@ def get_round_points_for_championship(
 
 
 def calculate_championship_from_rounds(
-    round_numbers: List[int]
+    round_numbers: List[int],
+    season: Optional[int] = None
 ) -> Dict[str, Any]:
     """
     Calculates championship standings from a given list of round numbers.
 
     Args:
         round_numbers (list): A list of round numbers (1-based).
+        season (int, optional): The season year. Defaults to DEFAULT_SEASON.
 
     Returns:
         dict: A dictionary containing 'standings', 'points', and 'winner'.
     """
-    csv_path = os.path.join(current_app.config['DATA_FOLDER'], "championships.csv")
-    if not os.path.exists(csv_path):
+    csv_path = _get_csv_path(season)
+    if csv_path is None:
         return {}
 
     df = pd.read_csv(csv_path)

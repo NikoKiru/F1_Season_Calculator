@@ -3,7 +3,7 @@ import os
 from typing import Dict, TypedDict, Optional
 
 # Default season for the application
-DEFAULT_SEASON = 2025
+DEFAULT_SEASON = 2026
 
 
 class DriverInfo(TypedDict):

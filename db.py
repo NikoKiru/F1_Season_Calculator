@@ -497,42 +497,41 @@ def setup_command() -> None:
     click.echo("="*60)
 
 
-@click.command('compute-stats')
-@with_appcontext
-def compute_stats_command() -> None:
-    """Pre-compute driver statistics for instant query performance.
+def compute_stats_for_season(db: PooledConnection, season: int) -> None:
+    """Compute driver statistics for a specific season.
 
-    Scans all championship results and computes:
-    - Highest position achieved by each driver
-    - Best winning margin for each winner
-    - Win counts
-    - Win probability cache (wins per driver per season length)
-
-    This runs once and makes the highest_position and championship_win_probability endpoints instant.
+    Args:
+        db: Database connection
+        season: The season year to compute statistics for
     """
     import time
     start_time = time.time()
 
-    db = get_db()
-    click.echo("Computing driver statistics...")
+    click.echo(f"\nComputing statistics for season {season}...")
 
-    # Step 1: Get all unique drivers from a sample championship
-    click.echo("  [1/5] Getting driver list...")
-    sample_row = db.execute("SELECT standings FROM championship_results LIMIT 1").fetchone()
+    # Step 1: Get all unique drivers from a sample championship for this season
+    click.echo("  [1/6] Getting driver list...")
+    sample_row = db.execute(
+        "SELECT standings FROM championship_results WHERE season = ? LIMIT 1",
+        (season,)
+    ).fetchone()
     if not sample_row:
-        click.echo("[ERROR] No championship data found. Run 'flask process-data' first.")
+        click.echo(f"  [WARNING] No championship data found for season {season}. Skipping.")
         return
 
     all_drivers = [d.strip() for d in sample_row['standings'].split(",")]
     click.echo(f"        Found {len(all_drivers)} drivers")
 
-    # Step 2: Get max races
-    max_races_row = db.execute("SELECT MAX(num_races) as max_races FROM championship_results").fetchone()
+    # Step 2: Get max races for this season
+    max_races_row = db.execute(
+        "SELECT MAX(num_races) as max_races FROM championship_results WHERE season = ?",
+        (season,)
+    ).fetchone()
     max_races = max_races_row['max_races']
-    click.echo(f"  [2/5] Max season length: {max_races} races")
+    click.echo(f"  [2/6] Max season length: {max_races} races")
 
     # Step 3: Compute highest positions efficiently
-    click.echo("  [3/5] Computing highest positions...")
+    click.echo("  [3/6] Computing highest positions...")
     driver_stats = {}
     drivers_to_find = set(all_drivers)
 
@@ -543,10 +542,10 @@ def compute_stats_command() -> None:
         rows = db.execute("""
             SELECT championship_id, standings, num_races
             FROM championship_results
-            WHERE num_races = ?
+            WHERE num_races = ? AND season = ?
             ORDER BY championship_id DESC
             LIMIT 10000
-        """, (num_races,)).fetchall()
+        """, (num_races, season)).fetchall()
 
         for row in rows:
             championship_id = row['championship_id']
@@ -580,27 +579,27 @@ def compute_stats_command() -> None:
     click.echo(f"        Computed positions for {len(driver_stats)} drivers")
 
     # Step 4: Get win counts
-    click.echo("  [4/5] Computing win counts...")
+    click.echo("  [4/6] Computing win counts...")
     win_counts = db.execute("""
         SELECT winner, COUNT(*) as wins
         FROM championship_results
-        WHERE winner IS NOT NULL
+        WHERE winner IS NOT NULL AND season = ?
         GROUP BY winner
-    """).fetchall()
+    """, (season,)).fetchall()
 
     for row in win_counts:
         if row['winner'] in driver_stats:
             driver_stats[row['winner']]['win_count'] = row['wins']
 
-    # Step 5: Compute best margins (scanning all winner records)
-    click.echo("  [5/5] Computing best winning margins...")
+    # Step 5: Compute best margins
+    click.echo("  [5/6] Computing best winning margins...")
     winners = [d for d, data in driver_stats.items() if data["highest_position"] == 1]
 
     margin_rows = db.execute("""
         SELECT winner, points, championship_id
         FROM championship_results
-        WHERE winner IS NOT NULL
-    """).fetchall()
+        WHERE winner IS NOT NULL AND season = ?
+    """, (season,)).fetchall()
 
     for row in margin_rows:
         winner = row['winner']
@@ -618,18 +617,19 @@ def compute_stats_command() -> None:
                     except ValueError:
                         pass
 
-    # Clear existing stats and insert new ones
+    # Clear existing stats for this season and insert new ones
     click.echo("  Writing to database...")
-    db.execute("DELETE FROM driver_statistics")
+    db.execute("DELETE FROM driver_statistics WHERE season = ?", (season,))
 
     for driver_code, stats in driver_stats.items():
         db.execute("""
             INSERT INTO driver_statistics
-            (driver_code, highest_position, highest_position_max_races,
+            (driver_code, season, highest_position, highest_position_max_races,
              highest_position_championship_id, best_margin, best_margin_championship_id, win_count)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             driver_code,
+            season,
             stats['highest_position'],
             stats['highest_position_max_races'],
             stats['highest_position_championship_id'],
@@ -643,74 +643,102 @@ def compute_stats_command() -> None:
     # Step 6: Compute win probability cache
     click.echo("  [6/6] Computing win probability cache...")
 
-    # Ensure table exists (for databases created before this feature)
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS win_probability_cache (
-        driver_code TEXT NOT NULL,
-        num_races INTEGER NOT NULL,
-        win_count INTEGER NOT NULL DEFAULT 0,
-        total_at_length INTEGER NOT NULL DEFAULT 0,
-        PRIMARY KEY (driver_code, num_races)
-    );
-    """)
-    db.execute("CREATE INDEX IF NOT EXISTS idx_prob_driver ON win_probability_cache (driver_code);")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_prob_num_races ON win_probability_cache (num_races);")
+    db.execute("DELETE FROM win_probability_cache WHERE season = ?", (season,))
 
-    # Get wins per driver per season length
     wins_per_length = db.execute("""
         SELECT winner, num_races, COUNT(*) as wins
         FROM championship_results
-        WHERE winner IS NOT NULL
+        WHERE winner IS NOT NULL AND season = ?
         GROUP BY winner, num_races
-    """).fetchall()
+    """, (season,)).fetchall()
 
-    # Get total championships per season length
     totals_per_length = db.execute("""
         SELECT num_races, COUNT(*) as total
         FROM championship_results
+        WHERE season = ?
         GROUP BY num_races
-    """).fetchall()
+    """, (season,)).fetchall()
 
     totals_dict = {row['num_races']: row['total'] for row in totals_per_length}
 
-    # Clear existing cache and insert new data
-    db.execute("DELETE FROM win_probability_cache")
-
-    # Prepare data for all driver/num_races combinations
     cache_data = []
     for row in wins_per_length:
         driver = row['winner']
         num_races = row['num_races']
         wins = row['wins']
         total = totals_dict.get(num_races, 0)
-        cache_data.append((driver, num_races, wins, total))
+        cache_data.append((driver, num_races, wins, total, season))
 
-    # Also add entries for drivers with 0 wins at certain season lengths
-    existing_combinations = {(d, n) for d, n, _, _ in cache_data}
+    existing_combinations = {(d, n) for d, n, _, _, _ in cache_data}
     for driver in all_drivers:
         for num_races, total in totals_dict.items():
             if (driver, num_races) not in existing_combinations:
-                cache_data.append((driver, num_races, 0, total))
+                cache_data.append((driver, num_races, 0, total, season))
 
     db.executemany("""
-        INSERT INTO win_probability_cache (driver_code, num_races, win_count, total_at_length)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO win_probability_cache (driver_code, num_races, win_count, total_at_length, season)
+        VALUES (?, ?, ?, ?, ?)
     """, cache_data)
 
     db.commit()
 
-    click.echo(f"        Cached {len(cache_data)} probability entries")
+    elapsed = time.time() - start_time
+    click.echo(f"  [OK] Season {season}: {len(driver_stats)} drivers, {len(cache_data)} probability entries ({elapsed:.1f}s)")
+
+
+@click.command('compute-stats')
+@click.option('--season', type=int, default=None,
+              help='Season year to compute stats for. If not specified, computes for all seasons.')
+@with_appcontext
+def compute_stats_command(season: Optional[int]) -> None:
+    """Pre-compute driver statistics for instant query performance.
+
+    Scans championship results and computes per season:
+    - Highest position achieved by each driver
+    - Best winning margin for each winner
+    - Win counts
+    - Win probability cache (wins per driver per season length)
+
+    Use --season to compute for a specific season, or omit to compute for all.
+    """
+    import time
+    start_time = time.time()
+
+    db = get_db()
+
+    if season is not None:
+        # Compute for a specific season
+        compute_stats_for_season(db, season)
+    else:
+        # Find all seasons with data and compute for each
+        seasons_rows = db.execute(
+            "SELECT DISTINCT season FROM championship_results ORDER BY season"
+        ).fetchall()
+
+        if not seasons_rows:
+            click.echo("[ERROR] No championship data found. Run 'flask process-data' first.")
+            return
+
+        seasons = [row['season'] for row in seasons_rows]
+        click.echo(f"Computing statistics for {len(seasons)} season(s): {', '.join(str(s) for s in seasons)}")
+
+        for s in seasons:
+            compute_stats_for_season(db, s)
 
     elapsed = time.time() - start_time
-    click.echo(f"\n[OK] Driver statistics and probability cache computed in {elapsed:.1f} seconds")
-    click.echo(f"     {len(driver_stats)} drivers processed")
-    click.echo(f"     {len(cache_data)} probability cache entries created")
+    click.echo(f"\n[OK] All statistics computed in {elapsed:.1f} seconds")
 
     # Show sample results
     click.echo("\nSample driver statistics:")
-    for row in db.execute("SELECT * FROM driver_statistics ORDER BY highest_position, win_count DESC LIMIT 5").fetchall():
+    for row in db.execute(
+        "SELECT * FROM driver_statistics ORDER BY season, highest_position, win_count DESC LIMIT 5"
+    ).fetchall():
         margin_str = f"+{row['best_margin']}" if row['best_margin'] else "N/A"
-        click.echo(f"  {row['driver_code']}: P{row['highest_position']} ({row['highest_position_max_races']} races), margin: {margin_str}, wins: {row['win_count']}")
+        click.echo(
+            f"  [{row['season']}] {row['driver_code']}: "
+            f"P{row['highest_position']} ({row['highest_position_max_races']} races), "
+            f"margin: {margin_str}, wins: {row['win_count']}"
+        )
 
 
 def clear_season_data(season: int) -> int:

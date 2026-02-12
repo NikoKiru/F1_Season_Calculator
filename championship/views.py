@@ -43,20 +43,29 @@ def index() -> str:
     ctx = get_template_context()
     season = ctx['season']
 
-    # Fetch the "real life" championship for this season (the one with the most races)
+    # Fetch the "real life" championship for this season
+    # (the one with the most races, i.e. the most complete picture)
     db = get_db()
     row = db.execute(
-        "SELECT MAX(championship_id) as max_id FROM championship_results WHERE season = ?",
+        "SELECT championship_id FROM championship_results "
+        "WHERE season = ? ORDER BY num_races DESC, championship_id DESC LIMIT 1",
         (season,)
     ).fetchone()
-    if row and row['max_id']:
-        response = get_championship(row['max_id'])
+    if row and row['championship_id']:
+        response = get_championship(row['championship_id'])
         if hasattr(response, 'get_json') and response.status_code == 200:
             ctx['real_life_data'] = response.get_json()
         else:
             ctx['real_life_data'] = None
     else:
         ctx['real_life_data'] = None
+
+    # Check if this season has any data at all
+    count_row = db.execute(
+        "SELECT COUNT(*) as cnt FROM championship_results WHERE season = ?",
+        (season,)
+    ).fetchone()
+    ctx['season_has_data'] = count_row['cnt'] > 0 if count_row else False
 
     return render_template('index.html', **ctx)
 

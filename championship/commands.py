@@ -122,13 +122,27 @@ def save_position_results(
 
 
 # Main function
-def process_data(batch_size: int = 100000) -> None:
-    """Processes the championship data and saves it to the database."""
+def process_data(batch_size: int = 100000, season: int = 2025) -> None:
+    """Processes the championship data and saves it to the database.
+
+    Args:
+        batch_size: Number of records to process per batch.
+        season: The season year to tag data with.
+    """
     db = get_db()
     table_name = "championship_results"
-    csv_path = os.path.join(current_app.config['DATA_FOLDER'], "championships.csv")
-    if not os.path.exists(csv_path):
-        click.echo(f"CSV file not found: {csv_path}")
+
+    data_folder = current_app.config['DATA_FOLDER']
+    # Try season-specific CSV first, then fall back to generic
+    season_csv = os.path.join(data_folder, f"championships_{season}.csv")
+    generic_csv = os.path.join(data_folder, "championships.csv")
+
+    if os.path.exists(season_csv):
+        csv_path = season_csv
+    elif os.path.exists(generic_csv):
+        csv_path = generic_csv
+    else:
+        click.echo(f"CSV file not found: {season_csv} or {generic_csv}")
         return
 
     # Step 1: Read input CSV into NumPy arrays
@@ -167,7 +181,7 @@ def process_data(batch_size: int = 100000) -> None:
 
         # Step 4: Save to database in batches
         if (i + 1) % batch_size == 0:
-            save_to_database(db, table_name, championship_data_batch)
+            save_to_database(db, table_name, championship_data_batch, season=season)
 
             # Generate and save position_results for this batch
             position_data = []
@@ -175,7 +189,7 @@ def process_data(batch_size: int = 100000) -> None:
                 champ_id = next_championship_id + j
                 for pos, (driver, points) in enumerate(zip(drivers_arr, scores_arr), start=1):
                     position_data.append((champ_id, driver, pos, int(points)))
-            save_position_results(db, position_data)
+            save_position_results(db, position_data, season=season)
 
             click.echo(f"Processed batch through combination {i + 1}...")
             next_championship_id += len(championship_data_batch)
@@ -184,7 +198,7 @@ def process_data(batch_size: int = 100000) -> None:
 
     # Save any remaining data
     if championship_data_batch:
-        save_to_database(db, table_name, championship_data_batch)
+        save_to_database(db, table_name, championship_data_batch, season=season)
 
         # Generate and save position_results for final batch
         position_data = []
@@ -192,7 +206,7 @@ def process_data(batch_size: int = 100000) -> None:
             champ_id = next_championship_id + j
             for pos, (driver, points) in enumerate(zip(drivers_arr, scores_arr), start=1):
                 position_data.append((champ_id, driver, pos, int(points)))
-        save_position_results(db, position_data)
+        save_position_results(db, position_data, season=season)
 
         click.echo(f"Processed final batch of {len(championship_data_batch)} combinations.")
 
@@ -204,26 +218,47 @@ def process_data(batch_size: int = 100000) -> None:
 
 @click.command('process-data')
 @click.option('--batch-size', default=100000, type=int, help='Number of records to process per batch')
+@click.option('--season', type=int, default=None,
+              help='Season year to process. Uses season-specific CSV (championships_{season}.csv). '
+                   'If not specified, processes championships.csv with the default season.')
 @with_appcontext
-def process_data_command(batch_size: int) -> None:
+def process_data_command(batch_size: int, season: int) -> None:
     """Processes championship data and saves it to the database.
 
-    Reads championships.csv from the data folder and generates all possible
-    championship combinations, saving them to the database.
+    Reads championship CSV and generates all possible championship combinations,
+    saving them to the database.
+
+    Use --season to process a season-specific CSV file (championships_{season}.csv).
+    Without --season, processes the default championships.csv.
     """
-    # Validate that CSV exists
-    csv_path = os.path.join(current_app.config['DATA_FOLDER'], "championships.csv")
-    if not os.path.exists(csv_path):
-        click.echo(f"[ERROR] CSV file not found at {csv_path}", err=True)
-        click.echo("\nPlease run 'flask setup' first to create the necessary folders.", err=True)
-        return
+    from .models import DEFAULT_SEASON
+
+    data_folder = current_app.config['DATA_FOLDER']
+
+    if season is not None:
+        # Season-specific: use championships_{season}.csv
+        csv_path = os.path.join(data_folder, f"championships_{season}.csv")
+        if not os.path.exists(csv_path):
+            click.echo(f"[ERROR] Season CSV file not found at {csv_path}", err=True)
+            click.echo(f"\nPlease create {csv_path} or use 'flask add-race --season {season}' to add race data.", err=True)
+            return
+        target_season = season
+    else:
+        # Default: use championships.csv with DEFAULT_SEASON
+        csv_path = os.path.join(data_folder, "championships.csv")
+        if not os.path.exists(csv_path):
+            click.echo(f"[ERROR] CSV file not found at {csv_path}", err=True)
+            click.echo("\nPlease run 'flask setup' first to create the necessary folders.", err=True)
+            return
+        target_season = DEFAULT_SEASON
 
     click.echo(f"Processing data from: {csv_path}")
+    click.echo(f"Season: {target_season}")
     click.echo(f"Batch size: {batch_size:,}")
 
     try:
-        process_data(batch_size=batch_size)
-        click.echo('[OK] Successfully processed and saved data to database.')
+        process_data(batch_size=batch_size, season=target_season)
+        click.echo(f'[OK] Successfully processed and saved data to database (season {target_season}).')
     except Exception as e:
         click.echo(f'[ERROR] Error processing data: {e}', err=True)
         raise
