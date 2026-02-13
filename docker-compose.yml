@@ -1,0 +1,14 @@
+services:
+  f1-calculator:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mount local instance/ directory containing the pre-built database
+      # This avoids copying the large SQLite DB into the Docker image
+      - ./instance:/app/instance
+      # Mount data directory for season configs and CSV files
+      - ./data:/app/data
+    environment:
+      - DATABASE_PATH=/app/instance/championships.db
+      - FLASK_ENV=production

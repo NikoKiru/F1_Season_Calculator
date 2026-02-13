@@ -29,6 +29,7 @@ class SeasonData:
 
 # Cache for loaded season data
 _season_cache: Dict[int, SeasonData] = {}
+_available_seasons_cache: Optional[list] = None
 
 
 def _get_season_config_path(season: int = DEFAULT_SEASON) -> str:
@@ -107,7 +108,9 @@ def get_season_data(season: Optional[int] = None) -> SeasonData:
 
 def clear_season_cache() -> None:
     """Clear the season data cache."""
+    global _available_seasons_cache
     _season_cache.clear()
+    _available_seasons_cache = None
 
 
 # Load the default season data for backwards compatibility
@@ -130,7 +133,7 @@ def reload_season_data(season: int = DEFAULT_SEASON) -> None:
     Args:
         season: The year of the season to load
     """
-    global TEAM_COLORS, DRIVERS, DRIVER_NAMES, ROUND_NAMES, _season_data
+    global TEAM_COLORS, DRIVERS, DRIVER_NAMES, ROUND_NAMES, _season_data, _available_seasons_cache
 
     _season_data = load_season_data(season)
     TEAM_COLORS = _build_team_colors(_season_data)
@@ -138,17 +141,22 @@ def reload_season_data(season: int = DEFAULT_SEASON) -> None:
     DRIVER_NAMES = _build_driver_names(DRIVERS)
     ROUND_NAMES = _build_round_names(_season_data)
 
-    # Also update the cache
+    # Also update the caches
     _season_cache[season] = SeasonData(season)
+    _available_seasons_cache = None
 
 
 def get_available_seasons() -> list[int]:
     """
-    Get list of available season years.
+    Get list of available season years, with in-memory caching.
 
     Returns:
         List of season years that have config files, sorted descending (newest first).
     """
+    global _available_seasons_cache
+    if _available_seasons_cache is not None:
+        return _available_seasons_cache
+
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     seasons_dir = os.path.join(base_dir, 'data', 'seasons')
 
@@ -164,4 +172,5 @@ def get_available_seasons() -> list[int]:
             except ValueError:
                 continue
 
-    return sorted(seasons, reverse=True)
+    _available_seasons_cache = sorted(seasons, reverse=True)
+    return _available_seasons_cache

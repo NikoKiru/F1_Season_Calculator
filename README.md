@@ -186,6 +186,12 @@ flask compute-stats --season 2025
 ### Running the Application
 
 ```bash
+# Production server (recommended) - multi-threaded via Waitress
+python app.py
+
+# Development server (for debugging only)
+python app.py --debug
+# or
 flask run
 ```
 
@@ -195,6 +201,21 @@ Then open your browser to:
 - **API Docs:** [http://127.0.0.1:5000/apidocs](http://127.0.0.1:5000/apidocs)
 
 The app defaults to the 2026 season. Use the season dropdown or add `?season=2025` to any URL to view other seasons.
+
+### Docker Deployment
+
+For containerized deployment, use Docker Compose with a volume-mounted database. This avoids copying the large SQLite database into the image:
+
+```bash
+# Build and run (mounts local instance/ and data/ directories)
+docker-compose up
+
+# Or build manually
+docker build -t f1-calculator .
+docker run -p 5000:5000 -v ./instance:/app/instance -v ./data:/app/data f1-calculator
+```
+
+> **Note:** Process your data locally first (`flask process-data` and `flask compute-stats`), then mount the resulting `instance/` directory into Docker.
 
 ### Available Commands
 

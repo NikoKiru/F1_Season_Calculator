@@ -4,6 +4,7 @@ from logging.handlers import RotatingFileHandler
 from typing import Optional, Dict, Any
 from flask import Flask
 from flask_caching import Cache
+from flask_compress import Compress
 
 # Initialize cache instance (configured in create_app)
 cache: Cache = Cache()
@@ -91,6 +92,9 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
 
     # Initialize Flask-Caching with app
     cache.init_app(app)
+
+    # Enable gzip/brotli compression for responses
+    Compress(app)
 
     # Initialize database
     import db

@@ -504,3 +504,72 @@ class TestDriverPositionNonWinner:
         assert response.status_code == 200
         data = response.get_json()
         assert data['position'] == 3
+
+
+class TestCachingBehavior:
+    """Test that caching works correctly for expensive endpoints."""
+
+    def test_all_championship_wins_cached(self, client):
+        """Second call should return same data (from cache)."""
+        r1 = client.get('/api/all_championship_wins')
+        r2 = client.get('/api/all_championship_wins')
+        assert r1.status_code == 200
+        assert r2.status_code == 200
+        assert r1.get_json() == r2.get_json()
+
+    def test_min_races_to_win_cached(self, client):
+        """Second call should return same data (from cache)."""
+        r1 = client.get('/api/min_races_to_win')
+        r2 = client.get('/api/min_races_to_win')
+        assert r1.status_code == 200
+        assert r2.status_code == 200
+        assert r1.get_json() == r2.get_json()
+
+    def test_head_to_head_cached(self, client):
+        """Second call should return same data (from cache)."""
+        r1 = client.get('/api/head_to_head/VER/NOR')
+        r2 = client.get('/api/head_to_head/VER/NOR')
+        assert r1.status_code == 200
+        assert r2.status_code == 200
+        assert r1.get_json() == r2.get_json()
+
+    def test_driver_positions_cached(self, client):
+        """Second call should return same data (from cache)."""
+        r1 = client.get('/api/driver_positions?position=1')
+        r2 = client.get('/api/driver_positions?position=1')
+        assert r1.status_code == 200
+        assert r2.status_code == 200
+        assert r1.get_json() == r2.get_json()
+
+    def test_driver_stats_cached(self, client):
+        """Second call should return same data (from cache)."""
+        r1 = client.get('/api/driver/VER/stats')
+        r2 = client.get('/api/driver/VER/stats')
+        assert r1.status_code == 200
+        assert r2.status_code == 200
+        assert r1.get_json() == r2.get_json()
+
+
+class TestHeadToHeadUsingPositionResults:
+    """Test head-to-head comparison using indexed position_results table."""
+
+    def test_head_to_head_returns_correct_counts(self, client):
+        """Head-to-head should count position comparisons correctly."""
+        response = client.get('/api/head_to_head/VER/NOR')
+        assert response.status_code == 200
+        data = response.get_json()
+        # VER beats NOR in championships 1 (P1 vs P2), 3 (P1 vs P3), 4 (P1 vs P2)
+        # NOR beats VER in championships 2 (P1 vs P2), 5 (P3 vs P2)
+        # Wait - championship 5: LEC P1, VER P2, NOR P3 -> VER beats NOR
+        # So VER: 4, NOR: 1
+        assert data['VER'] == 4
+        assert data['NOR'] == 1
+
+    def test_head_to_head_symmetric(self, client):
+        """Reversed order should give same totals."""
+        r1 = client.get('/api/head_to_head/VER/LEC')
+        r2 = client.get('/api/head_to_head/LEC/VER')
+        d1 = r1.get_json()
+        d2 = r2.get_json()
+        assert d1['VER'] == d2['VER']
+        assert d1['LEC'] == d2['LEC']

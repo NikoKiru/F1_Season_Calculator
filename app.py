@@ -18,4 +18,11 @@ from __init__ import create_app  # noqa: E402
 app: Flask = create_app()
 
 if __name__ == '__main__':
-    app.run()
+    use_dev = '--debug' in sys.argv or '--dev' in sys.argv
+    if use_dev:
+        app.run(debug=True)
+    else:
+        from waitress import serve
+        print("Starting production server with Waitress on http://127.0.0.1:5000")
+        print("Use --debug flag for Flask development server")
+        serve(app, host='0.0.0.0', port=5000, threads=4)

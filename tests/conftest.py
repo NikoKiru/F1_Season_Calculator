@@ -46,7 +46,6 @@ def app():
         db.execute("CREATE INDEX IF NOT EXISTS idx_season ON championship_results (season);")
         db.execute("CREATE INDEX IF NOT EXISTS idx_season_winner ON championship_results (season, winner);")
         db.execute("CREATE INDEX IF NOT EXISTS idx_winner_num_races ON championship_results (winner, num_races);")
-        db.execute("CREATE INDEX IF NOT EXISTS idx_points ON championship_results (points);")
         db.execute("CREATE INDEX IF NOT EXISTS idx_rounds ON championship_results (rounds);")
 
         # Create driver_statistics table with season support

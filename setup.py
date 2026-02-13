@@ -16,10 +16,12 @@ setup(
         'pandas',
         'Flask',
         'Flask-Caching',
+        'flask-compress',
         'flasgger',
         'numpy',
         'python-dotenv',
         'sqlalchemy',
+        'waitress',
     ],
     python_requires='>=3.6',
 )

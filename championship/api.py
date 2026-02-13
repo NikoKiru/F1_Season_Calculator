@@ -37,6 +37,9 @@ CACHE_KEY_HIGHEST_POSITION = 'highest_position_{season}'
 CACHE_KEY_HEAD_TO_HEAD = 'head_to_head_{driver1}_{driver2}_{season}'
 CACHE_KEY_DRIVER_POSITIONS = 'driver_positions_{position}_{season}'
 CACHE_KEY_DRIVER_STATS = 'driver_stats_{driver_code}_{season}'
+CACHE_KEY_ALL_WINS = 'all_championship_wins_{season}'
+CACHE_KEY_MIN_RACES = 'min_races_to_win_{season}'
+CACHE_KEY_SEASONS_PER_LENGTH = 'seasons_per_length_{season}'
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -226,6 +229,12 @@ def all_championship_wins(season: Optional[int] = None) -> Response:
     if season is None:
         season = get_current_season()
 
+    # Check cache first
+    cache_key = CACHE_KEY_ALL_WINS.format(season=season)
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return jsonify(cached)
+
     db = get_db()
 
     # Query to group by the indexed 'winner' column (filtered by season)
@@ -242,6 +251,7 @@ def all_championship_wins(season: Optional[int] = None) -> Response:
     # Format as a dictionary
     championship_wins = {row['winner']: row['wins'] for row in rows}
 
+    cache.set(cache_key, championship_wins)
     return jsonify(championship_wins)
 
 
@@ -403,22 +413,20 @@ def head_to_head(driver1: str, driver2: str) -> Response:
 
     db = get_db()
 
-    # This query is complex. It adds commas to the start and end of the standings string
-    # to safely find the position of a driver's abbreviation. Filtered by season.
+    # Use indexed position_results table: compare positions directly
+    # For each championship, the driver with the lower position number finished ahead
     query = """
         SELECT
-            SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',')
-                < INSTR(',' || standings || ',', ',' || ? || ',')
-                THEN 1 ELSE 0 END) as driver1_wins,
-            SUM(CASE WHEN INSTR(',' || standings || ',', ',' || ? || ',')
-                > INSTR(',' || standings || ',', ',' || ? || ',')
-                THEN 1 ELSE 0 END) as driver2_wins
-        FROM championship_results
-        WHERE season = ? AND INSTR(standings, ?) > 0 AND INSTR(standings, ?) > 0;
+            SUM(CASE WHEN p1.position < p2.position THEN 1 ELSE 0 END) as driver1_wins,
+            SUM(CASE WHEN p1.position > p2.position THEN 1 ELSE 0 END) as driver2_wins
+        FROM position_results p1
+        JOIN position_results p2
+            ON p1.championship_id = p2.championship_id AND p1.season = p2.season
+        WHERE p1.driver_code = ? AND p2.driver_code = ? AND p1.season = ?
     """
     result = db.execute(
         query,
-        (d1_upper, d2_upper, d1_upper, d2_upper, season, d1_upper, d2_upper)
+        (d1_upper, d2_upper, season)
     ).fetchone()
 
     response_data = {
@@ -448,6 +456,13 @@ def min_races_to_win() -> Response:
         description: The minimum number of races for a championship win for each driver.
     """
     season = get_current_season()
+
+    # Check cache first
+    cache_key = CACHE_KEY_MIN_RACES.format(season=season)
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return jsonify(cached)
+
     db = get_db()
 
     query = """
@@ -461,6 +476,7 @@ def min_races_to_win() -> Response:
 
     data = {row['winner']: row['min_races'] for row in results}
 
+    cache.set(cache_key, data)
     return jsonify(data)
 
 
@@ -692,10 +708,20 @@ def driver_stats(driver_code: str) -> Response:
         WHERE driver_code = ? AND season = ?
     """, (driver_code, season)).fetchone()
 
-    # Get total championships count for percentage (filtered by season)
-    total_query = "SELECT COUNT(*) as total FROM championship_results WHERE season = ?"
-    total_result = db.execute(total_query, (season,)).fetchone()
-    total_championships = total_result['total'] if total_result else 1
+    # Get total seasons per length (shared across all drivers for same season)
+    spl_cache_key = CACHE_KEY_SEASONS_PER_LENGTH.format(season=season)
+    seasons_per_length = cache.get(spl_cache_key)
+    if seasons_per_length is None:
+        seasons_per_length = {}
+        for row in db.execute(
+            "SELECT num_races, COUNT(*) as total FROM championship_results "
+            "WHERE season = ? GROUP BY num_races", (season,)
+        ).fetchall():
+            seasons_per_length[row['num_races']] = row['total']
+        cache.set(spl_cache_key, seasons_per_length)
+
+    # Derive total from cached seasons_per_length (avoids separate COUNT query)
+    total_championships = sum(seasons_per_length.values()) if seasons_per_length else 1
 
     # Use pre-computed data if available
     if stats_row:
@@ -723,11 +749,7 @@ def driver_stats(driver_code: str) -> Response:
     for row in db.execute(query, (driver_code, season)).fetchall():
         win_prob_by_length[row['num_races']] = row['wins']
 
-    # Get total seasons per length for percentage calculation
-    seasons_per_length = {}
-    for row in db.execute("SELECT num_races, COUNT(*) as total FROM championship_results WHERE season = ? GROUP BY num_races", (season,)).fetchall():
-        seasons_per_length[row['num_races']] = row['total']
-
+    # seasons_per_length already computed and cached above
     win_prob_percentages = {}
     for length, wins in win_prob_by_length.items():
         total = seasons_per_length.get(length, 1)

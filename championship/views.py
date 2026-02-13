@@ -167,8 +167,9 @@ def driver_position_detail(driver_code: str, position: int) -> Union[str, Tuple[
     per_page = request.args.get('per_page', 100, type=int)
 
     # Temporarily set request args for the API call
+    season = ctx['season']
     from flask import current_app
-    with current_app.test_request_context(f'/api/driver/{driver_code}/position/{position}?page={page}&per_page={per_page}'):
+    with current_app.test_request_context(f'/api/driver/{driver_code}/position/{position}?page={page}&per_page={per_page}&season={season}'):
         response = driver_position_championships(driver_code, position)
 
     if response.status_code != 200:
