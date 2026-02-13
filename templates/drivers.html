@@ -14,12 +14,12 @@
 {% endblock %}
 
 {% block content %}
-<h2>2025 F1 Drivers</h2>
+<h2>{{ season }} F1 Drivers</h2>
 <p>Click on a driver to view their detailed championship statistics across all 16.7 million scenarios.</p>
 
 <div class="drivers-grid">
     {% for code, driver in drivers.items() %}
-    <a href="{{ url_for('views.driver_page', driver_code=code) }}" class="driver-card" style="--team-color: {{ driver.color }};">
+    <a href="{{ url_for('views.driver_page', driver_code=code, season=season) }}" class="driver-card" style="--team-color: {{ driver.color }};">
         <div class="driver-number">{{ driver.number }}</div>
         <div class="driver-details">
             <span class="driver-name">{{ driver.flag }} {{ driver.name }}</span>

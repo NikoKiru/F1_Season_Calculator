@@ -22,7 +22,7 @@
             <li>
                 <span class="team-color-stripe" style="background-color: {{ drivers[driver].color if driver in drivers else '#666' }};"></span>
                 <div class="driver-info">
-                    <a href="{{ url_for('views.driver_page', driver_code=driver) }}" class="driver-name">{{ drivers[driver].name if driver in drivers else driver }}</a>
+                    <a href="{{ url_for('views.driver_page', driver_code=driver, season=season) }}" class="driver-name">{{ drivers[driver].name if driver in drivers else driver }}</a>
                     <span class="driver-team">{{ drivers[driver].team if driver in drivers else '' }}</span>
                 </div>
                 <span class="driver-wins">{{ wins }} win(s)</span>

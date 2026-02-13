@@ -25,19 +25,19 @@
             {% for item in data %}
                 <div class="position-card" style="--team-color: {{ drivers[item.driver].color if item.driver in drivers else '#666' }};">
                     <div class="position-card-header">
-                        <a href="{{ url_for('views.driver_page', driver_code=item.driver) }}" class="driver-info">
+                        <a href="{{ url_for('views.driver_page', driver_code=item.driver, season=season) }}" class="driver-info">
                             <span class="driver-flag">{{ drivers[item.driver].flag if item.driver in drivers else '' }}</span>
                             <span class="driver-name">{{ drivers[item.driver].name if item.driver in drivers else item.driver }}</span>
                         </a>
                         <span class="driver-team">{{ drivers[item.driver].team if item.driver in drivers else '' }}</span>
                     </div>
                     <div class="position-card-body">
-                        <a href="{{ url_for('views.driver_position_detail', driver_code=item.driver, position=item.position) }}" class="position-badge">
+                        <a href="{{ url_for('views.driver_position_detail', driver_code=item.driver, position=item.position, season=season) }}" class="position-badge">
                             <span class="position-rank">P{{ item.position }}</span>
                             <span class="position-detail">{{ item.max_races }} races</span>
                         </a>
                         {% if item.best_margin is not none %}
-                            <a href="{{ url_for('views.championship_page', id=item.best_margin_championship_id) }}" class="margin-badge">
+                            <a href="{{ url_for('views.championship_page', id=item.best_margin_championship_id, season=season) }}" class="margin-badge">
                                 <span class="margin-value">+{{ item.best_margin }}</span>
                                 <span class="margin-label">best margin</span>
                             </a>

@@ -50,7 +50,7 @@
                             <td data-label="Pos">{{ loop.index }}</td>
                             <td class="driver-cell" data-label="Driver">
                                 <span class="color-bar" style="background-color: {{ drivers[driver_code].color if driver_code in drivers else '#666' }};"></span>
-                                <a href="{{ url_for('views.driver_page', driver_code=driver_code) }}">{{ real_life_data.driver_names[driver_code] }}</a>
+                                <a href="{{ url_for('views.driver_page', driver_code=driver_code, season=season) }}">{{ real_life_data.driver_names[driver_code] }}</a>
                             </td>
                             <td data-label="Points"><strong>{{ real_life_data.round_points_data[driver_code].total_points }}</strong></td>
                         </tr>

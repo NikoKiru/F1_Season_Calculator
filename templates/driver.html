@@ -7,7 +7,7 @@
     <div class="breadcrumbs-container">
         <ol class="breadcrumb-list">
             <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ url_for('views.drivers_page') }}" class="breadcrumb-link">Drivers</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('views.drivers_page', season=season) }}" class="breadcrumb-link">Drivers</a></li>
             <li class="breadcrumb-item"><span class="breadcrumb-current">{{ driver.name }}</span></li>
         </ol>
     </div>
