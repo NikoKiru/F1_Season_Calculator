@@ -15,19 +15,54 @@
 
 {% block content %}
 <h2>Head-to-Head Comparison</h2>
-<div class="data-container">
-    <form id="head-to-head-form">
-        <input type="text" id="driver1" placeholder="Driver 1 (e.g., VER)">
-        <input type="text" id="driver2" placeholder="Driver 2 (e.g., NOR)">
-        <button type="submit">Compare</button>
-    </form>
-    <div id="loading-indicator" style="display: none; text-align: center; margin-top: 20px;">
-        <div class="spinner"></div>
-        <p>Loading comparison...</p>
+
+<!-- Selection Slots -->
+<div class="h2h-selection-area">
+    <div class="h2h-slot" id="h2h-slot-1" data-slot="1">
+        <div class="h2h-slot-empty">
+            <span class="h2h-slot-label">Driver 1</span>
+            <span class="h2h-slot-hint">Select below</span>
+        </div>
     </div>
-    <div id="head-to-head-result" style="margin-top: 20px; display: flex; flex-direction: column; align-items: center;">
-        <!-- Results will be displayed here -->
+
+    <button class="h2h-swap-btn" id="h2h-swap-btn" title="Swap drivers" disabled>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 16l-4-4 4-4"/>
+            <path d="M17 8l4 4-4 4"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+        </svg>
+    </button>
+
+    <div class="h2h-slot" id="h2h-slot-2" data-slot="2">
+        <div class="h2h-slot-empty">
+            <span class="h2h-slot-label">Driver 2</span>
+            <span class="h2h-slot-hint">Select below</span>
+        </div>
     </div>
+</div>
+
+<p class="h2h-prompt" id="h2h-prompt">Click two drivers below to compare</p>
+
+<!-- Driver Picker Grid -->
+<div class="h2h-driver-grid" id="h2h-driver-grid">
+    {% for code, driver in drivers.items() %}
+    <button class="h2h-driver-card" data-code="{{ code }}" style="--team-color: {{ driver.color }};">
+        <span class="h2h-card-number">{{ driver.number }}</span>
+        <div class="h2h-card-info">
+            <span class="h2h-card-name">{{ driver.flag }} {{ driver.name }}</span>
+            <span class="h2h-card-team">{{ driver.team }}</span>
+        </div>
+    </button>
+    {% endfor %}
+</div>
+
+<!-- Loading & Results -->
+<div id="loading-indicator" style="display: none; text-align: center; margin-top: 20px;">
+    <div class="spinner"></div>
+    <p>Loading comparison...</p>
+</div>
+<div id="head-to-head-result" style="margin-top: 20px; display: flex; flex-direction: column; align-items: center;">
+    <!-- Results will be displayed here -->
 </div>
 {% endblock %}
 
