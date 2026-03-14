@@ -27,8 +27,9 @@ async function loadDriverStats() {
 
     } catch (error) {
         console.error('Error loading driver stats:', error);
+        const msg = error.message || 'Unknown error';
         document.getElementById('loading-indicator').innerHTML = `
-            <p style="color: var(--f1-red);">Error loading driver statistics. Please try again.</p>
+            <p style="color: var(--f1-red);">Error loading driver statistics: ${msg}</p>
         `;
     }
 }
@@ -74,7 +75,9 @@ function getOrdinal(n) {
 }
 
 function renderPositionChart(positionData) {
-    const ctx = document.getElementById('position-chart').getContext('2d');
+    const canvas = document.getElementById('position-chart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
 
     // Create labels and data for positions 1-20
     const labels = [];
@@ -142,7 +145,9 @@ function renderPositionChart(positionData) {
 }
 
 function renderProbabilityChart(winProbData, seasonsPerLength) {
-    const ctx = document.getElementById('probability-chart').getContext('2d');
+    const canvas = document.getElementById('probability-chart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
 
     // Get all season lengths sorted
     const lengths = Object.keys(seasonsPerLength).map(Number).sort((a, b) => a - b);
@@ -200,7 +205,13 @@ function renderProbabilityChart(winProbData, seasonsPerLength) {
 
 function renderHeadToHeadGrid(headToHeadData) {
     const grid = document.getElementById('head-to-head-grid');
+    if (!grid) return;
     grid.innerHTML = '';
+
+    if (!headToHeadData || Object.keys(headToHeadData).length === 0) {
+        grid.innerHTML = '<p>No head-to-head data available.</p>';
+        return;
+    }
 
     // Sort opponents by win percentage descending
     const opponents = Object.keys(headToHeadData).sort((a, b) => {
