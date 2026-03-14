@@ -2,8 +2,25 @@ import json
 import os
 from typing import Dict, TypedDict, Optional
 
-# Default season for the application
-DEFAULT_SEASON = 2026
+
+def _detect_default_season() -> int:
+    """Auto-detect the latest available season from data/seasons/*.json."""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    seasons_dir = os.path.join(base_dir, 'data', 'seasons')
+    if os.path.exists(seasons_dir):
+        seasons = []
+        for f in os.listdir(seasons_dir):
+            if f.endswith('.json'):
+                try:
+                    seasons.append(int(f[:-5]))
+                except ValueError:
+                    pass
+        if seasons:
+            return max(seasons)
+    return 2026
+
+
+DEFAULT_SEASON = _detect_default_season()
 
 
 class DriverInfo(TypedDict):

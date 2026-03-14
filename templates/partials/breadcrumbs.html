@@ -1,0 +1,19 @@
+{#
+  Reusable breadcrumb navigation component.
+
+  Required:
+    items   - List of (label, url) tuples for parent links
+    current - Text for the current (last) breadcrumb item
+#}
+{% macro breadcrumbs(items, current) %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <div class="breadcrumbs-container">
+        <ol class="breadcrumb-list">
+            {% for label, url in items %}
+            <li class="breadcrumb-item"><a href="{{ url }}" class="breadcrumb-link">{{ label }}</a></li>
+            {% endfor %}
+            <li class="breadcrumb-item"><span class="breadcrumb-current">{{ current }}</span></li>
+        </ol>
+    </div>
+</nav>
+{% endmacro %}

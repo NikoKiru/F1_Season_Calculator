@@ -1,18 +1,14 @@
 {% extends "base.html" %}
+{% from "partials/breadcrumbs.html" import breadcrumbs %}
 
 {% block title %}{{ driver.name }} - Position {{ position }}{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="breadcrumbs" aria-label="Breadcrumb">
-    <div class="breadcrumbs-container">
-        <ol class="breadcrumb-list">
-            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ url_for('views.highest_position_page', season=season) }}" class="breadcrumb-link">Highest Position</a></li>
-            <li class="breadcrumb-item"><a href="{{ url_for('views.driver_page', driver_code=driver_code, season=season) }}" class="breadcrumb-link">{{ driver.name }}</a></li>
-            <li class="breadcrumb-item"><span class="breadcrumb-current">Position {{ position }}</span></li>
-        </ol>
-    </div>
-</nav>
+{{ breadcrumbs([
+    ('Home', url_for('views.index')),
+    ('Highest Position', url_for('views.highest_position_page', season=season)),
+    (driver.name, url_for('views.driver_page', driver_code=driver_code, season=season))
+], 'Position ' ~ position) }}
 {% endblock %}
 
 {% block content %}

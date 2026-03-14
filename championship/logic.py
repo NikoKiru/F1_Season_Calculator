@@ -1,4 +1,4 @@
-import pandas as pd
+import csv
 import os
 from typing import Dict, List, Any, Optional
 from flask import current_app
@@ -33,6 +33,28 @@ def _get_csv_path(season: Optional[int] = None) -> Optional[str]:
     return None
 
 
+def _read_csv_data(csv_path: str) -> tuple[dict[str, dict[str, int]], list[str]]:
+    """Read CSV and return driver points data and column names.
+
+    Args:
+        csv_path: Path to the CSV file.
+
+    Returns:
+        Tuple of (driver_data dict mapping driver -> {round_col: points}, round_columns list)
+    """
+    with open(csv_path, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        columns = reader.fieldnames or []
+        round_columns = [c for c in columns if c != 'Driver']
+        driver_data = {}
+        for row in reader:
+            driver = row['Driver']
+            driver_data[driver] = {
+                col: int(row[col]) for col in round_columns
+            }
+    return driver_data, round_columns
+
+
 def get_round_points_for_championship(
     drivers: List[str],
     round_numbers: List[int],
@@ -55,19 +77,14 @@ def get_round_points_for_championship(
     if csv_path is None:
         return {}
 
-    df = pd.read_csv(csv_path)
-    df = df.set_index('Driver')
-
-    # Convert round numbers to 0-based index for DataFrame lookup
-    # The round numbers in round_numbers are 1-based, and correspond to column names '1', '2', etc.
+    driver_data, available_columns = _read_csv_data(csv_path)
     round_cols = [str(r) for r in round_numbers]
 
     championship_points = {}
     for driver in drivers:
-        if driver in df.index:
-            # Ensure all round columns exist in the DataFrame
-            existing_round_cols = [col for col in round_cols if col in df.columns]
-            round_points = df.loc[driver, existing_round_cols].tolist()
+        if driver in driver_data:
+            existing_round_cols = [col for col in round_cols if col in available_columns]
+            round_points = [driver_data[driver][col] for col in existing_round_cols]
             total_points = sum(round_points)
             championship_points[driver] = {
                 'round_points': round_points,
@@ -94,24 +111,24 @@ def calculate_championship_from_rounds(
     if csv_path is None:
         return {}
 
-    df = pd.read_csv(csv_path)
-
+    driver_data, available_columns = _read_csv_data(csv_path)
     round_cols = [str(r) for r in round_numbers]
 
-    # Ensure all requested round columns exist
-    existing_round_cols = [col for col in round_cols if col in df.columns]
+    existing_round_cols = [col for col in round_cols if col in available_columns]
     if not existing_round_cols:
         return {}
 
-    # Sum points for selected rounds for each driver
-    df['total_points'] = df[existing_round_cols].sum(axis=1)
+    # Calculate total points for each driver
+    totals = []
+    for driver, points in driver_data.items():
+        total = sum(points[col] for col in existing_round_cols)
+        totals.append((driver, total))
 
     # Sort by total points descending
-    standings_df = df.sort_values(by='total_points', ascending=False)
+    totals.sort(key=lambda x: x[1], reverse=True)
 
-    # Get standings, points, and winner
-    standings = standings_df['Driver'].tolist()
-    points = standings_df['total_points'].astype(int).tolist()
+    standings = [t[0] for t in totals]
+    points = [t[1] for t in totals]
     winner = standings[0] if standings else None
 
     return {

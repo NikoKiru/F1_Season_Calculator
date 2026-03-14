@@ -1,17 +1,10 @@
 {% extends "base.html" %}
+{% from "partials/breadcrumbs.html" import breadcrumbs %}
 
 {% block title %}{{ driver.name }}{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="breadcrumbs" aria-label="Breadcrumb">
-    <div class="breadcrumbs-container">
-        <ol class="breadcrumb-list">
-            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ url_for('views.drivers_page', season=season) }}" class="breadcrumb-link">Drivers</a></li>
-            <li class="breadcrumb-item"><span class="breadcrumb-current">{{ driver.name }}</span></li>
-        </ol>
-    </div>
-</nav>
+{{ breadcrumbs([('Home', url_for('views.index')), ('Drivers', url_for('views.drivers_page', season=season))], driver.name) }}
 {% endblock %}
 
 {% block content %}
@@ -23,12 +16,12 @@
     </div>
 </div>
 
-<div id="loading-indicator" style="text-align: center; padding: 40px;">
+<div id="loading-indicator" class="loading-indicator">
     <div class="spinner"></div>
     <p>Loading driver statistics...</p>
 </div>
 
-<div id="driver-content" style="display: none;">
+<div id="driver-content" class="hidden">
     <!-- Stats Cards -->
     <div class="stats-grid" style="--team-color: {{ driver.color }};">
         <div class="stat-card">
@@ -76,11 +69,11 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
     const DRIVER_CODE = "{{ driver_code }}";
-    const DRIVERS = {{ drivers | tojson | safe }};
+    const DRIVERS = {{ drivers | tojson }};
     const TEAM_COLOR = "{{ driver.color }}";
 </script>
-<script src="{{ url_for('static', filename='js/driver.js') }}"></script>
+<script src="{{ versioned_static('js/driver.js') }}"></script>
 {% endblock %}

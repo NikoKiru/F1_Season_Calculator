@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% from "partials/breadcrumbs.html" import breadcrumbs %}
 
-{% block title %}Internal Server Error{% endblock %}
+{% block title %}Method Not Allowed{% endblock %}
 
 {% block breadcrumbs %}
-{{ breadcrumbs([('Home', url_for('views.index'))], '500 Error') }}
+{{ breadcrumbs([('Home', url_for('views.index'))], '405 Error') }}
 {% endblock %}
 
 {% block content %}
-<h2>Internal Server Error</h2>
-<p>An unexpected error occurred on our end. We're working to fix it.</p>
+<h2>Method Not Allowed</h2>
+<p>Sorry, the request method is not allowed for this page.</p>
 <p><a href="{{ url_for('views.index') }}">Return to the homepage</a></p>
 {% endblock %}

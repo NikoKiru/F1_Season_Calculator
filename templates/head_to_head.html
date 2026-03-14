@@ -1,16 +1,11 @@
 {% extends "base.html" %}
+{% from "partials/driver_card.html" import driver_card %}
+{% from "partials/breadcrumbs.html" import breadcrumbs %}
 
 {% block title %}Head-to-Head{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="breadcrumbs" aria-label="Breadcrumb">
-    <div class="breadcrumbs-container">
-        <ol class="breadcrumb-list">
-            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
-            <li class="breadcrumb-item"><span class="breadcrumb-current">Head-to-Head</span></li>
-        </ol>
-    </div>
-</nav>
+{{ breadcrumbs([('Home', url_for('views.index'))], 'Head-to-Head') }}
 {% endblock %}
 
 {% block content %}
@@ -44,15 +39,9 @@
 <p class="h2h-prompt" id="h2h-prompt">Click two drivers below to compare</p>
 
 <!-- Driver Picker Grid -->
-<div class="h2h-driver-grid" id="h2h-driver-grid">
+<div class="driver-card-grid" id="h2h-driver-grid">
     {% for code, driver in drivers.items() %}
-    <button class="h2h-driver-card" data-code="{{ code }}" style="--team-color: {{ driver.color }};">
-        <span class="h2h-card-number">{{ driver.number }}</span>
-        <div class="h2h-card-info">
-            <span class="h2h-card-name">{{ driver.flag }} {{ driver.name }}</span>
-            <span class="h2h-card-team">{{ driver.team }}</span>
-        </div>
-    </button>
+        {{ driver_card(code, driver, tag='button', data_attrs='data-code="' ~ code ~ '"') }}
     {% endfor %}
 </div>
 
@@ -67,9 +56,9 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-    const DRIVERS = {{ drivers | tojson | safe }};
+    const DRIVERS = {{ drivers | tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/head_to_head.js') }}"></script>
+<script src="{{ versioned_static('js/head_to_head.js') }}"></script>
 {% endblock %}

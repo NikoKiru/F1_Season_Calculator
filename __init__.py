@@ -2,7 +2,7 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 from typing import Optional, Dict, Any
-from flask import Flask
+from flask import Flask, url_for
 from flask_caching import Cache
 from flask_compress import Compress
 
@@ -113,6 +113,18 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
 
     # Configure logging
     configure_logging(app)
+
+    # Static file cache busting - append ?v=<mtime> to static URLs
+    @app.context_processor
+    def inject_versioned_static():
+        def versioned_static(filename):
+            filepath = os.path.join(app.static_folder, filename)
+            try:
+                mtime = int(os.path.getmtime(filepath))
+                return url_for('static', filename=filename, v=mtime)
+            except OSError:
+                return url_for('static', filename=filename)
+        return dict(versioned_static=versioned_static)
 
     # Static file caching - set long cache for CSS/JS/images
     app.config.setdefault('SEND_FILE_MAX_AGE_DEFAULT', 43200)  # 12 hours

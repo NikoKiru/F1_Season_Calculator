@@ -57,7 +57,7 @@ function updateUI() {
     renderSlot(2, selectedDriver2);
 
     // Update grid card states
-    document.querySelectorAll('.h2h-driver-card').forEach(card => {
+    document.querySelectorAll('#h2h-driver-grid .driver-card-unified').forEach(card => {
         const code = card.dataset.code;
         card.classList.toggle('selected', code === selectedDriver1 || code === selectedDriver2);
     });
@@ -205,7 +205,7 @@ function runComparison() {
 
 // Driver card click
 document.getElementById('h2h-driver-grid').addEventListener('click', function(e) {
-    const card = e.target.closest('.h2h-driver-card');
+    const card = e.target.closest('.driver-card-unified');
     if (!card) return;
 
     const code = card.dataset.code;

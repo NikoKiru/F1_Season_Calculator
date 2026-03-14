@@ -1,0 +1,30 @@
+{#
+  Reusable driver card component.
+
+  Required:
+    code   - Driver code string (e.g. "VER")
+    driver - Driver dict with keys: name, flag, team, color, number
+
+  Optional:
+    tag           - HTML tag: 'a', 'button', or 'div' (default 'a')
+    href          - Link target when tag='a'
+    extra_class   - Additional CSS classes
+    data_attrs    - Extra HTML attributes string (e.g. 'data-code="VER"')
+    badge_content - HTML/text to render as a trailing badge
+#}
+{% macro driver_card(code, driver, tag='a', href='', extra_class='', data_attrs='', badge_content='') %}
+<{{ tag }} class="driver-card-unified {{ extra_class }}"
+    style="--team-color: {{ driver.color }};"
+    {% if tag == 'a' and href %}href="{{ href }}"{% endif %}
+    {% if tag == 'button' %}type="button"{% endif %}
+    {{ data_attrs }}>
+    <span class="dcu-number">{{ driver.number }}</span>
+    <div class="dcu-info">
+        <span class="dcu-name">{{ driver.flag }} {{ driver.name }}</span>
+        <span class="dcu-team">{{ driver.team }}</span>
+    </div>
+    {% if badge_content %}
+    <div class="dcu-badge">{{ badge_content }}</div>
+    {% endif %}
+</{{ tag }}>
+{% endmacro %}

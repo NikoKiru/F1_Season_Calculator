@@ -1,34 +1,24 @@
 {% extends "base.html" %}
+{% from "partials/driver_card.html" import driver_card %}
+{% from "partials/breadcrumbs.html" import breadcrumbs %}
 
 {% block title %}All Championship Wins{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="breadcrumbs" aria-label="Breadcrumb">
-    <div class="breadcrumbs-container">
-        <ol class="breadcrumb-list">
-            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
-            <li class="breadcrumb-item"><span class="breadcrumb-current">All Championship Wins</span></li>
-        </ol>
-    </div>
-</nav>
+{{ breadcrumbs([('Home', url_for('views.index'))], 'All Championship Wins') }}
 {% endblock %}
 
 {% block content %}
 <h2>All Championship Wins</h2>
 <div class="data-container">
     {% if data %}
-        <ul class="driver-list">
-        {% for driver, wins in data|dictsort(by='value', reverse=true) %}
-            <li>
-                <span class="team-color-stripe" style="background-color: {{ drivers[driver].color if driver in drivers else '#666' }};"></span>
-                <div class="driver-info">
-                    <a href="{{ url_for('views.driver_page', driver_code=driver, season=season) }}" class="driver-name">{{ drivers[driver].name if driver in drivers else driver }}</a>
-                    <span class="driver-team">{{ drivers[driver].team if driver in drivers else '' }}</span>
-                </div>
-                <span class="driver-wins">{{ wins }} win(s)</span>
-            </li>
+        <div class="driver-card-grid">
+        {% for driver_code, wins in data|dictsort(by='value', reverse=true) %}
+            {% if driver_code in drivers %}
+                {{ driver_card(driver_code, drivers[driver_code], tag='a', href=url_for('views.driver_page', driver_code=driver_code, season=season), badge_content=wins ~ ' win(s)') }}
+            {% endif %}
         {% endfor %}
-        </ul>
+        </div>
     {% else %}
         <p>No data available.</p>
     {% endif %}

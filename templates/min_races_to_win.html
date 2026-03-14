@@ -1,16 +1,10 @@
 {% extends "base.html" %}
+{% from "partials/breadcrumbs.html" import breadcrumbs %}
 
 {% block title %}Min Races to Win{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="breadcrumbs" aria-label="Breadcrumb">
-    <div class="breadcrumbs-container">
-        <ol class="breadcrumb-list">
-            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
-            <li class="breadcrumb-item"><span class="breadcrumb-current">Min Races to Win</span></li>
-        </ol>
-    </div>
-</nav>
+{{ breadcrumbs([('Home', url_for('views.index'))], 'Min Races to Win') }}
 {% endblock %}
 
 {% block content %}

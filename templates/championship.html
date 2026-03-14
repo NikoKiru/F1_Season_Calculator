@@ -1,20 +1,14 @@
 {% extends "base.html" %}
+{% from "partials/breadcrumbs.html" import breadcrumbs %}
 
 {% block title %}Championship {{ data.championship_id }}{% endblock %}
 
 {% block head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 {% endblock %}
 
 {% block breadcrumbs %}
-<nav class="breadcrumbs" aria-label="Breadcrumb">
-    <div class="breadcrumbs-container">
-        <ol class="breadcrumb-list">
-            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
-            <li class="breadcrumb-item"><span class="breadcrumb-current">Championship #{{ data.championship_id }}</span></li>
-        </ol>
-    </div>
-</nav>
+{{ breadcrumbs([('Home', url_for('views.index'))], 'Championship #' ~ data.championship_id) }}
 {% endblock %}
 
 {% block content %}
@@ -55,7 +49,7 @@
         </div>
 
         {% if data.round_points_data %}
-        <h3 style="margin-top: 20px;">Championship Points Table:</h3>
+        <h3 class="section-title">Championship Points Table:</h3>
         <div class="table-wrapper">
             <table class="standings-table">
                 <thead>
@@ -86,7 +80,7 @@
             </table>
         </div>
 
-        <h3 style="margin-top: 30px;">Season Progression</h3>
+        <h3 class="section-title">Season Progression</h3>
         <div class="chart-container">
             <canvas id="progression-chart"></canvas>
         </div>

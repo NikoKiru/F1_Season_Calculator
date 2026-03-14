@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% from "partials/breadcrumbs.html" import breadcrumbs %}
 
-{% block title %}Internal Server Error{% endblock %}
+{% block title %}Bad Request{% endblock %}
 
 {% block breadcrumbs %}
-{{ breadcrumbs([('Home', url_for('views.index'))], '500 Error') }}
+{{ breadcrumbs([('Home', url_for('views.index'))], '400 Error') }}
 {% endblock %}
 
 {% block content %}
-<h2>Internal Server Error</h2>
-<p>An unexpected error occurred on our end. We're working to fix it.</p>
+<h2>Bad Request</h2>
+<p>Sorry, the server could not understand your request.</p>
 <p><a href="{{ url_for('views.index') }}">Return to the homepage</a></p>
 {% endblock %}

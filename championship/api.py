@@ -5,11 +5,10 @@ from flask import (
 
 # Root-level modules (absolute imports - db.py and cache are at project root)
 from db import get_db
-import __init__ as app_root
-cache = app_root.cache
+from __init__ import cache
 
 # Sibling modules within championship package (relative imports)
-from .models import ROUND_NAMES, DRIVER_NAMES, DRIVERS, DEFAULT_SEASON, get_season_data
+from .models import DEFAULT_SEASON, get_season_data
 from .logic import get_round_points_for_championship
 from .validators import (
     ErrorCode,
@@ -755,9 +754,33 @@ def driver_stats(driver_code: str) -> Response:
         total = seasons_per_length.get(length, 1)
         win_prob_percentages[length] = round((wins / total) * 100, 2)
 
-    # Position distribution: Use indexed winner column for P1, estimate others
-    # Full position distribution is expensive - only include P1 count (from wins)
-    position_counts = {1: total_wins} if total_wins > 0 else {}
+    # Position distribution: query indexed position_results table
+    position_counts = {}
+    for row in db.execute(
+        "SELECT position, COUNT(*) as cnt FROM position_results "
+        "WHERE driver_code = ? AND season = ? GROUP BY position ORDER BY position",
+        (driver_code, season)
+    ).fetchall():
+        position_counts[row['position']] = row['cnt']
+
+    # Head-to-head: compare positions in shared championships via indexed JOIN
+    head_to_head = {}
+    h2h_rows = db.execute(
+        "SELECT pr2.driver_code as opponent, "
+        "SUM(CASE WHEN pr1.position < pr2.position THEN 1 ELSE 0 END) as wins, "
+        "SUM(CASE WHEN pr1.position > pr2.position THEN 1 ELSE 0 END) as losses "
+        "FROM position_results pr1 "
+        "JOIN position_results pr2 ON pr1.championship_id = pr2.championship_id "
+        "AND pr1.season = pr2.season "
+        "WHERE pr1.driver_code = ? AND pr1.season = ? AND pr2.driver_code != ? "
+        "GROUP BY pr2.driver_code",
+        (driver_code, season, driver_code)
+    ).fetchall()
+    for row in h2h_rows:
+        head_to_head[row['opponent']] = {
+            'wins': row['wins'],
+            'losses': row['losses']
+        }
 
     response = {
         "driver_code": driver_code,
@@ -772,6 +795,7 @@ def driver_stats(driver_code: str) -> Response:
         "position_distribution": position_counts,
         "win_probability_by_length": win_prob_percentages,
         "seasons_per_length": seasons_per_length,
+        "head_to_head": head_to_head,
         "season": season
     }
 

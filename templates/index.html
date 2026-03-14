@@ -3,7 +3,7 @@
 {% block title %}F1 Championship Scenarios{% endblock %}
 
 {% block head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 {% endblock %}
 
 {% block header_extra %}
@@ -25,13 +25,13 @@
 </p>
 
 {% if not season_has_data %}
-<div class="info-box" style="background: var(--card-bg, #1a1a2e); border: 1px solid var(--accent-color, #4781D7); border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+<div class="info-box">
     <h3>{{ season }} Season - Coming Soon</h3>
     <p>No race data has been added for the {{ season }} season yet. Once the season begins, standings and statistics will appear here.</p>
-    <p style="font-size: 0.9em; opacity: 0.7;">Switch to a previous season using the dropdown above to view historical data.</p>
+    <p>Switch to a previous season using the dropdown above to view historical data.</p>
 </div>
 {% elif real_life_data and real_life_data.round_points_data %}
-<h3 style="margin-top: 30px;">{{ season }} Season Standings</h3>
+<h3 class="section-title">{{ season }} Season Standings</h3>
 
 <div class="standings-chart-grid">
     <div class="table-wrapper">
@@ -68,7 +68,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/index.js') }}"></script>
 {% if real_life_data and real_life_data.round_points_data %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {

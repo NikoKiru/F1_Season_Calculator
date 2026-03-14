@@ -1,16 +1,10 @@
 {% extends "base.html" %}
+{% from "partials/breadcrumbs.html" import breadcrumbs %}
 
 {% block title %}Driver Finishes by Position{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="breadcrumbs" aria-label="Breadcrumb">
-    <div class="breadcrumbs-container">
-        <ol class="breadcrumb-list">
-            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
-            <li class="breadcrumb-item"><span class="breadcrumb-current">Driver Positions</span></li>
-        </ol>
-    </div>
-</nav>
+{{ breadcrumbs([('Home', url_for('views.index'))], 'Driver Positions') }}
 {% endblock %}
 
 {% block content %}
@@ -51,7 +45,7 @@
 
 {% block scripts %}
 <script>
-    const DRIVERS = {{ drivers | tojson | safe }};
+    const DRIVERS = {{ drivers | tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/driver_positions.js') }}"></script>
+<script src="{{ versioned_static('js/driver_positions.js') }}"></script>
 {% endblock %}

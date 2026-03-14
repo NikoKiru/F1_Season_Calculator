@@ -1,3 +1,4 @@
+/* ============ CSS VARIABLES ============ */
 /* Modern CSS Variables for theming */
 :root {
     --f1-red: #d10000;
@@ -36,6 +37,7 @@
     box-sizing: border-box;
 }
 
+/* ============ BASE STYLES ============ */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     line-height: 1.6;
@@ -46,6 +48,7 @@ body {
     transition: background var(--transition-speed), color var(--transition-speed);
 }
 
+/* ============ HEADER & NAVIGATION ============ */
 header {
     background: linear-gradient(135deg, var(--f1-red) 0%, var(--f1-red-dark) 100%);
     color: #fff;
@@ -217,7 +220,7 @@ header h1 a {
     transform: rotate(-45deg);
 }
 
-/* Breadcrumbs */
+/* ============ BREADCRUMBS ============ */
 .breadcrumbs {
     background: var(--surface-secondary);
     padding: 12px 20px;
@@ -316,6 +319,7 @@ header h1 a {
     }
 }
 
+/* ============ SEARCH FORM ============ */
 #search-form {
     display: flex;
     width: 90%;
@@ -354,6 +358,7 @@ header h1 a {
     transform: translateY(-1px);
 }
 
+/* ============ MAIN CONTENT ============ */
 main {
     padding: 20px;
     max-width: 98%;
@@ -397,56 +402,10 @@ a:hover {
     text-decoration: underline;
 }
 
-.endpoint-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.endpoint-link {
-    background: var(--f1-red);
-    color: #fff;
-    padding: 15px;
-    text-align: center;
-    border-radius: 8px;
-    font-size: 1.1em;
-    transition: background 0.3s;
-}
-
-.endpoint-link:hover {
-    background: var(--f1-red-dark);
-    text-decoration: none;
-}
-
 .data-container {
     background: var(--surface-secondary);
     padding: 20px;
     border-radius: 8px;
-}
-
-/* Modern List Styles */
-.driver-list {
-    list-style: none;
-    padding: 0;
-    margin: 20px 0;
-}
-
-.driver-list li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    margin-bottom: 8px;
-    background: var(--surface);
-    border-radius: 10px;
-    border-left: 4px solid var(--f1-red);
-    transition: all var(--transition-speed);
-}
-
-.driver-list li:hover {
-    transform: translateX(5px);
-    border-left-width: 6px;
 }
 
 .driver-name {
@@ -465,14 +424,14 @@ a.driver-name,
 .driver-list a,
 td.driver-cell a,
 th.driver-cell a {
-    color: var(--text-primary) !important;
-    text-decoration: none !important;
-    background: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    display: inline !important;
-    font-size: inherit !important;
-    border-radius: 0 !important;
+    color: var(--text-primary);
+    text-decoration: none;
+    background: none;
+    padding: 0;
+    margin: 0;
+    display: inline;
+    font-size: inherit;
+    border-radius: 0;
 }
 
 a.driver-name:hover,
@@ -485,27 +444,6 @@ a.driver-name:hover,
     text-decoration: underline;
 }
 
-.driver-wins {
-    color: var(--text-secondary);
-    font-weight: 500;
-    background: rgba(209, 0, 0, 0.1);
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.95em;
-}
-
-@media (max-width: 480px) {
-    .driver-list li {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-
-    .driver-wins {
-        width: 100%;
-        text-align: center;
-    }
-}
 
 form {
     display: flex;
@@ -561,6 +499,36 @@ footer {
     color: var(--text-secondary);
 }
 
+/* Info box (used on index page when no season data) */
+.info-box {
+    background: var(--surface-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.info-box p:last-child {
+    font-size: 0.9em;
+    opacity: 0.7;
+}
+
+/* Section spacing */
+.section-title {
+    margin-top: 30px;
+}
+
+/* Utility classes */
+.hidden {
+    display: none;
+}
+
+.loading-indicator {
+    text-align: center;
+    padding: 40px;
+}
+
 /* RESPONSIVE TABLE SOLUTION - Consistent across all pages */
 .table-wrapper {
     position: relative;
@@ -595,6 +563,7 @@ footer {
 }
 
 
+/* ============ TABLES ============ */
 .standings-table {
     width: max-content; /* Allow table to be as wide as it needs */
     min-width: 100%; /* At least full width */
@@ -880,6 +849,7 @@ footer {
     color: var(--text-primary);
 }
 
+/* ============ RACE GRID ============ */
 /* Race grid styles - moved from inline styles */
 .race-grid {
     display: grid;
@@ -976,9 +946,45 @@ footer {
     flex-shrink: 0;
 }
 
-/* For tbody th (sticky driver column in probability table) */
-.standings-table tbody th {
-    /* Keep existing styles, add flex for color bar */
+/* Driver List (used in min_races_to_win, driver_positions) */
+.driver-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.driver-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: all var(--transition-speed);
+}
+
+.driver-list li:hover {
+    border-color: var(--f1-red);
+    transform: translateX(4px);
+}
+
+.team-color-stripe {
+    display: inline-block;
+    width: 4px;
+    height: 24px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.driver-wins {
+    margin-left: auto;
+    font-weight: 700;
+    color: var(--f1-red);
+    font-size: 0.95em;
 }
 
 .standings-table tbody th .color-bar {
@@ -990,32 +996,6 @@ footer {
     vertical-align: middle;
 }
 
-/* Driver list with team colors */
-.driver-list li {
-    border-left: none;
-    padding-left: 0;
-    overflow: hidden;
-}
-
-.driver-list li .team-color-stripe {
-    width: 5px;
-    align-self: stretch;
-    margin-right: 15px;
-    border-radius: 0;
-    flex-shrink: 0;
-}
-
-.driver-list .driver-info {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-}
-
-.driver-list .driver-team {
-    font-size: 0.85em;
-    color: var(--text-secondary);
-    font-weight: 400;
-}
 
 /* ============================================
    CHAMPIONSHIP PAGE HERO
@@ -1425,94 +1405,119 @@ footer {
 }
 
 /* ============================================
-   DRIVERS GRID PAGE
+   UNIFIED DRIVER CARD & GRID (reusable)
    ============================================ */
 
-.drivers-grid {
+.driver-card-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 16px;
-    margin: 30px 0;
+    gap: 10px;
+    margin: 20px 0;
 }
 
-.driver-card {
+.driver-card-unified {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
     background: var(--surface);
-    border-radius: var(--border-radius);
-    overflow: hidden;
-    text-decoration: none;
-    color: var(--text-primary);
-    transition: all var(--transition-speed);
-    box-shadow: var(--shadow-sm);
+    border: 2px solid var(--border-color);
     border-left: 5px solid var(--team-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-family: inherit;
+    font-size: inherit;
 }
 
-.driver-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-lg);
+.driver-card-unified:hover {
+    border-color: var(--team-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
     text-decoration: none;
 }
 
-.driver-card .driver-number {
-    background: var(--team-color);
-    color: white;
-    font-size: 2.5em;
-    font-weight: 800;
-    text-align: center;
-    padding: 15px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+.driver-card-unified.selected {
+    background: rgba(209, 0, 0, 0.08);
+    border-color: var(--f1-red);
+    box-shadow: 0 0 0 2px var(--f1-red);
 }
 
-.driver-card .driver-details {
-    padding: 15px;
+.dcu-number {
+    font-size: 1.3em;
+    font-weight: 800;
+    color: var(--team-color);
+    min-width: 32px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.dcu-info {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
 }
 
-.driver-card .driver-name {
-    font-weight: 700;
-    font-size: 1em;
+.dcu-name {
+    font-weight: 600;
+    font-size: 0.9em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.driver-card .driver-team {
+.dcu-team {
+    font-size: 0.75em;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dcu-badge {
+    font-weight: 600;
     font-size: 0.85em;
     color: var(--text-secondary);
+    background: rgba(209, 0, 0, 0.1);
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 /* Responsive: 4 columns on medium screens */
 @media (max-width: 1200px) {
-    .drivers-grid {
+    .driver-card-grid {
         grid-template-columns: repeat(4, 1fr);
     }
 }
 
 /* 3 columns on tablets */
 @media (max-width: 900px) {
-    .drivers-grid {
+    .driver-card-grid {
         grid-template-columns: repeat(3, 1fr);
     }
 }
 
 /* 2 columns on mobile */
 @media (max-width: 600px) {
-    .drivers-grid {
+    .driver-card-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
+        gap: 8px;
     }
 
-    .driver-card .driver-number {
-        font-size: 2em;
-        padding: 12px;
+    .dcu-number {
+        font-size: 1.1em;
+        min-width: 28px;
     }
 
-    .driver-card .driver-details {
-        padding: 12px;
-    }
-
-    .driver-card .driver-name {
-        font-size: 0.9em;
+    .dcu-name {
+        font-size: 0.85em;
     }
 }
 
@@ -2143,88 +2148,8 @@ footer {
     min-height: 1.5em;
 }
 
-/* Driver picker grid */
-.h2h-driver-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
-    margin: 0 0 30px;
-}
-
-.h2h-driver-card {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    background: var(--surface);
-    border: 2px solid var(--border-color);
-    border-left: 5px solid var(--team-color);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: left;
-    color: var(--text-primary);
-    font-family: inherit;
-    font-size: inherit;
-}
-
-.h2h-driver-card:hover {
-    border-color: var(--team-color);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-}
-
-.h2h-driver-card.selected {
-    background: rgba(209, 0, 0, 0.08);
-    border-color: var(--f1-red);
-    box-shadow: 0 0 0 2px var(--f1-red);
-}
-
-.h2h-card-number {
-    font-size: 1.3em;
-    font-weight: 800;
-    color: var(--team-color);
-    min-width: 32px;
-    text-align: center;
-    flex-shrink: 0;
-}
-
-.h2h-card-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-}
-
-.h2h-card-name {
-    font-weight: 600;
-    font-size: 0.9em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.h2h-card-team {
-    font-size: 0.75em;
-    color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Responsive: 4 columns on medium */
-@media (max-width: 1200px) {
-    .h2h-driver-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-
-/* 3 columns on tablets */
+/* Responsive h2h layout adjustments */
 @media (max-width: 900px) {
-    .h2h-driver-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-
     .h2h-selection-area {
         gap: 10px;
     }
@@ -2235,13 +2160,7 @@ footer {
     }
 }
 
-/* 2 columns on mobile */
 @media (max-width: 600px) {
-    .h2h-driver-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-    }
-
     .h2h-selection-area {
         flex-wrap: nowrap;
         gap: 8px;
@@ -2264,14 +2183,5 @@ footer {
     .h2h-swap-btn {
         width: 36px;
         height: 36px;
-    }
-
-    .h2h-card-number {
-        font-size: 1.1em;
-        min-width: 28px;
-    }
-
-    .h2h-card-name {
-        font-size: 0.85em;
     }
 }

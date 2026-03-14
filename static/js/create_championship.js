@@ -1,11 +1,3 @@
-document.getElementById('search-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const championshipId = document.getElementById('search-input').value;
-    if (championshipId) {
-        window.location.href = `/championship/${championshipId}?season=${CURRENT_SEASON}`;
-    }
-});
-
 document.addEventListener('DOMContentLoaded', function() {
     const raceGrid = document.getElementById('race-grid');
     const generateButton = document.getElementById('generate-championship');

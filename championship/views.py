@@ -7,7 +7,7 @@ from .api import (
     championship_win_probability, min_races_to_win, driver_position_championships
 )
 from .models import (
-    ROUND_NAMES, DRIVERS, DEFAULT_SEASON,
+    DEFAULT_SEASON,
     get_season_data, get_available_seasons
 )
 
@@ -28,9 +28,11 @@ def get_template_context(season: Optional[int] = None) -> dict:
         season = get_current_season()
 
     season_data = get_season_data(season)
+    # Only show active seasons in nav (2025 archived but still accessible via ?season=2025)
+    active_seasons = [s for s in get_available_seasons() if s >= 2026]
     return {
         'season': season,
-        'seasons': get_available_seasons(),
+        'seasons': active_seasons,
         'drivers': season_data.drivers,
         'driver_names': season_data.driver_names,
         'rounds': season_data.round_names,

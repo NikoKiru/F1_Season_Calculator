@@ -47,7 +47,7 @@ def bad_request_error(error: HTTPException) -> Union[Tuple[Response, int], Tuple
             message=str(error.description) if hasattr(error, 'description') else "Bad request"
         )
         return jsonify(response), status
-    return render_template('errors/400.html'), 400
+    return render_template('400.html'), 400
 
 
 @errors_bp.app_errorhandler(404)
@@ -72,7 +72,7 @@ def method_not_allowed_error(error: HTTPException) -> Union[Tuple[Response, int]
             http_status=405
         )
         return jsonify(response), 405
-    return render_template('errors/405.html'), 405
+    return render_template('405.html'), 405
 
 
 @errors_bp.app_errorhandler(500)

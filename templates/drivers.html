@@ -1,31 +1,20 @@
 {% extends "base.html" %}
+{% from "partials/driver_card.html" import driver_card %}
+{% from "partials/breadcrumbs.html" import breadcrumbs %}
 
 {% block title %}All Drivers{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="breadcrumbs" aria-label="Breadcrumb">
-    <div class="breadcrumbs-container">
-        <ol class="breadcrumb-list">
-            <li class="breadcrumb-item"><a href="{{ url_for('views.index') }}" class="breadcrumb-link">Home</a></li>
-            <li class="breadcrumb-item"><span class="breadcrumb-current">Drivers</span></li>
-        </ol>
-    </div>
-</nav>
+{{ breadcrumbs([('Home', url_for('views.index'))], 'Drivers') }}
 {% endblock %}
 
 {% block content %}
 <h2>{{ season }} F1 Drivers</h2>
 <p>Click on a driver to view their detailed championship statistics across all 16.7 million scenarios.</p>
 
-<div class="drivers-grid">
+<div class="driver-card-grid">
     {% for code, driver in drivers.items() %}
-    <a href="{{ url_for('views.driver_page', driver_code=code, season=season) }}" class="driver-card" style="--team-color: {{ driver.color }};">
-        <div class="driver-number">{{ driver.number }}</div>
-        <div class="driver-details">
-            <span class="driver-name">{{ driver.flag }} {{ driver.name }}</span>
-            <span class="driver-team">{{ driver.team }}</span>
-        </div>
-    </a>
+        {{ driver_card(code, driver, tag='a', href=url_for('views.driver_page', driver_code=code, season=season)) }}
     {% endfor %}
 </div>
 {% endblock %}

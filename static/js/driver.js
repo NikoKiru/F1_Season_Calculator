@@ -12,8 +12,8 @@ async function loadDriverStats() {
         const data = await response.json();
 
         // Hide loading, show content
-        document.getElementById('loading-indicator').style.display = 'none';
-        document.getElementById('driver-content').style.display = 'block';
+        document.getElementById('loading-indicator').classList.add('hidden');
+        document.getElementById('driver-content').classList.remove('hidden');
 
         // Populate stats cards
         populateStats(data);
