@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ driver.name }} — {{ current_season }}{% endblock %}
+{% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
+
+{% block content %}
+<section class="hero" style="--team-color: {{ driver.color }}">
+  <p class="hero__eyebrow">{{ driver.team }}</p>
+  <h1 class="hero__title">{{ driver.name }}</h1>
+  <p class="hero__lede">{{ driver.flag }} · #{{ driver.number }} · {{ driver.code }}</p>
+</section>
+
+<section class="section" aria-label="Key stats">
+  <div class="grid grid--stats">
+    <div class="stat-tile">
+      <p class="stat-tile__label">Championships won</p>
+      <p class="stat-tile__value">{{ "{:,}".format(stats.total_wins) }}</p>
+      <p class="stat-tile__hint">of {{ "{:,}".format(stats.total_championships) }} scenarios</p>
+    </div>
+    <div class="stat-tile">
+      <p class="stat-tile__label">Win probability</p>
+      <p class="stat-tile__value">{{ "%.2f"|format(stats.win_percentage) }}%</p>
+    </div>
+    <div class="stat-tile">
+      <p class="stat-tile__label">Highest finish</p>
+      <p class="stat-tile__value">P{{ stats.highest_position }}</p>
+      {% if stats.highest_position_championship_id %}
+      <p class="stat-tile__hint">
+        <a href="/championship/{{ stats.highest_position_championship_id }}">Scenario #{{ stats.highest_position_championship_id }}</a>
+      </p>
+      {% endif %}
+    </div>
+    <div class="stat-tile">
+      <p class="stat-tile__label">Min races to win</p>
+      <p class="stat-tile__value">{{ stats.min_races_to_win or "—" }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" data-charts-host aria-labelledby="charts-heading">
+  <div class="section__head">
+    <h2 id="charts-heading" class="section__title">Position & season-length charts</h2>
+  </div>
+  <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(340px, 1fr))">
+    <div class="chart-surface">
+      <canvas data-chart="position-distribution" aria-label="Position distribution bar chart"></canvas>
+    </div>
+    <div class="chart-surface">
+      <canvas data-chart="win-probability-by-length" aria-label="Win probability by season length line chart"></canvas>
+    </div>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="h2h-heading">
+  <div class="section__head">
+    <h2 id="h2h-heading" class="section__title">Head-to-head</h2>
+  </div>
+  <div class="grid grid--stats">
+    {% for code, h2h in stats.head_to_head.items() %}
+      {% set total = h2h.wins + h2h.losses %}
+      {% set pct = (h2h.wins / total * 100) if total else 0 %}
+      <a class="card card--interactive" href="/head-to-head?a={{ driver.code }}&b={{ code }}">
+        <p class="card__title">{{ stats.driver_info.name if code == driver.code else (code) }} vs {{ code }}</p>
+        <p class="card__subtitle">{{ h2h.wins }}–{{ h2h.losses }} ({{ "%.1f"|format(pct) }}% wins)</p>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+<script type="application/json" id="page-data">{{ page_data | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+{{ vite_script("src/pages/driver.ts") }}
+{% endblock %}

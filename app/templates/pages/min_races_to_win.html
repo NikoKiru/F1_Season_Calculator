@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Min races to win — {{ current_season }}{% endblock %}
+{% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1 class="hero__title">Minimum races to win</h1>
+  <p class="hero__lede">Fewest rounds at which each driver is mathematically a champion.</p>
+</section>
+
+<ol class="stack" style="counter-reset: rank">
+  {% for r in rows %}
+    <li class="card" style="--team-color: {{ r.color }}; flex-direction: row; align-items: center; justify-content: space-between">
+      <div>
+        <p class="card__title">
+          <a href="/driver/{{ r.code }}" style="color: inherit; text-decoration: none;">{{ r.name }}</a>
+        </p>
+        <p class="card__subtitle">{{ r.code }}</p>
+      </div>
+      <div style="text-align: right">
+        <p class="stat-tile__value">{{ r.min_races }}</p>
+        <p class="card__subtitle">races</p>
+      </div>
+    </li>
+  {% endfor %}
+</ol>
+{% endblock %}

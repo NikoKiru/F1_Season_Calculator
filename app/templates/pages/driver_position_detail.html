@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ data.driver_name }} — P{{ position }}{% endblock %}
+{% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <p class="hero__eyebrow">{{ data.driver_name }}</p>
+  <h1 class="hero__title">Scenarios where {{ driver_code }} finishes P{{ position }}</h1>
+  <p class="hero__lede">{{ "{:,}".format(data.total_count) }} scenarios — page {{ data.page }} of {{ data.total_pages }}</p>
+</section>
+
+{% if data.championships %}
+<div class="table-wrapper" data-responsive="true">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>#</th><th>Races</th><th>Standings</th><th class="num">Driver pts</th><th class="num">Margin</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in data.championships %}
+        <tr>
+          <td data-label="#"><a href="/championship/{{ c.championship_id }}">#{{ c.championship_id }}</a></td>
+          <td data-label="Races">{{ c.num_races }}</td>
+          <td data-label="Standings">{{ c.standings|join(", ") }}</td>
+          <td data-label="Driver pts" class="num">{{ c.driver_points }}</td>
+          <td data-label="Margin" class="num">{{ c.margin if c.margin is not none else "—" }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="row" style="justify-content: center; margin-top: var(--s-5)">
+  {% if data.page > 1 %}
+    <a class="btn" href="?page={{ data.page - 1 }}&per_page={{ data.per_page }}">← Previous</a>
+  {% endif %}
+  {% if data.page < data.total_pages %}
+    <a class="btn btn--primary" href="?page={{ data.page + 1 }}&per_page={{ data.per_page }}">Next →</a>
+  {% endif %}
+</div>
+{% else %}
+<div class="state-panel">
+  <p class="state-panel__title">No scenarios found.</p>
+</div>
+{% endif %}
+{% endblock %}

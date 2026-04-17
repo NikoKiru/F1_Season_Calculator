@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Head to head — {{ current_season }}{% endblock %}
+{% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1 class="hero__title">Head to head</h1>
+  <p class="hero__lede">Pick any two drivers to see who finishes ahead more often.</p>
+</section>
+
+<section class="section">
+  <div class="grid" style="grid-template-columns: 1fr auto 1fr; align-items: end; gap: var(--s-4)">
+    <div class="field">
+      <label class="label" for="slot-a">Driver A</label>
+      <select id="slot-a" class="select" data-slot="a">
+        <option value="">Choose a driver</option>
+        {% for d in drivers %}
+          <option value="{{ d.code }}">{{ d.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="button" class="btn btn--icon" data-swap aria-label="Swap drivers">⇄</button>
+    <div class="field">
+      <label class="label" for="slot-b">Driver B</label>
+      <select id="slot-b" class="select" data-slot="b">
+        <option value="">Choose a driver</option>
+        {% for d in drivers %}
+          <option value="{{ d.code }}">{{ d.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+</section>
+
+<section class="section" data-chart-host aria-live="polite">
+  <div class="chart-surface">
+    <canvas data-chart="head-to-head" aria-label="Head-to-head comparison pie chart"></canvas>
+  </div>
+</section>
+
+<script type="application/json" id="page-data">{{ page_data | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+{{ vite_script("src/pages/headToHead.ts") }}
+{% endblock %}

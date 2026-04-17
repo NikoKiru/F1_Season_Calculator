@@ -1,0 +1,108 @@
+/* Page-level layout primitives: container, hero, section spacing. */
+
+.container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 var(--s-4);
+}
+
+main {
+  padding-top: var(--s-6);
+  padding-bottom: var(--s-8);
+  min-height: calc(100vh - var(--header-height));
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-5) 0 var(--s-6);
+  border-bottom: 1px solid var(--border-default);
+  margin-bottom: var(--s-6);
+}
+.hero__eyebrow {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+.hero__title {
+  font-size: var(--fs-3xl);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+}
+.hero__lede {
+  color: var(--fg-muted);
+  max-width: 60ch;
+}
+
+.section {
+  margin: var(--s-7) 0;
+}
+.section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+.section__title {
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+}
+.section__aside {
+  color: var(--fg-muted);
+  font-size: var(--fs-sm);
+}
+
+.chart-surface {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  padding: var(--s-3);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-lg);
+}
+.chart-surface--tall {
+  height: 420px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+.row {
+  display: flex;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+}
+.stat-tile__label {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-muted);
+}
+.stat-tile__value {
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}
+.stat-tile__hint {
+  font-size: var(--fs-xs);
+  color: var(--fg-subtle);
+}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Create championship — {{ current_season }}{% endblock %}
+{% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <p class="hero__eyebrow">Season {{ current_season }}</p>
+  <h1 class="hero__title">Build your own season</h1>
+  <p class="hero__lede">Pick any subset of rounds and see the resulting championship.</p>
+</section>
+
+<div class="row" style="justify-content: flex-end">
+  <button type="button" class="btn" data-random>Random</button>
+  <button type="button" class="btn btn--primary" data-submit>Show championship →</button>
+</div>
+<div data-feedback class="stack" style="margin-top: var(--s-3)"></div>
+
+<section class="section">
+  <div class="round-grid" role="group" aria-label="Rounds">
+    {% for r in rounds %}
+      <label class="round-toggle">
+        <input type="checkbox" name="round" value="{{ r.number }}" />
+        <span class="round-toggle__num">{{ r.number }}</span>
+        <span class="round-toggle__name">{{ r.name }}</span>
+      </label>
+    {% endfor %}
+  </div>
+</section>
+
+<script type="application/json" id="page-data">{{ page_data | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+{{ vite_script("src/pages/createChampionship.ts") }}
+{% endblock %}

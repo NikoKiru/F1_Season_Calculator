@@ -1,0 +1,73 @@
+/* Tables and the narrow-viewport card fallback.
+ * Use the card fallback when `table-wrapper` is given `data-responsive="true"`.
+ */
+
+.table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.table th,
+.table td {
+  padding: var(--s-3) var(--s-4);
+  text-align: left;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.table th {
+  font-weight: var(--fw-bold);
+  background: var(--bg-sunken);
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: var(--fs-xs);
+  position: sticky;
+  top: 0;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table tbody tr:hover {
+  background: var(--bg-sunken);
+}
+
+.table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .table-wrapper[data-responsive="true"] .table,
+  .table-wrapper[data-responsive="true"] .table tbody,
+  .table-wrapper[data-responsive="true"] .table tr,
+  .table-wrapper[data-responsive="true"] .table td {
+    display: block;
+    width: 100%;
+  }
+  .table-wrapper[data-responsive="true"] .table thead {
+    display: none;
+  }
+  .table-wrapper[data-responsive="true"] .table tr {
+    padding: var(--s-3);
+    border-bottom: 1px solid var(--border-default);
+  }
+  .table-wrapper[data-responsive="true"] .table td {
+    padding: var(--s-1) 0;
+    border-bottom: 0;
+  }
+  .table-wrapper[data-responsive="true"] .table td::before {
+    content: attr(data-label) ": ";
+    font-weight: var(--fw-medium);
+    color: var(--fg-muted);
+  }
+}

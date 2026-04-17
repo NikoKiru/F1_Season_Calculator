@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Driver positions — {{ current_season }}{% endblock %}
+{% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1 class="hero__title">Who finishes where?</h1>
+  <p class="hero__lede">Pick a position to see which drivers land there most often.</p>
+</section>
+
+<section class="section" aria-label="Podium">
+  <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: var(--s-3)">
+    {% for pos in [1, 2, 3] %}
+      <button class="btn" data-position="{{ pos }}" aria-pressed="false" aria-controls="position-results">
+        <span class="position-chip {% if pos == 1 %}position-chip--gold{% elif pos == 2 %}position-chip--silver{% else %}position-chip--bronze{% endif %}">P{{ pos }}</span>
+        <span>Podium</span>
+      </button>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section" aria-label="Other positions">
+  <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: var(--s-2)">
+    {% for pos in positions if pos > 3 %}
+      <button class="btn btn--sm" data-position="{{ pos }}" aria-pressed="false" aria-controls="position-results">
+        P{{ pos }}
+      </button>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section" id="position-results" data-position-results aria-live="polite">
+  <div class="state-panel">
+    <p class="state-panel__title">Pick a position to begin</p>
+  </div>
+</section>
+
+<script type="application/json" id="page-data">{{ page_data | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+{{ vite_script("src/pages/driverPositions.ts") }}
+{% endblock %}

@@ -1,0 +1,15 @@
+<article class="card card--interactive" style="--team-color: {{ driver.color }}" onclick="window.location.assign('/driver/{{ driver.code }}')">
+  <div class="card__accent" aria-hidden="true"></div>
+  <div class="stack">
+    <h3 class="card__title">
+      <a href="/driver/{{ driver.code }}" style="text-decoration: none; color: inherit;">
+        {{ driver.name }}
+      </a>
+    </h3>
+    <p class="card__subtitle">{{ driver.team }}</p>
+    <p class="card__meta">
+      <span class="badge">{{ driver.code }}</span>
+      {% if driver.wins is defined %}<span>{{ driver.wins }} championships</span>{% endif %}
+    </p>
+  </div>
+</article>

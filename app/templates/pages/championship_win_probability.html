@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Win probability — {{ current_season }}{% endblock %}
+{% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1 class="hero__title">Championship win probability</h1>
+  <p class="hero__lede">For every driver × season length, the fraction of scenarios in which they win.</p>
+</section>
+
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Driver</th>
+        {% for length in data.season_lengths %}
+          <th class="num">{{ length }} race{{ "s" if length > 1 else "" }}</th>
+        {% endfor %}
+        <th class="num">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in data.drivers_data %}
+        <tr>
+          <td style="color: {{ row.color }}; font-weight: 700;">
+            <a href="/driver/{{ row.driver }}">{{ row.name }}</a>
+          </td>
+          {% for pct in row.percentages %}
+            <td class="num">{{ "%.2f"|format(pct) }}%</td>
+          {% endfor %}
+          <td class="num"><strong>{{ "{:,}".format(row.total_titles) }}</strong></td>
+        </tr>
+      {% endfor %}
+      <tr>
+        <td><em>Possible seasons</em></td>
+        {% for total in data.possible_seasons %}
+          <td class="num"><em>{{ "{:,}".format(total) }}</em></td>
+        {% endfor %}
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

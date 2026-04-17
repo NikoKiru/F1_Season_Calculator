@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}F1 Season Calculator{% endblock %}</title>
+  <meta name="description" content="{% block description %}Explore every possible F1 championship outcome for the season.{% endblock %}">
+  {{ vite_style("src/styles/main.css") }}
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <a href="#main" class="skip-to-content">Skip to main content</a>
+  {% include "partials/header.html" %}
+  <main id="main">
+    <div class="container">
+      {% block breadcrumbs %}{% endblock %}
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+  {{ vite_script("src/main.ts") }}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

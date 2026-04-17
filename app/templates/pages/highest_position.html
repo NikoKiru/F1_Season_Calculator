@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Highest position — {{ current_season }}{% endblock %}
+{% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1 class="hero__title">Highest position achieved</h1>
+  <p class="hero__lede">The best finish each driver can attain across every scenario.</p>
+</section>
+
+<div class="grid grid--drivers">
+  {% for r in rows %}
+    <article class="card" style="--team-color: {{ r.color }}">
+      <div class="card__accent" aria-hidden="true"></div>
+      <div class="row" style="justify-content: space-between; align-items: center">
+        <div>
+          <p class="card__title">
+            <a href="/driver/{{ r.driver }}" style="color: inherit; text-decoration: none;">{{ r.name }}</a>
+          </p>
+          <p class="card__subtitle">P{{ r.position }}</p>
+        </div>
+        <span class="position-chip {% if r.position == 1 %}position-chip--gold{% elif r.position == 2 %}position-chip--silver{% elif r.position == 3 %}position-chip--bronze{% endif %}">
+          P{{ r.position }}
+        </span>
+      </div>
+      {% if r.best_margin is not none %}
+        <p class="card__meta">
+          <span>Best margin: {{ r.best_margin }} pts</span>
+          {% if r.best_margin_championship_id %}
+            <a href="/championship/{{ r.best_margin_championship_id }}">#{{ r.best_margin_championship_id }}</a>
+          {% endif %}
+        </p>
+      {% endif %}
+    </article>
+  {% endfor %}
+</div>
+{% endblock %}

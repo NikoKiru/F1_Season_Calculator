@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}F1 Season Calculator — {{ current_season }}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <p class="hero__eyebrow">Season {{ current_season }}</p>
+  <h1 class="hero__title">Every possible championship outcome.</h1>
+  <p class="hero__lede">Explore the 2<sup>N</sup>-1 combinations of race results that could decide this season.</p>
+</section>
+
+<section class="section" aria-labelledby="standings-heading">
+  <div class="section__head">
+    <h2 id="standings-heading" class="section__title">Current standings</h2>
+    <a class="section__aside" href="/drivers">See all drivers →</a>
+  </div>
+  <div class="grid grid--drivers">
+    {% for d in drivers[:10] %}
+      {% set driver = d %}
+      {% include "partials/driver_card.html" %}
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section" aria-labelledby="progression-heading">
+  <div class="section__head">
+    <h2 id="progression-heading" class="section__title">Cumulative points — top 5</h2>
+  </div>
+  <div class="chart-surface">
+    <canvas data-chart="cumulative-points" aria-label="Cumulative points line chart"></canvas>
+  </div>
+</section>
+
+<script type="application/json" id="page-data">{{ page_data | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+{{ vite_script("src/pages/index.ts") }}
+{% endblock %}

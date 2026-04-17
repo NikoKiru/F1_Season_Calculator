@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}All championship wins — {{ current_season }}{% endblock %}
+{% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1 class="hero__title">All championship wins</h1>
+  <p class="hero__lede">Every driver who wins at least one of the 2<sup>N</sup>-1 scenarios, ranked.</p>
+</section>
+
+<div class="grid grid--drivers">
+  {% for d in drivers %}
+    <article class="card" style="--team-color: {{ d.color }}">
+      <div class="card__accent" aria-hidden="true"></div>
+      <p class="card__title">
+        <a href="/driver/{{ d.code }}" style="color: inherit; text-decoration: none;">{{ d.name }}</a>
+      </p>
+      <p class="stat-tile__value">{{ "{:,}".format(d.wins) }}</p>
+      <p class="card__subtitle">championships won</p>
+    </article>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+/* Loading / error / empty state patterns — every async surface uses these. */
+
+.state-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  padding: var(--s-7) var(--s-4);
+  text-align: center;
+  min-height: 200px;
+  background: var(--bg-surface);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--r-lg);
+  color: var(--fg-muted);
+}
+
+.state-panel__title {
+  color: var(--fg-default);
+  font-weight: var(--fw-medium);
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-default);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spinner-rotate 900ms linear infinite;
+}
+
+.spinner--sm {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+}
+
+@keyframes spinner-rotate {
+  to { transform: rotate(1turn); }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--s-1) var(--s-2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  background: var(--bg-sunken);
+  border-radius: var(--r-full);
+  color: var(--fg-muted);
+}
+.badge--win {
+  background: var(--success);
+  color: #fff;
+}
+.badge--accent {
+  background: var(--accent);
+  color: var(--fg-on-brand);
+}
+
+/* Position chip (P1, P2, …) */
+.position-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0 var(--s-2);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-sm);
+  color: var(--fg-on-brand);
+  background: var(--team-color, var(--gray-700));
+  border-radius: var(--r-full);
+}
+.position-chip--gold { background: #ffb300; color: #222; }
+.position-chip--silver { background: #b0b7be; color: #222; }
+.position-chip--bronze { background: #cd7f32; color: #fff; }
+
+.stripe-pattern {
+  background-image: linear-gradient(
+    45deg,
+    var(--team-color, var(--accent)) 0 6px,
+    var(--team-color-alt, var(--accent-pressed)) 6px 12px
+  );
+}

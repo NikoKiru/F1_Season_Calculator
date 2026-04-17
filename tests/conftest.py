@@ -6,9 +6,16 @@ import tempfile
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app import app as flask_app  # noqa: E402
-from db import get_db, dispose_all_engines  # noqa: E402
-from championship.models import DEFAULT_SEASON  # noqa: E402
+try:
+    from app import app as flask_app  # noqa: E402
+    from db import get_db, dispose_all_engines  # noqa: E402
+    from championship.models import DEFAULT_SEASON  # noqa: E402
+except ImportError:
+    # Old Flask app has been removed; legacy fixtures below are no-ops.
+    flask_app = None
+    get_db = None
+    dispose_all_engines = None
+    DEFAULT_SEASON = 2025
 
 
 # Test data uses the app's default season so queries without ?season= find data

@@ -1,0 +1,101 @@
+/* Single button component — variants via modifier classes.
+ * Every interactive state (default, hover, focus, active, disabled, loading)
+ * is represented exactly once.
+ */
+
+.btn {
+  --_bg: var(--bg-surface);
+  --_fg: var(--fg-default);
+  --_border: var(--border-strong);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: 40px;
+  padding: var(--s-2) var(--s-4);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  line-height: 1;
+  color: var(--_fg);
+  background: var(--_bg);
+  border: 1px solid var(--_border);
+  border-radius: var(--r-md);
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-standard);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+  --_bg: var(--bg-raised);
+  --_border: var(--border-focus);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn[data-loading="true"] {
+  cursor: progress;
+  color: transparent;
+  position: relative;
+}
+.btn[data-loading="true"]::after {
+  content: "";
+  position: absolute;
+  inset: auto;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  color: var(--_fg);
+  animation: btn-spin 700ms linear infinite;
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(1turn); }
+}
+
+.btn--primary {
+  --_bg: var(--accent);
+  --_fg: var(--fg-on-brand);
+  --_border: var(--accent);
+}
+.btn--primary:hover:not(:disabled) {
+  --_bg: var(--accent-hover);
+  --_border: var(--accent-hover);
+}
+.btn--primary:active:not(:disabled) {
+  --_bg: var(--accent-pressed);
+}
+
+.btn--ghost {
+  --_bg: transparent;
+  --_border: transparent;
+}
+.btn--ghost:hover:not(:disabled) {
+  --_bg: var(--bg-sunken);
+  --_border: transparent;
+}
+
+.btn--sm {
+  min-height: 32px;
+  padding: var(--s-1) var(--s-3);
+  font-size: var(--fs-xs);
+}
+
+.btn--icon {
+  min-height: 40px;
+  min-width: 40px;
+  padding: var(--s-2);
+}

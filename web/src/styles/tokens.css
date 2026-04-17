@@ -1,0 +1,138 @@
+/*
+ * Design tokens — the only place where raw values are allowed.
+ *
+ * Spacing follows a 4px base with a bounded 8-step scale. Type, color, radius,
+ * shadow, and motion each expose a small vocabulary so components have a
+ * limited set of choices, which keeps the UI visually consistent without a
+ * framework.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ── Spacing (4px base) ─────────────────────────────────────────── */
+  --s-0: 0;
+  --s-1: 0.25rem;   /*  4px */
+  --s-2: 0.5rem;    /*  8px */
+  --s-3: 0.75rem;   /* 12px */
+  --s-4: 1rem;      /* 16px */
+  --s-5: 1.5rem;    /* 24px */
+  --s-6: 2rem;      /* 32px */
+  --s-7: 3rem;      /* 48px */
+  --s-8: 4rem;      /* 64px */
+
+  /* ── Type ───────────────────────────────────────────────────────── */
+  --fs-xs: 0.75rem;   /* 12px */
+  --fs-sm: 0.875rem;  /* 14px */
+  --fs-md: 1rem;      /* 16px */
+  --fs-lg: 1.125rem;  /* 18px */
+  --fs-xl: 1.375rem;  /* 22px */
+  --fs-2xl: 1.75rem;  /* 28px */
+  --fs-3xl: 2.25rem;  /* 36px */
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-bold: 700;
+
+  --lh-tight: 1.2;
+  --lh-normal: 1.5;
+
+  --ff-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ff-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Consolas, monospace;
+
+  /* ── Color (light) ──────────────────────────────────────────────── */
+  --red-50: #fff1f2;
+  --red-100: #ffe4e6;
+  --red-400: #f43f5e;
+  --red-500: #e10600;   /* F1 brand */
+  --red-600: #c70500;
+  --red-700: #9e0400;
+
+  --gray-50:  #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  --success: #16a34a;
+  --warn: #d97706;
+  --danger: #dc2626;
+  --info: #2563eb;
+
+  --bg-app: var(--gray-50);
+  --bg-surface: #ffffff;
+  --bg-raised: #ffffff;
+  --bg-sunken: var(--gray-100);
+  --bg-overlay: rgba(17, 24, 39, 0.5);
+
+  --fg-default: var(--gray-900);
+  --fg-muted: var(--gray-600);
+  --fg-subtle: var(--gray-500);
+  --fg-on-brand: #ffffff;
+
+  --border-default: var(--gray-200);
+  --border-strong: var(--gray-300);
+  --border-focus: var(--red-500);
+
+  --accent: var(--red-500);
+  --accent-hover: var(--red-600);
+  --accent-pressed: var(--red-700);
+
+  /* ── Radius ─────────────────────────────────────────────────────── */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-full: 9999px;
+
+  /* ── Shadow ─────────────────────────────────────────────────────── */
+  --shadow-1: 0 1px 2px rgba(17, 24, 39, 0.06), 0 1px 1px rgba(17, 24, 39, 0.04);
+  --shadow-2: 0 4px 12px rgba(17, 24, 39, 0.08), 0 2px 4px rgba(17, 24, 39, 0.05);
+  --shadow-3: 0 12px 32px rgba(17, 24, 39, 0.16), 0 4px 12px rgba(17, 24, 39, 0.08);
+
+  /* ── Motion ─────────────────────────────────────────────────────── */
+  --dur-fast: 120ms;
+  --dur-med: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ── Layout ─────────────────────────────────────────────────────── */
+  --container-max: 1200px;
+  --header-height: 64px;
+  --focus-ring: 0 0 0 3px rgba(225, 6, 0, 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --bg-app: #0b0d10;
+    --bg-surface: #15181d;
+    --bg-raised: #1b1f26;
+    --bg-sunken: #0f1216;
+    --bg-overlay: rgba(0, 0, 0, 0.6);
+
+    --fg-default: #f3f4f6;
+    --fg-muted: #9ca3af;
+    --fg-subtle: #6b7280;
+
+    --border-default: #262b33;
+    --border-strong: #353c46;
+
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.45);
+    --shadow-3: 0 12px 32px rgba(0, 0, 0, 0.55);
+
+    --focus-ring: 0 0 0 3px rgba(244, 63, 94, 0.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-med: 0ms;
+  }
+}

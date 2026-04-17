@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Championship #{{ championship.championship_id }}{% endblock %}
+{% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <p class="hero__eyebrow">Scenario #{{ championship.championship_id }}</p>
+  <h1 class="hero__title">{{ championship.winner }} wins</h1>
+  <p class="hero__lede">{{ championship.num_races }} races — rounds {{ championship.rounds }}</p>
+</section>
+
+<section class="section" aria-labelledby="rounds-heading">
+  <div class="section__head">
+    <h2 id="rounds-heading" class="section__title">Included rounds</h2>
+  </div>
+  <div class="row">
+    {% for round_name in championship.round_names %}
+      <span class="badge">{{ round_name }}</span>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section" aria-labelledby="standings-heading">
+  <div class="section__head">
+    <h2 id="standings-heading" class="section__title">Final standings</h2>
+  </div>
+  <div class="table-wrapper" data-responsive="true">
+    <table class="table">
+      <thead>
+        <tr><th>Pos</th><th>Driver</th><th class="num">Points</th></tr>
+      </thead>
+      <tbody>
+        {% for code, pts in championship.driver_points.items() %}
+          <tr>
+            <td data-label="Pos">{{ loop.index }}</td>
+            <td data-label="Driver"><a href="/driver/{{ code }}">{{ championship.driver_names.get(code, code) }}</a></td>
+            <td data-label="Points" class="num">{{ pts }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="progression-heading">
+  <div class="section__head">
+    <h2 id="progression-heading" class="section__title">Season progression</h2>
+  </div>
+  <div class="chart-surface chart-surface--tall">
+    <canvas data-chart="season-progression" aria-label="Points progression line chart"></canvas>
+  </div>
+</section>
+
+<script type="application/json" id="page-data">{{ page_data | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+{{ vite_script("src/pages/championship.ts") }}
+{% endblock %}
