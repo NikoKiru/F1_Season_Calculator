@@ -58,6 +58,24 @@
   color: var(--fg-on-brand);
 }
 
+.badge__pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: var(--s-1);
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 var(--s-1);
+  font-size: 0.65rem;
+  font-weight: var(--fw-bold);
+  line-height: 1;
+  border-radius: var(--r-full);
+}
+.badge__pill--sprint {
+  background: var(--warn, #f59e0b);
+  color: #1a1a1a;
+}
+
 /* Position chip (P1, P2, …) */
 .position-chip {
   display: inline-flex;

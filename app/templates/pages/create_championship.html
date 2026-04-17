@@ -18,10 +18,13 @@
 <section class="section">
   <div class="round-grid" role="group" aria-label="Rounds">
     {% for r in rounds %}
-      <label class="round-toggle">
+      <label class="round-toggle{% if r.sprint %} round-toggle--sprint{% endif %}">
         <input type="checkbox" name="round" value="{{ r.number }}" />
         <span class="round-toggle__num">{{ r.number }}</span>
         <span class="round-toggle__name">{{ r.name }}</span>
+        {% if r.sprint %}
+          <span class="badge__pill badge__pill--sprint" title="Sprint weekend">S</span>
+        {% endif %}
       </label>
     {% endfor %}
   </div>

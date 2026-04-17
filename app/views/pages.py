@@ -185,7 +185,7 @@ def championship_page(request: Request, championship_id: int, conn: ConnDep):
 def create_championship_page(request: Request, season: SeasonDep):
     sd = season_service.get_season_data(season)
     rounds = [
-        {"number": num, "name": name}
+        {"number": num, "name": name, "sprint": sd.is_sprint(num)}
         for num, name in sorted(sd.round_names.items())
     ]
     context = {

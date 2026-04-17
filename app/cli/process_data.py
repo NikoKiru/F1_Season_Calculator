@@ -24,8 +24,12 @@ def run(
     csv_path = csv_loader.resolve_csv(settings.data_folder, season)
     typer.echo(f"CSV: {csv_path}")
 
-    drivers, scores = csv_loader.load(csv_path)
-    typer.echo(f"drivers={len(drivers)} rounds={scores.shape[1]}")
+    loaded = csv_loader.load(csv_path)
+    sprint_count = int((loaded.sprint_scores.sum(axis=0) > 0).sum())
+    typer.echo(
+        f"drivers={len(loaded.drivers)} weekends={loaded.race_scores.shape[1]} "
+        f"sprints={sprint_count}"
+    )
 
     if clear:
         writer.clear_season(settings.database_path, season)
@@ -39,8 +43,7 @@ def run(
 
     inserted = writer.process_season(
         settings.database_path,
-        drivers,
-        scores,
+        loaded,
         season=season,
         batch_size=batch_size,
         on_progress=log,

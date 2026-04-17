@@ -39,10 +39,32 @@ def test_rank_standings_stable_on_ties():
     assert sorted_drivers[1] == "NOR"
 
 
-def test_csv_loader(tmp_path):
+def test_csv_loader_basic(tmp_path):
     csv = tmp_path / "c.csv"
     csv.write_text("Driver,1,2,3\nVER,25,18,25\nNOR,18,25,18\n")
-    drivers, scores = csv_loader.load(csv)
-    assert drivers.tolist() == ["VER", "NOR"]
-    assert scores.shape == (2, 3)
-    assert scores[0].tolist() == [25, 18, 25]
+    loaded = csv_loader.load(csv)
+    assert loaded.drivers.tolist() == ["VER", "NOR"]
+    assert loaded.round_numbers.tolist() == [1, 2, 3]
+    assert loaded.race_scores.shape == (2, 3)
+    assert loaded.race_scores[0].tolist() == [25, 18, 25]
+    assert loaded.sprint_scores.sum() == 0
+    assert loaded.combined[0].tolist() == [25, 18, 25]
+
+
+def test_csv_loader_with_sprint_columns(tmp_path):
+    csv = tmp_path / "c.csv"
+    # Rounds 1, 2 (sprint), 6 (sprint) — round 3/4/5 canceled/skipped
+    csv.write_text("Driver,1,2,2s,6,6s\nVER,25,18,8,25,7\nNOR,18,25,6,18,8\n")
+    loaded = csv_loader.load(csv)
+    assert loaded.round_numbers.tolist() == [1, 2, 6]
+    assert loaded.race_scores.tolist() == [[25, 18, 25], [18, 25, 18]]
+    assert loaded.sprint_scores.tolist() == [[0, 8, 7], [0, 6, 8]]
+    assert loaded.combined.tolist() == [[25, 26, 32], [18, 31, 26]]
+
+
+def test_csv_loader_sprint_without_matching_race_fails(tmp_path):
+    csv = tmp_path / "c.csv"
+    csv.write_text("Driver,1,3s\nVER,25,8\n")
+    import pytest
+    with pytest.raises(csv_loader.CSVLoadError):
+        csv_loader.load(csv)

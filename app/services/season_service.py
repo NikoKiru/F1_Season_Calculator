@@ -54,6 +54,7 @@ def get_season_data(season: int | None = None) -> SeasonData:
         )
     driver_names = {code: d.name for code, d in drivers.items()}
     round_names = {int(num): name for num, name in raw["rounds"].items()}
+    sprint_rounds = tuple(int(r) for r in raw.get("sprint_rounds", []))
 
     return SeasonData(
         season=year,
@@ -61,6 +62,7 @@ def get_season_data(season: int | None = None) -> SeasonData:
         drivers=drivers,
         driver_names=driver_names,
         round_names=round_names,
+        sprint_rounds=sprint_rounds,
     )
 
 

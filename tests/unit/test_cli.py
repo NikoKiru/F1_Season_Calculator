@@ -34,6 +34,7 @@ def cli_settings(tmp_path, monkeypatch):
         "app.cli.process_data",
         "app.cli.compute_stats",
         "app.cli.add_race",
+        "app.cli.fetch_race",
         "app.services.season_service",
         "app.data.session",
         "app.cache.service",
@@ -49,7 +50,7 @@ def cli_settings(tmp_path, monkeypatch):
 def test_help_lists_all_commands():
     result = runner.invoke(cli_app, ["--help"])
     assert result.exit_code == 0
-    for cmd in ("setup", "process-data", "compute-stats", "add-race"):
+    for cmd in ("setup", "process-data", "compute-stats", "add-race", "fetch-race"):
         assert cmd in result.stdout
 
 
@@ -118,3 +119,65 @@ def test_add_race_appends_and_reprocesses(cli_settings):
     content = csv.read_text()
     header = content.splitlines()[0]
     assert header.split(",")[-1] == "3"
+
+
+def test_fetch_race_splices_jolpica_results(cli_settings, monkeypatch):
+    csv = cli_settings.data_folder / "championships_2099.csv"
+    csv.write_text("Driver,1\nVER,25\nNOR,18\nLEC,15\n")
+    (cli_settings.seasons_folder / "2099.json").write_text(
+        '{"teams":{"Red Bull":{"color":"#000"}},'
+        '"drivers":{'
+        '"VER":{"name":"Max","team":"Red Bull","number":1,"flag":""},'
+        '"NOR":{"name":"Lando","team":"Red Bull","number":2,"flag":""},'
+        '"LEC":{"name":"Charles","team":"Red Bull","number":3,"flag":""}},'
+        '"rounds":{"1":"r1","2":"r2"},'
+        '"sprint_rounds":[2]}'
+    )
+    assert runner.invoke(cli_app, ["setup"]).exit_code == 0
+    assert runner.invoke(cli_app, ["process-data", "--season", "2099"]).exit_code == 0
+
+    from app.cli import fetch_race as fetch_race_mod
+
+    def fake_fetch_weekend(season, round_number, *, client=None):
+        assert season == 2099 and round_number == 2
+        return ({"VER": 18, "NOR": 25, "LEC": 15}, {"VER": 8, "NOR": 7, "LEC": 6})
+
+    monkeypatch.setattr(
+        fetch_race_mod.jolpica_service, "fetch_weekend", fake_fetch_weekend
+    )
+
+    result = runner.invoke(
+        cli_app, ["fetch-race", "--season", "2099", "--round", "2"]
+    )
+    assert result.exit_code == 0, result.stdout
+
+    content = csv.read_text()
+    header = content.splitlines()[0].split(",")
+    # Expect race column "2" and sprint column "2s" now present
+    assert "2" in header
+    assert "2s" in header
+
+
+def test_fetch_race_round_not_found(cli_settings, monkeypatch):
+    csv = cli_settings.data_folder / "championships_2099.csv"
+    csv.write_text("Driver,1\nVER,25\n")
+    (cli_settings.seasons_folder / "2099.json").write_text(
+        '{"teams":{},"drivers":{"VER":{"name":"Max","team":"","number":1,"flag":""}},'
+        '"rounds":{"1":"r1"}}'
+    )
+    assert runner.invoke(cli_app, ["setup"]).exit_code == 0
+
+    from app.cli import fetch_race as fetch_race_mod
+    from app.services import jolpica_service
+
+    def fake_fetch_weekend(season, round_number, *, client=None):
+        raise jolpica_service.RoundNotFoundError("no such round")
+
+    monkeypatch.setattr(
+        fetch_race_mod.jolpica_service, "fetch_weekend", fake_fetch_weekend
+    )
+
+    result = runner.invoke(
+        cli_app, ["fetch-race", "--season", "2099", "--round", "99", "--no-reprocess"]
+    )
+    assert result.exit_code == 1

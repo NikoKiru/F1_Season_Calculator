@@ -1,9 +1,12 @@
 """Season CSV editing for incremental race additions.
 
-The `add-race` CLI lets a user append one race to a season without editing
-the CSV by hand. This module is the minimum needed to support that flow:
-read the existing CSV, splice in a new column, write it back. Actual
-re-processing is handled by `writer.process_season`.
+Supports the sprint-column layout: race column `N` is optionally paired with a
+sprint column `Ns` immediately after it. Both columns represent the same
+weekend — selecting round N in a championship includes race + sprint points.
+
+In-memory model:
+    race[driver][round]   -> int points (race)
+    sprint[driver][round] -> int points (sprint), keys only present for sprint rounds
 """
 from __future__ import annotations
 
@@ -39,64 +42,128 @@ def parse_results(raw: str) -> dict[str, int]:
     return out
 
 
-def load(csv_path: Path) -> tuple[list[str], dict[str, dict[int, int]]]:
-    """Return (ordered driver list, {driver: {round: points}}) from an existing season CSV."""
+def _parse_header_cell(cell: str) -> tuple[int, str]:
+    cell = cell.strip()
+    if cell.lower().endswith("s"):
+        return int(cell[:-1]), "sprint"
+    return int(cell), "race"
+
+
+def load(
+    csv_path: Path,
+) -> tuple[list[str], dict[str, dict[int, int]], dict[str, dict[int, int]]]:
+    """Return (drivers, race_data, sprint_data).
+
+    `race_data[code][round]` = race points; `sprint_data[code][round]` = sprint points.
+    Sprint data only has entries for rounds that include a sprint column.
+    """
     if not csv_path.exists():
-        return [], {}
+        return [], {}, {}
 
     drivers: list[str] = []
-    data: dict[str, dict[int, int]] = {}
+    race_data: dict[str, dict[int, int]] = {}
+    sprint_data: dict[str, dict[int, int]] = {}
+
     with csv_path.open("r", newline="", encoding="utf-8") as f:
         reader = csv.reader(f)
         header = next(reader)
-        rounds = [int(h) for h in header[1:]]
+        cols = [_parse_header_cell(h) for h in header[1:]]
         for row in reader:
             if not row:
                 continue
             code = row[0].strip().upper()
             drivers.append(code)
-            data[code] = {}
-            for i, round_num in enumerate(rounds):
+            race_data[code] = {}
+            sprint_data[code] = {}
+            for i, (round_num, kind) in enumerate(cols):
                 col = i + 1
-                if col < len(row) and row[col].strip():
-                    try:
-                        data[code][round_num] = int(row[col])
-                    except ValueError:
-                        data[code][round_num] = 0
-    return drivers, data
+                if col >= len(row):
+                    continue
+                value = row[col].strip()
+                if not value:
+                    continue
+                try:
+                    points = int(value)
+                except ValueError:
+                    points = 0
+                if kind == "sprint":
+                    sprint_data[code][round_num] = points
+                else:
+                    race_data[code][round_num] = points
+    return drivers, race_data, sprint_data
 
 
 def save(
     csv_path: Path,
     drivers: list[str],
-    data: dict[str, dict[int, int]],
-    max_round: int,
+    race_data: dict[str, dict[int, int]],
+    sprint_data: dict[str, dict[int, int]],
 ) -> None:
+    """Write CSV with race + sprint columns. Columns are sorted by round number;
+    sprint rounds emit `N` then `Ns` pairs."""
     csv_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Union of all rounds touched across race and sprint data.
+    rounds: set[int] = set()
+    for d in race_data.values():
+        rounds.update(d.keys())
+    # Only emit sprint columns for rounds that actually have any sprint data.
+    sprint_rounds: set[int] = set()
+    for d in sprint_data.values():
+        sprint_rounds.update(d.keys())
+    rounds.update(sprint_rounds)
+
+    ordered = sorted(rounds)
+    header = ["Driver"]
+    for r in ordered:
+        header.append(str(r))
+        if r in sprint_rounds:
+            header.append(f"{r}s")
+
     with csv_path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Driver", *(str(r) for r in range(1, max_round + 1))])
+        w = csv.writer(f)
+        w.writerow(header)
         for code in drivers:
-            row = [code]
-            rounds = data.get(code, {})
-            row.extend(str(rounds.get(r, 0)) for r in range(1, max_round + 1))
-            writer.writerow(row)
+            row: list[str] = [code]
+            rdata = race_data.get(code, {})
+            sdata = sprint_data.get(code, {})
+            for r in ordered:
+                row.append(str(rdata.get(r, 0)))
+                if r in sprint_rounds:
+                    row.append(str(sdata.get(r, 0)))
+            w.writerow(row)
 
 
 def apply_race(
-    data: dict[str, dict[int, int]],
+    race_data: dict[str, dict[int, int]],
+    sprint_data: dict[str, dict[int, int]],
     drivers: list[str],
     round_num: int,
-    results: dict[str, int],
+    race_results: dict[str, int],
+    sprint_results: dict[str, int] | None = None,
 ) -> list[str]:
-    """Splice new race results into the in-memory CSV model. Returns the updated driver list."""
-    for code in results:
-        if code not in data:
-            data[code] = {}
+    """Splice new results into the in-memory model. Returns the updated driver list."""
+    for code in race_results:
+        if code not in race_data:
+            race_data[code] = {}
+            sprint_data.setdefault(code, {})
             drivers.append(code)
-    for code, points in results.items():
-        data[code][round_num] = points
-    # Zero-fill missing rounds for every driver
+    if sprint_results:
+        for code in sprint_results:
+            if code not in race_data:
+                race_data[code] = {}
+                sprint_data.setdefault(code, {})
+                drivers.append(code)
+
+    for code, points in race_results.items():
+        race_data[code][round_num] = points
+    # Zero-fill missing drivers for this round in the race column.
     for code in drivers:
-        data.setdefault(code, {}).setdefault(round_num, 0)
+        race_data.setdefault(code, {}).setdefault(round_num, 0)
+
+    if sprint_results:
+        for code, points in sprint_results.items():
+            sprint_data[code][round_num] = points
+        for code in drivers:
+            sprint_data.setdefault(code, {}).setdefault(round_num, 0)
     return drivers

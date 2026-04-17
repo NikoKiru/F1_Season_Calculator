@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Callable
 
 import numpy as np
 
 from app.pipeline.combinator import rank_standings, race_combinations, total_combinations
+from app.pipeline.csv_loader import LoadedSeason
 
 
 INSERT_CHAMPIONSHIP = (
@@ -38,24 +39,23 @@ def _restore_safe(conn: sqlite3.Connection) -> None:
 
 def process_season(
     db_path: Path,
-    drivers: np.ndarray,
-    scores: np.ndarray,
+    loaded: LoadedSeason,
     season: int,
     batch_size: int = 100_000,
     on_progress: Callable[[int, int], None] | None = None,
 ) -> int:
-    """Generate + insert every combination for one season. Returns row count."""
-    num_races = scores.shape[1]
-    total = total_combinations(num_races)
+    """Generate + insert every weekend combination for one season. Returns row count."""
+    drivers = loaded.drivers
+    scores = loaded.combined
+    round_numbers = loaded.round_numbers.tolist()
+    num_weekends = scores.shape[1]
+    total = total_combinations(num_weekends)
 
     conn = sqlite3.connect(db_path)
     try:
         _tune_for_bulk_load(conn)
-        # One transaction covers the entire load — commit at the very end
         conn.execute("BEGIN IMMEDIATE")
 
-        # Start championship_id at MAX+1 so position_results lines up even if
-        # the table already contains other seasons' rows.
         next_id = (
             conn.execute(
                 "SELECT COALESCE(MAX(championship_id), 0) FROM championship_results"
@@ -67,9 +67,9 @@ def process_season(
         stand_buf: list[tuple[np.ndarray, np.ndarray]] = []
         inserted = 0
 
-        for i, subset in enumerate(race_combinations(num_races)):
+        for subset in race_combinations(num_weekends):
             ordered_drivers, ordered_scores = rank_standings(drivers, scores, subset)
-            rounds_str = ",".join(str(r + 1) for r in subset)
+            rounds_str = ",".join(str(round_numbers[i]) for i in subset)
             standings_str = ",".join(ordered_drivers.tolist())
             points_str = ",".join(str(int(p)) for p in ordered_scores)
             winner = str(ordered_drivers[0])

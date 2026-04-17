@@ -38,35 +38,67 @@ def _format(row: dict, season: int, *, with_round_points: bool = False) -> dict:
 
         if with_round_points and row.get("rounds"):
             round_numbers = _parse_csv_list(row["rounds"], int)
-            result["round_points_data"] = _round_points(drivers, round_numbers, season)
+            round_points, sprint_flags = _round_points(drivers, round_numbers, season)
+            result["round_points_data"] = round_points
+            result["sprint_flags"] = sprint_flags
 
     return result
 
 
-def _round_points(drivers: list[str], round_numbers: list[int], season: int) -> dict[str, Any]:
-    """Per-driver per-round points for the championship detail page.
+def _round_points(
+    drivers: list[str], round_numbers: list[int], season: int
+) -> tuple[dict[str, Any], list[bool]]:
+    """Per-driver per-round points + sprint flags for the championship detail page.
 
-    Reads the season CSV once. Small (≤ 22 drivers × ≤ 24 rounds) so no perf concern.
+    Returns (by_driver, sprint_flags) where sprint_flags[i] == True iff round i
+    has a sprint column in the CSV. Each driver entry is a dict with
+    `round_points` (race + sprint combined), `race_points`, `sprint_points`,
+    and `total_points`.
     """
     path = _season_csv_path(season)
     if path is None:
-        return {}
+        return {}, [False] * len(round_numbers)
 
     with path.open("r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        available = set((reader.fieldnames or [])) - {"Driver"}
-        round_cols = [str(r) for r in round_numbers if str(r) in available]
-        by_driver: dict[str, list[int]] = {}
+        reader = csv.reader(f)
+        header = next(reader, [])
+        header_map: dict[str, int] = {}
+        for idx, cell in enumerate(header[1:], start=1):
+            header_map[cell.strip()] = idx
+
+        race_cols = [header_map.get(str(r)) for r in round_numbers]
+        sprint_cols = [header_map.get(f"{r}s") for r in round_numbers]
+        sprint_flags = [i is not None for i in sprint_cols]
+
+        by_driver_race: dict[str, list[int]] = {}
+        by_driver_sprint: dict[str, list[int]] = {}
         for row in reader:
-            name = row["Driver"].strip()
-            if name in drivers:
-                by_driver[name] = [int(row[c]) for c in round_cols]
+            if not row:
+                continue
+            name = row[0].strip()
+            if name not in drivers:
+                continue
+            by_driver_race[name] = [
+                int(row[i]) if i is not None and i < len(row) and row[i].strip() else 0
+                for i in race_cols
+            ]
+            by_driver_sprint[name] = [
+                int(row[i]) if i is not None and i < len(row) and row[i].strip() else 0
+                for i in sprint_cols
+            ]
 
     out: dict[str, Any] = {}
     for d in drivers:
-        pts = by_driver.get(d, [])
-        out[d] = {"round_points": pts, "total_points": sum(pts)}
-    return out
+        race_pts = by_driver_race.get(d, [0] * len(round_numbers))
+        sprint_pts = by_driver_sprint.get(d, [0] * len(round_numbers))
+        combined = [r + s for r, s in zip(race_pts, sprint_pts)]
+        out[d] = {
+            "round_points": combined,
+            "race_points": race_pts,
+            "sprint_points": sprint_pts,
+            "total_points": sum(combined),
+        }
+    return out, sprint_flags
 
 
 def _season_csv_path(season: int):

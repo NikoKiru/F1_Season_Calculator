@@ -60,8 +60,8 @@ def test_data_root(tmp_path_factory) -> Path:
         init_schema(conn)
     engine.dispose()
 
-    drivers, scores = csv_loader.load(data / f"championships_{TEST_SEASON}.csv")
-    writer.process_season(db_path, drivers, scores, season=TEST_SEASON, batch_size=5)
+    loaded = csv_loader.load(data / f"championships_{TEST_SEASON}.csv")
+    writer.process_season(db_path, loaded, season=TEST_SEASON, batch_size=5)
     stats_compute.compute(db_path, TEST_SEASON)
 
     return root

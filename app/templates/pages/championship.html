@@ -15,7 +15,12 @@
   </div>
   <div class="row">
     {% for round_name in championship.round_names %}
-      <span class="badge">{{ round_name }}</span>
+      <span class="badge">
+        {{ round_name }}
+        {% if championship.sprint_flags and championship.sprint_flags[loop.index0] %}
+          <span class="badge__pill badge__pill--sprint" title="Sprint weekend">S</span>
+        {% endif %}
+      </span>
     {% endfor %}
   </div>
 </section>

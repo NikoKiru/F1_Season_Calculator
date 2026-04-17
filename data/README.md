@@ -1,89 +1,99 @@
 # Data Folder
 
-This folder contains championship data and season configuration files.
+Championship results and season configuration live here. Everything else
+(combinations, statistics, position tables) is derived from these files.
 
-## Directory Structure
+## Layout
 
 ```
 data/
-├── championships.csv         # Race results data (required)
-├── championships_sample.csv  # Sample template
-├── seasons/                  # Season configuration
-│   └── 2025.json            # 2025 season config
-└── README.md                # This file
+├── championships_{YYYY}.csv    # Race + sprint results per season
+├── championships_sample.csv    # Template
+├── seasons/
+│   └── {YYYY}.json             # Drivers, teams, rounds, sprint metadata
+└── README.md
 ```
 
-## Championship Data
+## CSV format
 
-Create a `championships.csv` file with the following format:
+Column 1 is the 3-letter driver code. Each round gets one numeric column —
+`1`, `2`, `3`, … — holding race points.
+
+### Sprint weekends
+
+Sprint weekends use a **paired column** layout: the race column `N` is
+followed immediately by a sprint column `Ns`. Both belong to the same
+weekend; selecting round `N` in a championship includes both race and
+sprint points.
 
 ```csv
-Driver,1,2,3,4,5
-VER,25,18,25,15,18
-NOR,18,25,18,25,25
-LEC,15,15,15,18,15
+Driver,1,2,2s,3,6,6s
+VER,25,18,8,25,25,7
+NOR,18,25,6,18,18,8
+LEC,15,15,4,15,15,5
 ```
 
-### Format Details:
-- **First column:** Driver abbreviation (e.g., VER, NOR, LEC)
-- **Subsequent columns:** Points for each race (numbered 1, 2, 3, ...)
+In this example: rounds 1, 3 are plain races; rounds 2 and 6 are sprint
+weekends. Round 2's total points for VER = `18 + 8 = 26`.
 
-## Season Configuration
+Constraints:
+- Sprint scoring is 1st–8th: 8, 7, 6, 5, 4, 3, 2, 1 points.
+- Drivers missing from a round are implicitly 0 points.
+- Round numbers do **not** need to be contiguous — canceled rounds are
+  simply omitted (see 2026 below).
+- Every `Ns` column must be preceded by a matching `N` race column.
 
-Season data (drivers, teams, races) is stored in JSON files under `seasons/`.
+### Canceled rounds (2026)
 
-### File Format: `seasons/{year}.json`
+Rounds 4 (Bahrain) and 5 (Saudi Arabia) are canceled for 2026 and are
+absent from `championships_2026.csv`. The pipeline uses the actual round
+numbers in the CSV header — there are no placeholder zero columns.
+
+## Season configuration
 
 ```json
 {
-    "season": 2025,
-    "teams": {
-        "McLaren": {"color": "#F47600"},
-        "Red Bull Racing": {"color": "#4781D7"},
-        "Mercedes": {"color": "#00D7B6"}
-    },
-    "drivers": {
-        "VER": {
-            "name": "Max Verstappen",
-            "team": "Red Bull Racing",
-            "number": 1,
-            "flag": "🇳🇱"
-        },
-        "NOR": {
-            "name": "Lando Norris",
-            "team": "McLaren",
-            "number": 4,
-            "flag": "🇬🇧"
-        }
-    },
-    "rounds": {
-        "1": "AUS",
-        "2": "CHN",
-        "3": "JPN"
-    }
+  "season": 2026,
+  "teams": {
+    "McLaren": {"color": "#F47600"},
+    "Red Bull Racing": {"color": "#4781D7"}
+  },
+  "drivers": {
+    "VER": {"name": "Max Verstappen", "team": "Red Bull Racing", "number": 1, "flag": "🇳🇱"}
+  },
+  "rounds": {
+    "1": "AUS",
+    "2": "CHN",
+    "3": "JPN"
+  },
+  "sprint_rounds": [2, 6, 7, 11, 14, 18]
 }
 ```
 
-### Adding a New Season
+- `rounds` maps round number → short name. Omit canceled rounds entirely.
+- `sprint_rounds` is the list of rounds that run a sprint session. Used
+  only for UI affordances (the badge on round chips); the source of truth
+  for sprint *points* is the CSV's `Ns` columns.
 
-1. Create a new JSON file: `seasons/{year}.json`
-2. Add all teams with their official colors
-3. Add all drivers with their team, number, and flag
-4. Add all race rounds with their abbreviations
+2026 sprint weekends: **2 (China), 6 (Miami), 7 (Canada), 11 (Silverstone),
+14 (Zandvoort), 18 (Singapore)**.
 
-The application loads the default season (2025) at startup. The season configuration is used to display driver names, team colors, and race names throughout the UI.
+## Populating data
 
-## Sample File
-
-A `championships_sample.csv` file is provided as a template. You can:
-1. Rename it to `championships.csv` and edit it with your data
-2. Use it as a reference to create your own `championships.csv`
-
-## Processing Data
-
-After creating your `championships.csv` file, run:
-```powershell
-flask process-data
+**Manually from a scoreboard:**
+```bash
+f1 add-race --season 2026 --race 3 --results "VER:25,NOR:18,LEC:15" \
+            --sprint  "VER:8,NOR:7,LEC:6"
 ```
+`--sprint` is optional; supply it on sprint weekends only.
 
-This will generate all possible championship combinations and save them to the database.
+**From the Jolpica-F1 API (Ergast-compatible):**
+```bash
+f1 fetch-race --season 2026 --round 3
+```
+Pulls both race and sprint results and splices them into the CSV. Use
+`--no-reprocess` to skip the full recompute (handy when batching multiple
+rounds — reprocess once at the end with `f1 process-data --season 2026`).
+
+Both commands rewrite the season CSV; if the season had already been
+processed, the full combinator re-runs automatically.

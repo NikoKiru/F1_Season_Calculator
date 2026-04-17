@@ -10,3 +10,9 @@ class SeasonData(BaseModel):
     drivers: dict[str, DriverInfo] = Field(description="Driver code → info.")
     driver_names: dict[str, str] = Field(description="Driver code → display name.")
     round_names: dict[int, str] = Field(description="Round number → circuit abbreviation.")
+    sprint_rounds: tuple[int, ...] = Field(
+        default=(), description="Round numbers that include a sprint session."
+    )
+
+    def is_sprint(self, round_number: int) -> bool:
+        return round_number in self.sprint_rounds

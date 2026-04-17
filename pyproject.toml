@@ -17,10 +17,12 @@ dependencies = [
     "pydantic-settings>=2.1",
     "sqlalchemy>=2.0",
     "numpy>=1.26",
+    "pandas>=2.0",
     "typer>=0.9",
     "cachetools>=5.3",
     "python-dotenv>=1.0",
     "python-multipart>=0.0.9",
+    "httpx>=0.26",
 ]
 
 [project.optional-dependencies]
