@@ -128,6 +128,7 @@ def driver_page(request: Request, code: str, conn: ConnDep, season: SeasonDep):
         ),
         "driver": stats["driver_info"] | {"code": driver_code, "name": stats["driver_name"]},
         "stats": stats,
+        "driver_names": sd.driver_names,
         "other_drivers": [
             {"code": c, "name": d.name, "color": d.color}
             for c, d in sd.drivers.items() if c != driver_code
@@ -287,11 +288,12 @@ def highest_position_page(request: Request, conn: ConnDep, season: SeasonDep):
 
 @router.get("/driver-positions", include_in_schema=False)
 def driver_positions_page(request: Request, season: SeasonDep):
+    sd = season_service.get_season_data(season)
     context = {
         **_common(season),
         "crumbs": _breadcrumbs(("Home", "/"), ("Positions", None)),
         "positions": list(range(1, 21)),
-        "page_data": {"season": season},
+        "page_data": {"season": season, "driver_names": sd.driver_names},
     }
     return render(request, "pages/driver_positions.html", context)
 

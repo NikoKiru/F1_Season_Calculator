@@ -1,7 +1,8 @@
 /**
  * Driver detail page: stat tiles are SSR; the position-bar and
- * season-length line charts fetch + render client-side so the detail view
- * can still deep-link without blocking on JS.
+ * season-length line charts fetch + render client-side. The state host
+ * is separate from the chart wrapper so loading/error panels can render
+ * without destroying the <canvas> elements.
  */
 
 import { barChart, lineChart } from "../components/charts/factories";
@@ -16,13 +17,36 @@ interface PagePayload {
   color: string;
 }
 
+function stateHost(): HTMLElement | null {
+  return $<HTMLElement>("[data-state-host]");
+}
+
+function chartsWrapper(): HTMLElement | null {
+  return $<HTMLElement>("[data-charts-wrapper]");
+}
+
+function showState(panelHtml: (host: HTMLElement) => void): void {
+  const host = stateHost();
+  const wrapper = chartsWrapper();
+  if (!host || !wrapper) return;
+  wrapper.setAttribute("hidden", "");
+  panelHtml(host);
+}
+
+function showCharts(): void {
+  const host = stateHost();
+  const wrapper = chartsWrapper();
+  if (!host || !wrapper) return;
+  host.innerHTML = "";
+  wrapper.removeAttribute("hidden");
+}
+
 async function hydrateCharts(payload: PagePayload): Promise<void> {
   const barCanvas = $<HTMLCanvasElement>("[data-chart='position-distribution']");
   const lineCanvas = $<HTMLCanvasElement>("[data-chart='win-probability-by-length']");
-  const host = $<HTMLElement>("[data-charts-host]");
-  if (!barCanvas || !lineCanvas || !host) return;
+  if (!barCanvas || !lineCanvas) return;
 
-  showLoading(host, "Loading charts…");
+  showState((host) => showLoading(host, "Loading charts…"));
 
   let stats: DriverStats;
   try {
@@ -31,11 +55,11 @@ async function hydrateCharts(payload: PagePayload): Promise<void> {
       { params: { season: payload.season }, timeoutMs: 8000 },
     );
   } catch (err) {
-    showError(host, err, () => hydrateCharts(payload));
+    showState((host) => showError(host, err, () => hydrateCharts(payload)));
     return;
   }
 
-  host.innerHTML = ""; // clear loading panel; charts render into their canvases
+  showCharts();
 
   const positions = Object.keys(stats.position_distribution).sort((a, b) => Number(a) - Number(b));
   const positionCounts = positions.map((p) => stats.position_distribution[p] ?? 0);
@@ -45,13 +69,8 @@ async function hydrateCharts(payload: PagePayload): Promise<void> {
   const winRates = lengths.map((l) => stats.win_probability_by_length[l] ?? 0);
   await lineChart(
     lineCanvas,
-    [
-      {
-        label: "Win probability %",
-        color: payload.color,
-        data: lengths.map((l, i) => ({ x: l, y: winRates[i] ?? 0 })),
-      },
-    ],
+    lengths,
+    [{ label: "Win probability %", color: payload.color, data: winRates }],
     "Season length (races)",
     "Win %",
   );

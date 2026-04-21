@@ -36,11 +36,12 @@
   </div>
 </section>
 
-<section class="section" data-charts-host aria-labelledby="charts-heading">
+<section class="section" aria-labelledby="charts-heading">
   <div class="section__head">
     <h2 id="charts-heading" class="section__title">Position & season-length charts</h2>
   </div>
-  <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(340px, 1fr))">
+  <div data-state-host></div>
+  <div class="grid" data-charts-wrapper hidden style="grid-template-columns: repeat(auto-fit, minmax(340px, 1fr))">
     <div class="chart-surface">
       <canvas data-chart="position-distribution" aria-label="Position distribution bar chart"></canvas>
     </div>
@@ -59,7 +60,7 @@
       {% set total = h2h.wins + h2h.losses %}
       {% set pct = (h2h.wins / total * 100) if total else 0 %}
       <a class="card card--interactive" href="/head-to-head?a={{ driver.code }}&b={{ code }}">
-        <p class="card__title">{{ stats.driver_info.name if code == driver.code else (code) }} vs {{ code }}</p>
+        <p class="card__title">{{ driver.name }} vs {{ driver_names.get(code, code) }}</p>
         <p class="card__subtitle">{{ h2h.wins }}–{{ h2h.losses }} ({{ "%.1f"|format(pct) }}% wins)</p>
       </a>
     {% endfor %}

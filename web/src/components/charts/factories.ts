@@ -1,25 +1,33 @@
 /**
  * Opinionated Chart.js factories — every chart in the app goes through one of
  * these so defaults (font, grid, tooltip) stay consistent.
+ *
+ * `lineChart` uses the `labels + data[]` shape (idiomatic Chart.js on a
+ * category x-axis). The previous `{x, y}` + `parsing: false` combination
+ * silently rendered an empty canvas because unparsed points never got mapped
+ * to axis positions.
  */
 
 import type { ChartConfiguration } from "chart.js";
 import { makeChart } from "./loader";
 
-export interface SeriesPoint {
-  x: string | number;
-  y: number;
+export interface LineSeries {
+  label: string;
+  data: number[];
+  color: string;
 }
 
 export async function lineChart(
   canvas: HTMLCanvasElement,
-  series: { label: string; data: SeriesPoint[]; color: string }[],
+  labels: string[],
+  series: LineSeries[],
   xLabel = "",
   yLabel = "",
 ) {
   const config: ChartConfiguration<"line"> = {
     type: "line",
     data: {
+      labels,
       datasets: series.map((s) => ({
         label: s.label,
         data: s.data,
@@ -30,8 +38,7 @@ export async function lineChart(
       })),
     },
     options: {
-      ...sharedOptions(),
-      parsing: false,
+      ...sharedOptions(series.length > 1),
       scales: axes(xLabel, yLabel),
     },
   };

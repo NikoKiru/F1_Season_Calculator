@@ -12,14 +12,17 @@ async function render(): Promise<void> {
   const canvas = $<HTMLCanvasElement>("[data-chart='season-progression']");
   const data = readJsonScript<PagePayload>("page-data");
   if (!canvas || !data) return;
+  const [first] = data.drivers;
+  if (!first) return;
 
+  const labels = data.rounds.length ? data.rounds : first.cumulative.map((_, i) => `R${i + 1}`);
   const series = data.drivers.map((d) => ({
     label: d.code,
     color: d.color,
-    data: d.cumulative.map((y, i) => ({ x: data.rounds[i] ?? String(i + 1), y })),
+    data: d.cumulative,
   }));
 
-  await lineChart(canvas, series, "Round", "Cumulative points");
+  await lineChart(canvas, labels, series, "Round", "Cumulative points");
 }
 
 render();
