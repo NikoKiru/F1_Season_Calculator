@@ -23,7 +23,7 @@
             "color": "#6C98FF"
         },
         "Audi": {
-            "color": "#ff3e41"
+            "color": "#101319"
         },
         "Haas": {
             "color": "#9C9FA2"
@@ -32,7 +32,7 @@
             "color": "#00A1E8"
         },
         "Cadillac": {
-            "color": "#c9b65b"
+            "color": "#ffffff"
         }
     },
     "drivers": {

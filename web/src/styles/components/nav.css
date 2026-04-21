@@ -17,7 +17,8 @@
   padding: 0 var(--s-4);
   display: flex;
   align-items: center;
-  gap: var(--s-4);
+  gap: var(--s-3);
+  min-width: 0;
 }
 
 .site-header__brand {
@@ -27,12 +28,16 @@
   color: var(--fg-on-brand);
   text-decoration: none;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .site-nav {
   display: flex;
   gap: var(--s-1);
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 
 .site-nav a {
@@ -42,6 +47,7 @@
   font-weight: var(--fw-medium);
   color: var(--fg-on-brand);
   text-decoration: none;
+  white-space: nowrap;
   transition: background var(--dur-fast) var(--ease-standard);
 }
 .site-nav a:hover,
@@ -53,6 +59,8 @@
   display: flex;
   align-items: center;
   gap: var(--s-2);
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .season-switcher {
@@ -79,8 +87,9 @@
   background: transparent;
   border: 0;
   color: var(--fg-on-brand);
-  width: 160px;
+  width: 120px;
   font-size: var(--fs-sm);
+  min-width: 0;
 }
 .global-search input::placeholder {
   color: rgba(255, 255, 255, 0.7);
@@ -98,7 +107,7 @@
   color: var(--fg-on-brand);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .site-nav {
     position: absolute;
     top: var(--header-height);
@@ -110,6 +119,7 @@
     gap: var(--s-1);
     box-shadow: var(--shadow-2);
     display: none;
+    overflow: visible;
   }
   .site-nav[data-open="true"] {
     display: flex;
@@ -118,7 +128,13 @@
     display: inline-flex;
   }
   .global-search input {
-    width: 110px;
+    width: 100px;
+  }
+}
+
+@media (max-width: 600px) {
+  .global-search {
+    display: none;
   }
 }
 

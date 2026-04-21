@@ -44,33 +44,58 @@ def home(request: Request, conn: ConnDep, season: SeasonDep):
     sd = season_service.get_season_data(season)
     wins = championship_service.all_wins(conn, season)
 
-    # Current standings derived from full-season row: load page 1 filtered
-    # to the max-length championship so points match the "final" scenario.
-    max_champ = next(
-        (r for r in championship_service.get_page(conn, season, 1, 1)["results"]),
-        None,
+    # Full-season championship (page 1, per_page 1 hits the longest scenario first
+    # because `get_page` orders by num_races DESC). Refetch by id with
+    # with_round_points=True so we also get the per-round breakdown for the chart.
+    first = next(
+        iter(championship_service.get_page(conn, season, 1, 1)["results"]), None
     )
+    max_champ = (
+        championship_service.get_by_id(conn, int(first["championship_id"]))
+        if first
+        else None
+    )
+
+    driver_points = (max_champ or {}).get("driver_points", {}) or {}
+    round_points = (max_champ or {}).get("round_points_data", {}) or {}
+    rounds = (max_champ or {}).get("round_names", []) or []
+
+    # Standings are already sorted DESC by points — the DB's `standings` column
+    # is the ordered list. Fall back to season JSON order when no data yet.
+    ordered_codes = list(driver_points.keys()) or list(sd.drivers.keys())
+    drivers_view = [
+        {
+            "code": code,
+            "name": sd.drivers[code].name if code in sd.drivers else code,
+            "team": sd.drivers[code].team if code in sd.drivers else "",
+            "color": sd.drivers[code].color if code in sd.drivers else "#666",
+            "wins": wins.get(code, 0),
+            "points": driver_points.get(code, 0),
+        }
+        for code in ordered_codes
+    ]
+
+    chart_drivers = []
+    for code in ordered_codes[:5]:
+        per_round = (round_points.get(code) or {}).get("round_points") or []
+        cumulative: list[int] = []
+        running = 0
+        for p in per_round:
+            running += int(p)
+            cumulative.append(running)
+        chart_drivers.append(
+            {
+                "code": code,
+                "color": sd.drivers[code].color if code in sd.drivers else "#666",
+                "cumulative": cumulative,
+            }
+        )
 
     context = {
         **_common(season),
-        "drivers": [
-            {
-                "code": code,
-                "name": d.name,
-                "team": d.team,
-                "color": d.color,
-                "wins": wins.get(code, 0),
-            }
-            for code, d in sd.drivers.items()
-        ],
+        "drivers": drivers_view,
         "featured_championship": max_champ,
-        "page_data": {
-            "rounds": list(sd.round_names.values()),
-            "drivers": [
-                {"code": code, "color": d.color, "cumulative": []}
-                for code, d in sd.drivers.items()
-            ],
-        },
+        "page_data": {"rounds": rounds, "drivers": chart_drivers},
     }
     return render(request, "pages/index.html", context)
 

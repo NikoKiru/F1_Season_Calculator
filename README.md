@@ -21,6 +21,13 @@
   `{N}s` columns and surfaced separately in the UI
 - Unit, API-contract, and (optional) Playwright e2e test suites
 
+## Prerequisites
+
+- **Python 3.10+** (tested on 3.10 – 3.13)
+- **Node.js 18+** (ships with `npm`) — for building the Vite frontend.
+  Get it from [nodejs.org](https://nodejs.org/). `pnpm` and `yarn` also
+  work with the `package.json` scripts if you prefer them.
+
 ## Quick start
 
 ```bash
@@ -38,12 +45,14 @@ f1 setup
 f1 process-data --season 2026
 f1 compute-stats --season 2026
 
-# 4. Build frontend assets (once, or `pnpm dev` for watch mode)
-pnpm --dir web install
-pnpm --dir web build
+# 4. Build frontend assets (once; use `npm run dev` for watch mode)
+cd web
+npm install
+npm run build
+cd ..
 
 # 5. Serve
-uvicorn app.main:create_app --factory --port 8000
+uvicorn "app.main:create_app" --factory --host 127.0.0.1 --port 8000 --reload
 ```
 
 Open [http://127.0.0.1:8000](http://127.0.0.1:8000). API docs are at
@@ -97,6 +106,11 @@ from the CSV header, not padded with zeros.
 | `f1 add-race --season YYYY --race N --results "…" [--sprint "…"]` | Append a weekend's results |
 | `f1 fetch-race --season YYYY --round N [--no-reprocess]` | Pull race + sprint from Jolpica and splice in |
 
+> The `f1` script is registered by `pip install -e .`. If your shell
+> can't find it after install, reopen the terminal so the new `Scripts/`
+> entry is on `PATH`, or invoke the CLI directly with
+> `python -m app.cli …` — it runs the exact same Typer app.
+
 ## HTTP API
 
 The REST surface lives under `/api/*` — full schema at `/api/openapi.json`
@@ -141,6 +155,21 @@ data/                    Your CSV + season JSON (user data)
 instance/                SQLite file
 tests/                   unit/ + api/ + e2e/
 ```
+
+## Frontend development
+
+The `web/` directory is a standard Vite + TypeScript project. From inside it:
+
+| Command | What it does |
+| --- | --- |
+| `npm install` | Install frontend dependencies |
+| `npm run build` | One-off production build → `app/static/dist/` |
+| `npm run dev` | Vite dev server with HMR (run alongside `uvicorn --reload`) |
+| `npm run typecheck` | `tsc --noEmit` |
+
+FastAPI reads `app/static/dist/manifest.json` at startup to resolve hashed
+asset URLs, so rebuild after changing any TS/CSS file (or leave `npm run
+dev` running).
 
 ## Tests
 
