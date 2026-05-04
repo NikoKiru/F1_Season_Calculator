@@ -49,14 +49,8 @@ def total_wins(conn: Connection, driver_code: str, season: int) -> int:
 def head_to_head_against_all(conn: Connection, driver_code: str, season: int) -> list[dict]:
     rows = conn.execute(
         text(
-            "SELECT pr2.driver_code AS opponent, "
-            "SUM(CASE WHEN pr1.position < pr2.position THEN 1 ELSE 0 END) AS wins, "
-            "SUM(CASE WHEN pr1.position > pr2.position THEN 1 ELSE 0 END) AS losses "
-            "FROM position_results pr1 "
-            "JOIN position_results pr2 ON pr1.championship_id = pr2.championship_id "
-            "  AND pr1.season = pr2.season "
-            "WHERE pr1.driver_code = :d AND pr1.season = :s AND pr2.driver_code != :d "
-            "GROUP BY pr2.driver_code"
+            "SELECT opponent, wins, losses FROM driver_head_to_head "
+            "WHERE season = :s AND driver_code = :d ORDER BY opponent"
         ),
         {"d": driver_code, "s": season},
     ).mappings().all()
@@ -66,17 +60,14 @@ def head_to_head_against_all(conn: Connection, driver_code: str, season: int) ->
 def head_to_head_pair(conn: Connection, d1: str, d2: str, season: int) -> tuple[int, int]:
     row = conn.execute(
         text(
-            "SELECT "
-            "SUM(CASE WHEN p1.position < p2.position THEN 1 ELSE 0 END) AS d1_wins, "
-            "SUM(CASE WHEN p1.position > p2.position THEN 1 ELSE 0 END) AS d2_wins "
-            "FROM position_results p1 "
-            "JOIN position_results p2 ON p1.championship_id = p2.championship_id "
-            "  AND p1.season = p2.season "
-            "WHERE p1.driver_code = :d1 AND p2.driver_code = :d2 AND p1.season = :s"
+            "SELECT wins, losses FROM driver_head_to_head "
+            "WHERE season = :s AND driver_code = :d1 AND opponent = :d2"
         ),
         {"d1": d1, "d2": d2, "s": season},
-    ).one()
-    return int(row.d1_wins or 0), int(row.d2_wins or 0)
+    ).one_or_none()
+    if row is None:
+        return 0, 0
+    return int(row.wins), int(row.losses)
 
 
 def position_driver_counts(conn: Connection, position: int, season: int) -> list[dict]:

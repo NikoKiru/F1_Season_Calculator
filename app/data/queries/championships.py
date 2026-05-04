@@ -13,7 +13,8 @@ def page(conn: Connection, season: int, limit: int, offset: int) -> list[dict]:
     rows = conn.execute(
         text(
             "SELECT championship_id, season, num_races, rounds, standings, winner, points "
-            "FROM championship_results WHERE season = :s LIMIT :lim OFFSET :off"
+            "FROM championship_results WHERE season = :s "
+            "ORDER BY num_races DESC, championship_id ASC LIMIT :lim OFFSET :off"
         ),
         {"s": season, "lim": limit, "off": offset},
     ).mappings().all()

@@ -38,6 +38,31 @@ def test_home_renders(client):
     assert 'data-chart="cumulative-points"' in r.text
 
 
+def test_header_uses_topical_dropdown_nav(client):
+    """Regression: the header used to inline 9 links and overflow at typical
+    widths. It now renders three top-level dropdown groups (Drivers,
+    Championships, Compare) plus a Home link, with WAI-ARIA menu semantics."""
+    r = client.get("/")
+    html = r.text
+    # Top-level groups present.
+    assert 'aria-controls="nav-drivers-menu"' in html
+    assert 'aria-controls="nav-championships-menu"' in html
+    assert 'aria-controls="nav-compare-menu"' in html
+    # Each trigger starts collapsed.
+    assert html.count('aria-expanded="false"') >= 3
+    # Drivers submenu items.
+    for href in ("/drivers", "/highest-position", "/driver-positions", "/min-races-to-win"):
+        assert f'href="{href}"' in html
+    # Championships submenu items.
+    for href in ("/create-championship", "/all-championship-wins", "/championship-win-probability"):
+        assert f'href="{href}"' in html
+    # Compare submenu items.
+    assert 'href="/head-to-head"' in html
+    # Old flat-list bare links are gone — none of the secondary pages should
+    # appear as direct children of `.site-nav` outside a menu.
+    assert 'class="site-nav__link"' in html  # Home link uses the new class
+
+
 def test_home_page_data_has_nonempty_cumulative(client):
     """Regression: the chart used to receive drivers with cumulative=[] and render empty."""
     r = client.get("/")
@@ -52,6 +77,19 @@ def test_home_page_data_has_nonempty_cumulative(client):
     # Length of each driver's cumulative array equals the rounds array.
     for d in data["drivers"]:
         assert len(d["cumulative"]) == len(data["rounds"])
+
+
+def test_home_chart_uses_longest_championship(client):
+    """Regression: `page()` had no ORDER BY, so SQLite returned a 1-race
+    championship and the home chart rendered a single round on the x-axis.
+    Now `page()` orders by num_races DESC, so the home page always pins
+    the longest championship in the season."""
+    r = client.get("/")
+    payload = _page_data(r.text)
+    # Seeded fixture is 3 drivers × 4 races → max championship has 4 rounds.
+    assert len(payload["rounds"]) == 4
+    for d in payload["drivers"]:
+        assert len(d["cumulative"]) == 4
 
 
 def test_home_drivers_sorted_by_points_desc(client):

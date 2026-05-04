@@ -64,6 +64,27 @@ def test_get_stats_head_to_head_symmetry(conn):
     assert ver["head_to_head"]["NOR"]["losses"] == nor["head_to_head"]["VER"]["wins"]
 
 
+def test_head_to_head_cache_populated(conn):
+    """Regression: head-to-head used to do a 60-90s self-join on the prod DB.
+    It now reads from the precomputed `driver_head_to_head` table, populated
+    during `stats_compute`. The seeded fixture is 3 drivers, so the table
+    must hold D × (D-1) = 6 rows for the test season."""
+    from sqlalchemy import text
+    rows = conn.execute(
+        text("SELECT driver_code, opponent, wins, losses FROM driver_head_to_head "
+             "WHERE season = 9999 ORDER BY driver_code, opponent")
+    ).mappings().all()
+    assert len(rows) == 6
+    # VER beats LEC in every championship they share (15 of them).
+    ver_lec = next(r for r in rows if r["driver_code"] == "VER" and r["opponent"] == "LEC")
+    assert ver_lec["wins"] == 15
+    assert ver_lec["losses"] == 0
+    # Symmetric pair must mirror.
+    lec_ver = next(r for r in rows if r["driver_code"] == "LEC" and r["opponent"] == "VER")
+    assert lec_ver["wins"] == ver_lec["losses"]
+    assert lec_ver["losses"] == ver_lec["wins"]
+
+
 def test_head_to_head_preserves_request_order(conn):
     result = driver_service.head_to_head(conn, "VER", "NOR", 9999)
     assert list(result.keys()) == ["VER", "NOR"]

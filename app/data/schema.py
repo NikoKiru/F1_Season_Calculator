@@ -65,6 +65,17 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
     "CREATE INDEX IF NOT EXISTS idx_prob_driver ON win_probability_cache (driver_code)",
     "CREATE INDEX IF NOT EXISTS idx_prob_num_races ON win_probability_cache (num_races)",
     "CREATE INDEX IF NOT EXISTS idx_prob_season ON win_probability_cache (season)",
+    """
+    CREATE TABLE IF NOT EXISTS driver_head_to_head (
+        season INTEGER NOT NULL,
+        driver_code TEXT NOT NULL,
+        opponent TEXT NOT NULL,
+        wins INTEGER NOT NULL DEFAULT 0,
+        losses INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (season, driver_code, opponent)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_h2h_season_driver ON driver_head_to_head (season, driver_code)",
 )
 
 

@@ -181,5 +181,85 @@ def _compute_locked(
     )
     conn.commit()
 
-    say(f"  done: {len(driver_stats)} drivers, {len(cache_rows)} probability rows")
-    return {"drivers": len(driver_stats), "probability_rows": len(cache_rows)}
+    say("  computing head-to-head cache")
+    h2h_pairs = _compute_head_to_head(conn, season, all_drivers, say)
+
+    say(f"  done: {len(driver_stats)} drivers, {len(cache_rows)} probability rows, {h2h_pairs} h2h pairs")
+    return {
+        "drivers": len(driver_stats),
+        "probability_rows": len(cache_rows),
+        "head_to_head_pairs": h2h_pairs,
+    }
+
+
+def _compute_head_to_head(
+    conn: sqlite3.Connection,
+    season: int,
+    all_drivers: list[str],
+    say: Callable[[str], None],
+) -> int:
+    """Aggregate head-to-head wins/losses for every (driver, opponent) pair.
+
+    Single pass over `position_results` ordered by championship: for each
+    championship, all-pairs comparison among the participating drivers. That's
+    O(C × D²) where D ≤ 25, far cheaper than the SQL self-join which materializes
+    C × D × D comparisons even with indexes.
+    """
+    pair_wins: dict[tuple[str, str], int] = {}
+
+    cursor = conn.execute(
+        "SELECT championship_id, driver_code, position FROM position_results "
+        "WHERE season = ? ORDER BY championship_id",
+        (season,),
+    )
+    current_cid: int | None = None
+    placements: list[tuple[str, int]] = []
+    seen_count = 0
+
+    def flush(group: list[tuple[str, int]]) -> None:
+        # All-pairs: each driver beats every driver behind them.
+        n = len(group)
+        for i in range(n):
+            di, pi = group[i]
+            for j in range(i + 1, n):
+                dj, pj = group[j]
+                if pi < pj:
+                    pair_wins[(di, dj)] = pair_wins.get((di, dj), 0) + 1
+                elif pj < pi:
+                    pair_wins[(dj, di)] = pair_wins.get((dj, di), 0) + 1
+
+    for row in cursor:
+        cid = row["championship_id"]
+        if cid != current_cid:
+            if placements:
+                flush(placements)
+                seen_count += 1
+                if seen_count % 100_000 == 0:
+                    say(f"    processed {seen_count} championships")
+            current_cid = cid
+            placements = []
+        placements.append((row["driver_code"], row["position"]))
+    if placements:
+        flush(placements)
+
+    say(f"    aggregated {seen_count + (1 if placements else 0)} championships")
+
+    # Materialize symmetric rows: (driver, opponent, wins, losses).
+    rows: list[tuple] = []
+    for d in all_drivers:
+        for opp in all_drivers:
+            if d == opp:
+                continue
+            wins = pair_wins.get((d, opp), 0)
+            losses = pair_wins.get((opp, d), 0)
+            rows.append((season, d, opp, wins, losses))
+
+    conn.execute("BEGIN IMMEDIATE")
+    conn.execute("DELETE FROM driver_head_to_head WHERE season = ?", (season,))
+    conn.executemany(
+        "INSERT INTO driver_head_to_head (season, driver_code, opponent, wins, losses) "
+        "VALUES (?, ?, ?, ?, ?)",
+        rows,
+    )
+    conn.commit()
+    return len(rows)

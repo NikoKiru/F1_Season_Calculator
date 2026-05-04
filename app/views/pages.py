@@ -44,9 +44,6 @@ def home(request: Request, conn: ConnDep, season: SeasonDep):
     sd = season_service.get_season_data(season)
     wins = championship_service.all_wins(conn, season)
 
-    # Full-season championship (page 1, per_page 1 hits the longest scenario first
-    # because `get_page` orders by num_races DESC). Refetch by id with
-    # with_round_points=True so we also get the per-round breakdown for the chart.
     first = next(
         iter(championship_service.get_page(conn, season, 1, 1)["results"]), None
     )

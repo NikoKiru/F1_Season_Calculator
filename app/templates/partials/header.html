@@ -6,15 +6,39 @@
       <span aria-hidden="true">☰</span>
     </button>
     <nav id="site-nav" class="site-nav" data-site-nav aria-label="Primary">
-      <a href="/">Home</a>
-      <a href="/drivers">Drivers</a>
-      <a href="/create-championship">Create</a>
-      <a href="/championship-win-probability">Win Prob</a>
-      <a href="/all-championship-wins">All Wins</a>
-      <a href="/head-to-head">Head to Head</a>
-      <a href="/highest-position">Highest Pos</a>
-      <a href="/driver-positions">Positions</a>
-      <a href="/min-races-to-win">Min Races</a>
+      <a href="/" class="site-nav__link">Home</a>
+      <div class="nav-group" data-nav-group>
+        <button type="button" class="nav-group__trigger" data-nav-trigger
+                aria-expanded="false" aria-haspopup="true" aria-controls="nav-drivers-menu">
+          Drivers <span class="nav-group__caret" aria-hidden="true">▾</span>
+        </button>
+        <ul id="nav-drivers-menu" class="nav-group__menu" role="menu">
+          <li role="none"><a role="menuitem" href="/drivers">All Drivers</a></li>
+          <li role="none"><a role="menuitem" href="/highest-position">Highest Position</a></li>
+          <li role="none"><a role="menuitem" href="/driver-positions">Driver Positions</a></li>
+          <li role="none"><a role="menuitem" href="/min-races-to-win">Min Races to Win</a></li>
+        </ul>
+      </div>
+      <div class="nav-group" data-nav-group>
+        <button type="button" class="nav-group__trigger" data-nav-trigger
+                aria-expanded="false" aria-haspopup="true" aria-controls="nav-championships-menu">
+          Championships <span class="nav-group__caret" aria-hidden="true">▾</span>
+        </button>
+        <ul id="nav-championships-menu" class="nav-group__menu" role="menu">
+          <li role="none"><a role="menuitem" href="/create-championship">Create Championship</a></li>
+          <li role="none"><a role="menuitem" href="/all-championship-wins">All Championship Wins</a></li>
+          <li role="none"><a role="menuitem" href="/championship-win-probability">Win Probability</a></li>
+        </ul>
+      </div>
+      <div class="nav-group" data-nav-group>
+        <button type="button" class="nav-group__trigger" data-nav-trigger
+                aria-expanded="false" aria-haspopup="true" aria-controls="nav-compare-menu">
+          Compare <span class="nav-group__caret" aria-hidden="true">▾</span>
+        </button>
+        <ul id="nav-compare-menu" class="nav-group__menu" role="menu">
+          <li role="none"><a role="menuitem" href="/head-to-head">Head to Head</a></li>
+        </ul>
+      </div>
     </nav>
     <div class="site-header__controls">
       <form class="global-search" data-global-search role="search" aria-label="Find championship by ID">

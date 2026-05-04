@@ -3,7 +3,7 @@
  * Submit hits /api/championships/search and redirects on success.
  */
 
-import { showError } from "../components/states";
+import { showError, showLoading } from "../components/states";
 import { apiGet } from "../lib/api";
 import { $, $$, readJsonScript, require$ } from "../lib/dom";
 
@@ -32,21 +32,27 @@ function randomise(total: number): void {
   }
 }
 
-async function submit(payload: PagePayload, feedbackHost: HTMLElement): Promise<void> {
+async function submit(
+  payload: PagePayload,
+  feedbackHost: HTMLElement,
+  submitBtn: HTMLButtonElement,
+): Promise<void> {
   const rounds = selectedRounds();
   if (rounds.length === 0) {
     feedbackHost.innerHTML = `<p class="error-message">Pick at least one round.</p>`;
     return;
   }
-  feedbackHost.innerHTML = "";
+  showLoading(feedbackHost, "Searching for championship…");
+  submitBtn.disabled = true;
   try {
     const res = await apiGet<SearchResponse>("/api/search/championship", {
       params: { rounds: rounds.join(","), season: payload.season },
-      timeoutMs: 10_000,
+      timeoutMs: 15_000,
     });
     window.location.assign(res.url);
   } catch (err) {
-    showError(feedbackHost, err, () => submit(payload, feedbackHost));
+    submitBtn.disabled = false;
+    showError(feedbackHost, err, () => submit(payload, feedbackHost, submitBtn));
   }
 }
 
@@ -55,5 +61,5 @@ if (payload) {
   const submitBtn = require$<HTMLButtonElement>("[data-submit]");
   const feedback = require$<HTMLElement>("[data-feedback]");
   $<HTMLButtonElement>("[data-random]")?.addEventListener("click", () => randomise(payload.total_rounds));
-  submitBtn.addEventListener("click", () => submit(payload, feedback));
+  submitBtn.addEventListener("click", () => submit(payload, feedback, submitBtn));
 }
