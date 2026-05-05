@@ -9,6 +9,8 @@ import sqlite3
 from pathlib import Path
 from typing import Callable
 
+from app.data.schema import SCHEMA_STATEMENTS
+
 
 def compute(
     db_path: Path,
@@ -22,6 +24,11 @@ def compute(
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     try:
+        # Idempotent CREATE IF NOT EXISTS — covers tables added after the DB
+        # file was first set up (e.g. driver_head_to_head).
+        for stmt in SCHEMA_STATEMENTS:
+            conn.execute(stmt)
+        conn.commit()
         return _compute_locked(conn, season, on_progress or (lambda _msg: None))
     finally:
         conn.close()
