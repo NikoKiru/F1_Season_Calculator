@@ -9,7 +9,24 @@ import sqlite3
 from pathlib import Path
 from typing import Callable
 
-from app.data.schema import SCHEMA_STATEMENTS
+
+# Just the head-to-head table — running every SCHEMA_STATEMENTS would force
+# CREATE INDEX IF NOT EXISTS on position_results (335M rows on prod), which is
+# a full-table scan if any index is missing. CREATE on an empty new table and
+# its index is instant.
+_HEAD_TO_HEAD_DDL = (
+    """
+    CREATE TABLE IF NOT EXISTS driver_head_to_head (
+        season INTEGER NOT NULL,
+        driver_code TEXT NOT NULL,
+        opponent TEXT NOT NULL,
+        wins INTEGER NOT NULL DEFAULT 0,
+        losses INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (season, driver_code, opponent)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_h2h_season_driver ON driver_head_to_head (season, driver_code)",
+)
 
 
 def compute(
@@ -24,9 +41,7 @@ def compute(
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     try:
-        # Idempotent CREATE IF NOT EXISTS — covers tables added after the DB
-        # file was first set up (e.g. driver_head_to_head).
-        for stmt in SCHEMA_STATEMENTS:
+        for stmt in _HEAD_TO_HEAD_DDL:
             conn.execute(stmt)
         conn.commit()
         return _compute_locked(conn, season, on_progress or (lambda _msg: None))
