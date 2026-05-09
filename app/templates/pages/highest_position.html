@@ -27,8 +27,13 @@
         <p class="card__meta">
           <span>Best margin: {{ r.best_margin }} pts</span>
           {% if r.best_margin_championship_id %}
-            <a href="/championship/{{ r.best_margin_championship_id }}">#{{ r.best_margin_championship_id }}</a>
+            <a href="/championship/{{ r.best_margin_championship_id }}">View scenario →</a>
           {% endif %}
+        </p>
+      {% elif r.max_races_championship_id %}
+        <p class="card__meta">
+          <span>Longest run at P{{ r.position }}: {{ r.max_races }} race{% if r.max_races != 1 %}s{% endif %}</span>
+          <a href="/championship/{{ r.max_races_championship_id }}">View scenario →</a>
         </p>
       {% endif %}
     </article>

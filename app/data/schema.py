@@ -76,6 +76,15 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS idx_h2h_season_driver ON driver_head_to_head (season, driver_code)",
+    """
+    CREATE TABLE IF NOT EXISTS driver_position_distribution (
+        season INTEGER NOT NULL,
+        driver_code TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        count INTEGER NOT NULL,
+        PRIMARY KEY (season, driver_code, position)
+    )
+    """,
 )
 
 

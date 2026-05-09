@@ -54,16 +54,42 @@
 <section class="section" aria-labelledby="h2h-heading">
   <div class="section__head">
     <h2 id="h2h-heading" class="section__title">Head-to-head</h2>
+    <p class="section__lede">How {{ driver.name }} stacks up against every other driver this season.</p>
   </div>
-  <div class="grid grid--stats">
-    {% for code, h2h in stats.head_to_head.items() %}
-      {% set total = h2h.wins + h2h.losses %}
-      {% set pct = (h2h.wins / total * 100) if total else 0 %}
-      <a class="card card--interactive" href="/head-to-head?a={{ driver.code }}&b={{ code }}">
-        <p class="card__title">{{ driver.name }} vs {{ driver_names.get(code, code) }}</p>
-        <p class="card__subtitle">{{ h2h.wins }}–{{ h2h.losses }} ({{ "%.1f"|format(pct) }}% wins)</p>
-      </a>
-    {% endfor %}
+  {% set h2h_rows = [] %}
+  {% for code, h2h in stats.head_to_head.items() %}
+    {% set total = h2h.wins + h2h.losses %}
+    {% set pct = (h2h.wins / total * 100) if total else 0 %}
+    {% if h2h_rows.append({"code": code, "name": driver_names.get(code, code), "wins": h2h.wins, "losses": h2h.losses, "pct": pct}) %}{% endif %}
+  {% endfor %}
+  <div class="table-wrapper" data-responsive="true">
+    <table class="table h2h-table">
+      <thead>
+        <tr>
+          <th scope="col">Opponent</th>
+          <th scope="col" class="num">W</th>
+          <th scope="col" class="num">L</th>
+          <th scope="col" class="num">Win %</th>
+          <th scope="col" aria-label="Compare"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in h2h_rows | sort(attribute="pct", reverse=True) %}
+          <tr>
+            <th scope="row" data-label="Opponent">{{ row.name }}</th>
+            <td class="num" data-label="W">{{ row.wins }}</td>
+            <td class="num" data-label="L">{{ row.losses }}</td>
+            <td class="num h2h-table__pct" data-label="Win %">
+              <span class="pct-bar" style="--pct: {{ row.pct }}%" aria-hidden="true"></span>
+              <span class="pct-value">{{ "%.1f"|format(row.pct) }}%</span>
+            </td>
+            <td class="num" data-label="">
+              <a class="btn btn--sm btn--ghost" href="/head-to-head?a={{ driver.code }}&b={{ row.code }}">Compare →</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </section>
 

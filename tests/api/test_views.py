@@ -140,15 +140,28 @@ def test_driver_detail_renders(client):
 
 
 def test_driver_detail_head_to_head_uses_full_names(client):
-    """Regression: the h2h cards used to render '<code> vs <code>' because the
-    template checked `code == driver.code` (never true — h2h dict excludes self)."""
+    """The h2h table renders each opponent's full name (not code) and never
+    shows the driver themselves in their own opponent list.
+
+    Earlier regression: the old card grid rendered `<code> vs <code>`
+    because the template's self-filter compared against the wrong key.
+    The table layout drops the redundant "X vs" prefix entirely; this
+    test now asserts the table contract: opponent rows by full name,
+    self never appears as opponent.
+    """
     r = client.get(f"/driver/VER?season={SEASON}")
-    # For VER, we should see 'Max Verstappen vs Lando Norris' or similar.
-    # Never the broken form 'NOR vs NOR' — same code twice.
+    # The h2h table appears.
+    assert 'class="table h2h-table"' in r.text or "h2h-table" in r.text
+    # Opponents render with full names.
+    for name in ("Lando Norris", "Charles Leclerc"):
+        assert name in r.text, f"opponent {name} missing from h2h table"
+    # Driver themselves should not appear as their own opponent. The
+    # h2h dict in the API excludes the self key, so a "Max Verstappen"
+    # row in the table body would be a regression. We can't grep for
+    # "Max Verstappen" globally because the hero shows it, but we can
+    # check the broken-codes pattern.
     for bad in ("NOR vs NOR", "LEC vs LEC", "VER vs VER"):
-        assert bad not in r.text, f"broken h2h card found: {bad}"
-    # Positive: at least one good form appears.
-    assert "Max Verstappen vs" in r.text, "driver's own name missing from h2h card title"
+        assert bad not in r.text, f"broken h2h pattern found: {bad}"
 
 
 def test_driver_detail_page_data_for_charts(client):

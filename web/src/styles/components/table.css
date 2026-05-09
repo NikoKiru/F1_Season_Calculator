@@ -46,6 +46,38 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Head-to-head table — slim rows, embedded win-% bar. */
+.h2h-table tbody th {
+  font-weight: var(--fw-medium);
+  background: transparent;
+  color: var(--fg-default);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--fs-sm);
+  position: static;
+}
+.h2h-table th,
+.h2h-table td {
+  padding: var(--s-2) var(--s-4);
+}
+.h2h-table__pct {
+  position: relative;
+  min-width: 92px;
+}
+.h2h-table__pct .pct-bar {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--accent) 22%, transparent) var(--pct, 0%),
+    transparent var(--pct, 0%)
+  );
+  pointer-events: none;
+}
+.h2h-table__pct .pct-value {
+  position: relative;
+}
+
 @media (max-width: 640px) {
   .table-wrapper[data-responsive="true"] .table,
   .table-wrapper[data-responsive="true"] .table tbody,

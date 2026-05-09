@@ -26,6 +26,15 @@ _HEAD_TO_HEAD_DDL = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS idx_h2h_season_driver ON driver_head_to_head (season, driver_code)",
+    """
+    CREATE TABLE IF NOT EXISTS driver_position_distribution (
+        season INTEGER NOT NULL,
+        driver_code TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        count INTEGER NOT NULL,
+        PRIMARY KEY (season, driver_code, position)
+    )
+    """,
 )
 
 
@@ -203,31 +212,40 @@ def _compute_locked(
     )
     conn.commit()
 
-    say("  computing head-to-head cache")
-    h2h_pairs = _compute_head_to_head(conn, season, all_drivers, say)
+    say("  computing head-to-head + position-distribution caches")
+    h2h_pairs, position_rows = _compute_pair_and_position_caches(
+        conn, season, all_drivers, say
+    )
 
-    say(f"  done: {len(driver_stats)} drivers, {len(cache_rows)} probability rows, {h2h_pairs} h2h pairs")
+    say(
+        f"  done: {len(driver_stats)} drivers, {len(cache_rows)} probability rows, "
+        f"{h2h_pairs} h2h pairs, {position_rows} position rows"
+    )
     return {
         "drivers": len(driver_stats),
         "probability_rows": len(cache_rows),
         "head_to_head_pairs": h2h_pairs,
+        "position_distribution_rows": position_rows,
     }
 
 
-def _compute_head_to_head(
+def _compute_pair_and_position_caches(
     conn: sqlite3.Connection,
     season: int,
     all_drivers: list[str],
     say: Callable[[str], None],
-) -> int:
-    """Aggregate head-to-head wins/losses for every (driver, opponent) pair.
+) -> tuple[int, int]:
+    """Single pass over `position_results` populates two caches at once:
 
-    Single pass over `position_results` ordered by championship: for each
-    championship, all-pairs comparison among the participating drivers. That's
-    O(C × D²) where D ≤ 25, far cheaper than the SQL self-join which materializes
-    C × D × D comparisons even with indexes.
+    - `driver_head_to_head`: wins/losses per (driver, opponent) — O(C × D²)
+      Python all-pairs loop, far cheaper than the SQL self-join which
+      materializes C × D × D comparisons even with indexes.
+    - `driver_position_distribution`: how often each driver finished P1..PN
+      in the season — replaces a `WHERE driver=:d AND season=:s GROUP BY
+      position` scan over `position_results` (16M+ rows) with a PK lookup.
     """
     pair_wins: dict[tuple[str, str], int] = {}
+    position_counts: dict[tuple[str, int], int] = {}
 
     cursor = conn.execute(
         "SELECT championship_id, driver_code, position FROM position_results "
@@ -260,28 +278,42 @@ def _compute_head_to_head(
                     say(f"    processed {seen_count} championships")
             current_cid = cid
             placements = []
-        placements.append((row["driver_code"], row["position"]))
+        d, p = row["driver_code"], row["position"]
+        placements.append((d, p))
+        position_counts[(d, p)] = position_counts.get((d, p), 0) + 1
     if placements:
         flush(placements)
 
     say(f"    aggregated {seen_count + (1 if placements else 0)} championships")
 
-    # Materialize symmetric rows: (driver, opponent, wins, losses).
-    rows: list[tuple] = []
+    # Materialize head-to-head rows: (driver, opponent, wins, losses).
+    h2h_rows: list[tuple] = []
     for d in all_drivers:
         for opp in all_drivers:
             if d == opp:
                 continue
             wins = pair_wins.get((d, opp), 0)
             losses = pair_wins.get((opp, d), 0)
-            rows.append((season, d, opp, wins, losses))
+            h2h_rows.append((season, d, opp, wins, losses))
+
+    # Materialize position-distribution rows.
+    position_rows: list[tuple] = [
+        (season, driver, position, count)
+        for (driver, position), count in position_counts.items()
+    ]
 
     conn.execute("BEGIN IMMEDIATE")
     conn.execute("DELETE FROM driver_head_to_head WHERE season = ?", (season,))
     conn.executemany(
         "INSERT INTO driver_head_to_head (season, driver_code, opponent, wins, losses) "
         "VALUES (?, ?, ?, ?, ?)",
-        rows,
+        h2h_rows,
+    )
+    conn.execute("DELETE FROM driver_position_distribution WHERE season = ?", (season,))
+    conn.executemany(
+        "INSERT INTO driver_position_distribution (season, driver_code, position, count) "
+        "VALUES (?, ?, ?, ?)",
+        position_rows,
     )
     conn.commit()
-    return len(rows)
+    return len(h2h_rows), len(position_rows)

@@ -2,11 +2,17 @@ from sqlalchemy import Connection, text
 
 
 def position_counts(conn: Connection, driver_code: str, season: int) -> dict[int, int]:
+    """Read from the precomputed `driver_position_distribution` cache.
+
+    Replaces a `GROUP BY position` scan over `position_results` (16M+ rows
+    on a 24-race season) with an indexed lookup. Run `f1 compute-stats
+    --season YYYY` to populate the cache.
+    """
     rows = conn.execute(
         text(
-            "SELECT position, COUNT(*) AS cnt FROM position_results "
+            "SELECT position, count AS cnt FROM driver_position_distribution "
             "WHERE driver_code = :d AND season = :s "
-            "GROUP BY position ORDER BY position"
+            "ORDER BY position"
         ),
         {"d": driver_code, "s": season},
     ).mappings().all()

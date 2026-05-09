@@ -4,6 +4,26 @@ All notable user-visible changes to this project. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Precomputed `driver_position_distribution` cache table — driver detail
+  page now reads position counts via PK lookup instead of scanning
+  `position_results` (16M+ rows). Run `f1 compute-stats --season YYYY`
+  to populate.
+- Per-row "View scenario →" link on the highest-position page. Winners
+  link to their biggest-margin scenario; non-winners link to the
+  longest scenario at their best finish.
+- Compact head-to-head table on the driver detail page with W/L/Win-%
+  columns, an inline percentage bar, and a "Compare →" button per row.
+
+### Changed
+
+- Replaced the 22-card head-to-head grid on driver detail with the new
+  table — drops the redundant "<DriverName> vs" prefix and sorts by
+  win % descending.
+
 ## [2.1.0] — 2026-05-09
 
 ### Added
