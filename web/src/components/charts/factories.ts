@@ -15,6 +15,8 @@ export interface LineSeries {
   label: string;
   data: number[];
   color: string;
+  /** Render this series with a dashed stroke (e.g. lower-placed teammate). */
+  dashed?: boolean;
 }
 
 export async function lineChart(
@@ -35,6 +37,7 @@ export async function lineChart(
         backgroundColor: s.color,
         tension: 0.2,
         pointRadius: 3,
+        borderDash: s.dashed ? [6, 4] : undefined,
       })),
     },
     options: {
@@ -69,12 +72,28 @@ export async function pieChart(
   values: number[],
   colors: string[],
 ) {
+  // Slice borders use the page background so adjacent slices are always
+  // visually separated, including when teammates share a team color.
+  const sliceBorder = getSliceBorder(canvas);
   const config: ChartConfiguration<"pie"> = {
     type: "pie",
-    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }] },
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderColor: sliceBorder,
+        borderWidth: 2,
+      }],
+    },
     options: sharedOptions(),
   };
   return makeChart(canvas, config);
+}
+
+function getSliceBorder(canvas: HTMLCanvasElement): string {
+  const v = getComputedStyle(canvas).getPropertyValue("--bg-app").trim();
+  return v || "#0b0d10";
 }
 
 function sharedOptions(withLegend = true) {

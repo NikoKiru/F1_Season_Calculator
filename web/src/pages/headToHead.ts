@@ -11,6 +11,7 @@
 import { pieChart } from "../components/charts/factories";
 import { showError, showLoading } from "../components/states";
 import { apiGet } from "../lib/api";
+import { darkenHex } from "../lib/color";
 import { $, readJsonScript, require$ } from "../lib/dom";
 
 interface PagePayload {
@@ -69,11 +70,24 @@ async function refresh(payload: PagePayload): Promise<void> {
     const driverB = payload.drivers.find((d) => d.code === b);
     showChartSurface();
     const canvas = require$<HTMLCanvasElement>("[data-chart='head-to-head']");
+    const baseA = driverA?.color ?? "#e10600";
+    const baseB = driverB?.color ?? "#1f2937";
+    // Teammates share a team color — darken whichever lost more head-to-head
+    // matchups so the two slices are visually distinct. Ties darken B for
+    // determinism so the chart doesn't flicker between renders.
+    let colorA = baseA;
+    let colorB = baseB;
+    if (baseA.toLowerCase() === baseB.toLowerCase()) {
+      const winsA = res[a] ?? 0;
+      const winsB = res[b] ?? 0;
+      if (winsA < winsB) colorA = darkenHex(baseA);
+      else colorB = darkenHex(baseB);
+    }
     await pieChart(
       canvas,
       [driverA?.name ?? a, driverB?.name ?? b],
       [res[a] ?? 0, res[b] ?? 0],
-      [driverA?.color ?? "#e10600", driverB?.color ?? "#1f2937"],
+      [colorA, colorB],
     );
   } catch (err) {
     chartWrapper().hidden = true;

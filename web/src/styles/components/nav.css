@@ -86,11 +86,13 @@
   position: absolute;
   top: calc(100% + var(--s-1));
   left: 0;
-  min-width: 200px;
+  min-width: 220px;
   margin: 0;
   padding: var(--s-1);
   list-style: none;
-  background: var(--bg-elevated, #fff);
+  background: var(--bg-elevated);
+  color: var(--fg-on-elevated);
+  border: 1px solid var(--border-default);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-3);
   display: none;
@@ -112,19 +114,19 @@
   border-radius: var(--r-sm);
   font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
-  color: var(--fg-default);
+  color: var(--fg-on-elevated);
   text-decoration: none;
   white-space: nowrap;
 }
 .nav-group__menu a:hover,
 .nav-group__menu a:focus-visible {
-  background: var(--bg-hover, rgba(0, 0, 0, 0.05));
-  color: var(--red-600);
+  background: var(--bg-hover);
+  color: var(--accent);
   outline: none;
 }
 .nav-group__menu a[aria-current="page"] {
-  color: var(--red-600);
-  background: var(--bg-hover, rgba(0, 0, 0, 0.05));
+  color: var(--accent);
+  background: var(--bg-active);
 }
 
 .site-header__controls {
@@ -137,23 +139,32 @@
 
 .season-switcher {
   appearance: none;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.18);
   color: var(--fg-on-brand);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.45);
   border-radius: var(--r-md);
   padding: var(--s-1) var(--s-3);
   font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
+}
+.season-switcher:focus-visible {
+  outline: 0;
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
 }
 
 .global-search {
   display: flex;
   align-items: center;
   gap: var(--s-1);
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.45);
   border-radius: var(--r-md);
   padding: var(--s-1) var(--s-2);
+}
+.global-search:focus-within {
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.7);
 }
 .global-search input {
   background: transparent;
@@ -164,7 +175,7 @@
   min-width: 0;
 }
 .global-search input::placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .hamburger {

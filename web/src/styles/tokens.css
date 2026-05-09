@@ -67,13 +67,17 @@
   --bg-app: var(--gray-50);
   --bg-surface: #ffffff;
   --bg-raised: #ffffff;
+  --bg-elevated: #ffffff;          /* popovers, dropdowns — sits above surface */
   --bg-sunken: var(--gray-100);
   --bg-overlay: rgba(17, 24, 39, 0.5);
+  --bg-hover: rgba(17, 24, 39, 0.06);
+  --bg-active: rgba(17, 24, 39, 0.10);
 
   --fg-default: var(--gray-900);
   --fg-muted: var(--gray-600);
   --fg-subtle: var(--gray-500);
   --fg-on-brand: #ffffff;
+  --fg-on-elevated: var(--gray-900);   /* always pair with --bg-elevated */
 
   --border-default: var(--gray-200);
   --border-strong: var(--gray-300);
@@ -112,12 +116,16 @@
     --bg-app: #0b0d10;
     --bg-surface: #15181d;
     --bg-raised: #1b1f26;
+    --bg-elevated: #232831;         /* lighter than surface so popovers pop */
     --bg-sunken: #0f1216;
     --bg-overlay: rgba(0, 0, 0, 0.6);
+    --bg-hover: rgba(255, 255, 255, 0.08);
+    --bg-active: rgba(255, 255, 255, 0.14);
 
     --fg-default: #f3f4f6;
     --fg-muted: #9ca3af;
     --fg-subtle: #6b7280;
+    --fg-on-elevated: #f3f4f6;     /* WCAG AA on --bg-elevated */
 
     --border-default: #262b33;
     --border-strong: #353c46;

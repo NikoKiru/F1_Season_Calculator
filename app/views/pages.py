@@ -83,6 +83,7 @@ def home(request: Request, conn: ConnDep, season: SeasonDep):
         chart_drivers.append(
             {
                 "code": code,
+                "team": sd.drivers[code].team if code in sd.drivers else "",
                 "color": sd.drivers[code].color if code in sd.drivers else "#666",
                 "cumulative": cumulative,
             }
@@ -192,7 +193,12 @@ def championship_page(request: Request, championship_id: int, conn: ConnDep):
             running += int(p)
             cumulative.append(running)
         drivers_payload.append(
-            {"code": code, "color": sd.drivers.get(code).color if code in sd.drivers else "#666", "cumulative": cumulative}
+            {
+                "code": code,
+                "team": sd.drivers[code].team if code in sd.drivers else "",
+                "color": sd.drivers.get(code).color if code in sd.drivers else "#666",
+                "cumulative": cumulative,
+            }
         )
 
     context = {

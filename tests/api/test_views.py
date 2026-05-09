@@ -79,6 +79,15 @@ def test_home_page_data_has_nonempty_cumulative(client):
         assert len(d["cumulative"]) == len(data["rounds"])
 
 
+def test_home_page_data_includes_team_for_dashed_teammate_logic(client):
+    """The chart payload must include `team` per driver so the frontend can
+    pick the lower-placed teammate of each pair and render them dashed."""
+    r = client.get("/")
+    data = _page_data(r.text)
+    for d in data["drivers"]:
+        assert "team" in d, f"driver {d['code']} missing team field"
+
+
 def test_home_chart_uses_longest_championship(client):
     """Regression: `page()` had no ORDER BY, so SQLite returned a 1-race
     championship and the home chart rendered a single round on the x-axis.
@@ -207,6 +216,7 @@ def test_championship_detail_page_data_contains_cumulative(client):
     for d in data["drivers"]:
         assert d["cumulative"], f"{d['code']} cumulative empty"
         assert len(d["cumulative"]) == len(data["rounds"])
+        assert "team" in d, f"{d['code']} missing team field for dashed-line logic"
 
 
 def test_championship_not_found_404(client):

@@ -9,14 +9,28 @@
   border: 1px solid var(--border-strong);
   border-radius: var(--r-md);
   background: var(--bg-surface);
+  color: var(--fg-default);
   font-size: var(--fs-sm);
   transition: border-color var(--dur-fast) var(--ease-standard);
+}
+.input::placeholder {
+  color: var(--fg-subtle);
 }
 .input:focus-visible,
 .select:focus-visible {
   border-color: var(--border-focus);
   box-shadow: var(--focus-ring);
   outline: 0;
+}
+
+/* Native <option> popup: browsers don't reliably inherit the select's
+   color, so set them explicitly. Without this, dark mode shipped white
+   text on a white system popup. */
+.select option,
+.input option,
+.season-switcher option {
+  background: var(--bg-elevated);
+  color: var(--fg-on-elevated);
 }
 
 .label {
