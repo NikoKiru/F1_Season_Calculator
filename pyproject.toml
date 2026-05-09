@@ -42,7 +42,7 @@ f1 = "app.cli:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["app*"]
-exclude = ["championship*", "tests*", "web*"]
+exclude = ["tests*", "web*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests/unit", "tests/api", "tests/e2e"]

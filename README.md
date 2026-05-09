@@ -9,6 +9,32 @@
 > non-empty subsets of rounds (up to 16,777,215 for a 24-race year) and
 > tells you who wins, by how much, and on which round.
 
+## What's new (2026-05-09)
+
+- **Home chart fix** — the cumulative-points line on the home page now
+  spans the full longest championship instead of collapsing to a single
+  round.
+- **2026 round labels** — Miami and the rest of 2026 now render with the
+  right names. The season JSON was renumbered to match the sequential CSV
+  ordering.
+- **Fast head-to-head** — driver detail and head-to-head pages used to
+  do a self-join over 335M rows and timed out. They now read from a
+  precomputed `driver_head_to_head` cache table and return in <1s. Run
+  `f1 compute-stats --season YYYY` once after pulling.
+- **Topical dropdown nav** — header collapses to Home + Drivers ▾ +
+  Championships ▾ + Compare ▾ with WAI-ARIA menus + keyboard support.
+- **Loading feedback** — "Searching for championship…" appears between
+  submit and redirect, plus retry-able error states on every async pane.
+- **Dark-mode contrast** — popovers, dropdowns, selects, and the search
+  input are now legible in both light and dark themes.
+- **Teammate visibility on charts** — the lower-finishing teammate of
+  each pair renders with a dashed line on cumulative-points charts and
+  with a darkened slice on the head-to-head pie.
+- **Legacy Flask code removed** — `app.py`, `championship/`, `static/`,
+  `requirements.txt`, the old `tests/test_*.py` suite, and Flask-era CI
+  steps are gone. The CI workflow now exercises the FastAPI app via
+  uvicorn and runs the Vite build.
+
 ## What's inside
 
 - **FastAPI + SQLAlchemy Core + SQLite** backend with OpenAPI docs at
