@@ -1,5 +1,5 @@
 /**
- * Shared bootstrap loaded by every page: hamburger, season switcher, global
+ * Shared bootstrap loaded by every page: hamburger menu and the global
  * championship-ID search. Page-specific entries run their own main() after.
  */
 
@@ -14,16 +14,6 @@ function bindHamburger(): void {
     const open = nav.dataset.open === "true";
     nav.dataset.open = String(!open);
     btn.setAttribute("aria-expanded", String(!open));
-  });
-}
-
-function bindSeasonSwitcher(): void {
-  const select = $<HTMLSelectElement>("[data-season-switcher]");
-  if (!select) return;
-  select.addEventListener("change", () => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("season", select.value);
-    window.location.assign(url.toString());
   });
 }
 
@@ -110,7 +100,6 @@ function bindNavGroups(): void {
 }
 
 bindHamburger();
-bindSeasonSwitcher();
 bindGlobalSearch();
 bindNavGroups();
 markCurrentNav();

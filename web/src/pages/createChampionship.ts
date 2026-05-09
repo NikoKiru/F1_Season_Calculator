@@ -56,10 +56,24 @@ async function submit(
   }
 }
 
+function resetForm(feedback: HTMLElement, submitBtn: HTMLButtonElement): void {
+  feedback.innerHTML = "";
+  feedback.removeAttribute("aria-busy");
+  submitBtn.disabled = false;
+}
+
 const payload = readJsonScript<PagePayload>("page-data");
 if (payload) {
   const submitBtn = require$<HTMLButtonElement>("[data-submit]");
   const feedback = require$<HTMLElement>("[data-feedback]");
   $<HTMLButtonElement>("[data-random]")?.addEventListener("click", () => randomise(payload.total_rounds));
   submitBtn.addEventListener("click", () => submit(payload, feedback, submitBtn));
+  // Browsers snapshot the DOM into the back-forward cache at navigation
+  // time. Without this, returning to the page (e.g. clicking back from
+  // the result) restores the frozen "Searching for championship…" panel
+  // with the submit button still disabled. Clear that state on bfcache
+  // restore so the form is usable again.
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) resetForm(feedback, submitBtn);
+  });
 }

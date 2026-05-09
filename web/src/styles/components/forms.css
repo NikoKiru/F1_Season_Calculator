@@ -27,8 +27,7 @@
    color, so set them explicitly. Without this, dark mode shipped white
    text on a white system popup. */
 .select option,
-.input option,
-.season-switcher option {
+.input option {
   background: var(--bg-elevated);
   color: var(--fg-on-elevated);
 }

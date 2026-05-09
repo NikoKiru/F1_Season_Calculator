@@ -43,17 +43,9 @@
     <div class="site-header__controls">
       <form class="global-search" data-global-search role="search" aria-label="Find championship by ID">
         <label class="visually-hidden" for="global-search-input">Championship ID</label>
-        <input id="global-search-input" class="input" name="championship_id" type="search" placeholder="Championship #" />
-        <button class="btn btn--sm btn--ghost" type="submit" aria-label="Go">Go</button>
+        <input id="global-search-input" class="global-search__input" name="championship_id" type="search" placeholder="Championship #" />
+        <button class="global-search__submit" type="submit" aria-label="Go">Go</button>
       </form>
-      {% if seasons %}
-      <label class="visually-hidden" for="season-switcher">Season</label>
-      <select id="season-switcher" class="season-switcher" data-season-switcher aria-label="Season">
-        {% for year in seasons %}
-          <option value="{{ year }}" {% if year == current_season %}selected{% endif %}>{{ year }}</option>
-        {% endfor %}
-      </select>
-      {% endif %}
     </div>
   </div>
 </header>

@@ -386,11 +386,15 @@ def test_404_html_renders(client):
     assert "Not found" in r.text or "404" in r.text
 
 
-def test_season_switcher_present_on_every_page(client):
+def test_season_switcher_removed_from_header(client):
+    """Season switcher was removed once the project was scoped to a single
+    season (2026). Make sure the control isn't rendered anywhere."""
     for path in ("/", "/drivers", "/create-championship", "/head-to-head"):
         r = client.get(path)
         assert r.status_code == 200, f"{path} failed"
-        assert "data-season-switcher" in r.text, f"{path} missing season switcher"
+        assert "data-season-switcher" not in r.text, (
+            f"{path} still renders the season switcher"
+        )
 
 
 def test_global_search_present_on_every_page(client):
