@@ -121,7 +121,7 @@ jobs:
           pip install -e .
 
       - name: Download frontend build
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: web-dist
           path: app/static/dist
@@ -165,7 +165,7 @@ jobs:
           cache: 'pip'
 
       - name: Download frontend build
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: web-dist
           path: app/static/dist
@@ -180,20 +180,23 @@ jobs:
         run: test -f app/static/dist/manifest.json
 
       - name: Create deployment package
+        # Path-anchored excludes (leading ./) so we don't accidentally drop
+        # app/static/dist/ — that's the frontend bundle we just downloaded
+        # and need inside the tarball.
         run: |
           mkdir -p dist
           tar -czvf dist/app-${{ github.sha }}.tar.gz \
-            --exclude='.git' \
-            --exclude='.github' \
+            --exclude='./.git' \
+            --exclude='./.github' \
+            --exclude='./.pytest_cache' \
+            --exclude='./.venv' \
+            --exclude='./instance' \
+            --exclude='./node_modules' \
+            --exclude='./web/node_modules' \
+            --exclude='./web/dist' \
+            --exclude='./dist' \
             --exclude='__pycache__' \
             --exclude='*.pyc' \
-            --exclude='.pytest_cache' \
-            --exclude='instance' \
-            --exclude='.venv' \
-            --exclude='node_modules' \
-            --exclude='dist' \
-            --exclude='web/dist' \
-            --exclude='./dist' \
             .
 
       - name: Upload build artifact
