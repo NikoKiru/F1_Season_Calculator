@@ -42,7 +42,8 @@
 
 .card__head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: var(--s-3);
 }
 .card__head-text {
@@ -50,20 +51,38 @@
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex: 1;
 }
-.card__stat-value {
-  font-size: var(--fs-2xl);
-  font-weight: var(--fw-bold);
-  font-variant-numeric: tabular-nums;
-  line-height: var(--lh-tight);
+.card__divider {
+  height: 1px;
+  background: var(--border-default);
+  margin: var(--s-1) 0;
+}
+.card__stat-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
 }
 .card__stat-label {
   font-size: var(--fs-xs);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--fg-muted);
-  margin-top: 2px;
+  font-weight: var(--fw-medium);
 }
+.card__stat-value {
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-tight);
+  color: var(--fg-default);
+}
+
+/* Podium tint the stat value to echo the chip color. */
+.card--p1 .card__stat-value { color: #ffb300; }
+.card--p2 .card__stat-value { color: #d4d8de; }
+.card--p3 .card__stat-value { color: #e2934a; }
 
 .card__accent {
   height: 4px;
