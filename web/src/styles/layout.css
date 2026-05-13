@@ -37,6 +37,17 @@ main {
   color: var(--fg-muted);
   max-width: 60ch;
 }
+.hero--accented {
+  border-left: 4px solid var(--team-color, var(--accent));
+  padding-left: var(--s-4);
+}
+.hero__rounds {
+  margin-top: var(--s-2);
+}
+.hero__rounds-label {
+  font-size: var(--fs-sm);
+  color: var(--fg-muted);
+}
 
 .section {
   margin: var(--s-7) 0;

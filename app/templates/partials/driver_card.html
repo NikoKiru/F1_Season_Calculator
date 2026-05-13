@@ -9,6 +9,7 @@
     <p class="card__subtitle">{{ driver.team }}</p>
     <p class="card__meta">
       <span class="badge">{{ driver.code }}</span>
+      {% if driver.points is defined %}<span>{{ driver.points }} pts</span>{% endif %}
       {% if driver.wins is defined %}<span>{{ driver.wins }} championships</span>{% endif %}
     </p>
   </div>

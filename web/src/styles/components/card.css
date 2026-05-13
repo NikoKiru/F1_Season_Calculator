@@ -40,6 +40,31 @@
   color: var(--fg-muted);
 }
 
+.card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+.card__head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.card__stat-value {
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-tight);
+}
+.card__stat-label {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-muted);
+  margin-top: 2px;
+}
+
 .card__accent {
   height: 4px;
   border-radius: var(--r-full);

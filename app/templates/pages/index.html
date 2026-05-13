@@ -11,13 +11,33 @@
 <section class="section" aria-labelledby="standings-heading">
   <div class="section__head">
     <h2 id="standings-heading" class="section__title">Current standings</h2>
-    <a class="section__aside" href="/drivers">See all drivers →</a>
+    {% if live_championship_id %}
+      <a class="section__aside" href="/championship/{{ live_championship_id }}">See full table →</a>
+    {% else %}
+      <a class="section__aside" href="/drivers">See all drivers →</a>
+    {% endif %}
   </div>
-  <div class="grid grid--drivers">
-    {% for d in drivers[:10] %}
-      {% set driver = d %}
-      {% include "partials/driver_card.html" %}
-    {% endfor %}
+  <div class="table-wrapper" data-responsive="true">
+    <table class="table table--striped-rows">
+      <thead>
+        <tr>
+          <th scope="col">Pos</th>
+          <th scope="col">Driver</th>
+          <th scope="col">Team</th>
+          <th scope="col" class="num">Points</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in drivers[:10] %}
+          <tr style="--team-color: {{ d.color }}">
+            <td data-label="Pos">{{ loop.index }}</td>
+            <td data-label="Driver"><a href="/driver/{{ d.code }}">{{ d.name }}</a></td>
+            <td data-label="Team">{{ d.team }}</td>
+            <td class="num" data-label="Points">{{ d.points }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </section>
 

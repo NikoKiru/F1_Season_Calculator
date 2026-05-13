@@ -102,19 +102,24 @@ def test_home_chart_uses_longest_championship(client):
 
 
 def test_home_drivers_sorted_by_points_desc(client):
-    """The 'standings' on the homepage must be ordered by points descending,
-    not by the insertion order of the season JSON roster."""
+    """The home-page standings table must be ordered by points descending."""
     r = client.get("/")
     html = r.text
-    # Top 10 driver cards appear in standings order; verify strictly decreasing points.
-    cards = re.findall(
-        r"<article[^>]*class=\"card card--interactive\"[^>]*>.*?(\d+)\s*championships",
-        html,
-        flags=re.DOTALL,
+    points = [
+        int(p)
+        for p in re.findall(r'data-label="Points"[^>]*>\s*(\d+)\s*<', html)
+    ]
+    assert points, "no points cells found in home standings table"
+    assert points == sorted(points, reverse=True), (
+        f"points must be DESC, got {points}"
     )
-    # Cards render championship counts — not a perfect proxy but sufficient: the
-    # first card should be a known winner in the seeded data.
-    assert cards, "no driver cards found on home page"
+
+
+def test_home_links_full_table_to_live_championship(client):
+    """The 'See full table' link points to the longest-scenario championship,
+    which acts as the live standings page that grows as rounds happen."""
+    r = client.get("/")
+    assert re.search(r'href="/championship/\d+"[^>]*>See full table', r.text)
 
 
 # --- drivers index --------------------------------------------------------
@@ -238,17 +243,18 @@ def test_championship_not_found_404(client):
 
 
 def test_championship_detail_winner_uses_full_name(client):
-    """Regression: hero used to render '{winner} wins' which is the code.
-    It should resolve to the driver's full name."""
+    """Hero no longer says '{X} wins' (redundant with standings table). It now
+    surfaces margin + runner-up name; assert that resolves to a full name."""
     r = client.get("/championship/1")
     html = r.text
-    # Any of the seeded names must appear as 'NAME wins' in the hero.
+    # Some seeded driver's full name must render somewhere (standings + runner-up).
     assert any(
-        f"{name} wins" in html for name in ("Max Verstappen", "Lando Norris", "Charles Leclerc")
-    ), "championship hero should render winner's full name, not code"
-    # And the bare code form should not appear as the heading.
-    for code in ("VER wins", "NOR wins", "LEC wins"):
-        assert code not in html, f"'{code}' suggests code leaked into heading"
+        name in html for name in ("Max Verstappen", "Lando Norris", "Charles Leclerc")
+    ), "championship page must render full driver names, not codes"
+    # New hero shape: scenario eyebrow + N-race championship title + included rounds.
+    assert "Scenario #1" in html
+    assert "race championship" in html
+    assert "Included rounds" in html
 
 
 # --- create championship --------------------------------------------------

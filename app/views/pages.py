@@ -89,25 +89,47 @@ def home(request: Request, conn: ConnDep, season: SeasonDep):
             }
         )
 
+    live_championship_id = int(first["championship_id"]) if first else None
+
     context = {
         **_common(season),
         "drivers": drivers_view,
         "featured_championship": max_champ,
+        "live_championship_id": live_championship_id,
         "page_data": {"rounds": rounds, "drivers": chart_drivers},
     }
     return render(request, "pages/index.html", context)
 
 
 @router.get("/drivers", include_in_schema=False)
-def drivers_page(request: Request, season: SeasonDep):
+def drivers_page(request: Request, conn: ConnDep, season: SeasonDep):
     sd = season_service.get_season_data(season)
+
+    # Sort drivers by live points (full-enumeration scenario standings).
+    first = next(
+        iter(championship_service.get_page(conn, season, 1, 1)["results"]), None
+    )
+    live_points: dict[str, int] = {}
+    if first:
+        live = championship_service.get_by_id(conn, int(first["championship_id"]))
+        live_points = (live or {}).get("driver_points", {}) or {}
+
+    drivers = [
+        {
+            "code": code,
+            "name": d.name,
+            "team": d.team,
+            "color": d.color,
+            "points": int(live_points.get(code, 0)),
+        }
+        for code, d in sd.drivers.items()
+    ]
+    drivers.sort(key=lambda x: -x["points"])
+
     context = {
         **_common(season),
         "crumbs": _breadcrumbs(("Home", "/"), ("Drivers", None)),
-        "drivers": [
-            {"code": code, "name": d.name, "team": d.team, "color": d.color}
-            for code, d in sd.drivers.items()
-        ],
+        "drivers": drivers,
     }
     return render(request, "pages/drivers.html", context)
 
@@ -181,6 +203,20 @@ def championship_page(request: Request, championship_id: int, conn: ConnDep):
 
     driver_points = data.get("driver_points", {}) or {}
     ordered = list(driver_points.keys())
+
+    winner_code = data.get("winner")
+    margin = 0
+    runner_up_name: str | None = None
+    if len(ordered) >= 2:
+        points_list = list(driver_points.values())
+        margin = int(points_list[0]) - int(points_list[1])
+        runner_up_code = ordered[1]
+        runner_up_name = data.get("driver_names", {}).get(runner_up_code, runner_up_code)
+    data["margin"] = margin
+    data["runner_up_name"] = runner_up_name
+    data["winner_color"] = sd.drivers[winner_code].color if winner_code in sd.drivers else "#666"
+    data["winner_team"] = sd.drivers[winner_code].team if winner_code in sd.drivers else ""
+
     # Cumulative-by-round chart data
     round_points = data.get("round_points_data", {}) or {}
     rounds = data.get("round_names", []) or []
@@ -275,7 +311,9 @@ def highest_position_page(request: Request, conn: ConnDep, season: SeasonDep):
             {
                 **r,
                 "name": sd.driver_names.get(r["driver"], r["driver"]),
+                "team": sd.drivers[r["driver"]].team if r["driver"] in sd.drivers else "",
                 "color": sd.drivers[r["driver"]].color if r["driver"] in sd.drivers else "#666",
+                "scenario_id": r.get("best_margin_championship_id") or r.get("max_races_championship_id"),
             }
             for r in rows
         ],

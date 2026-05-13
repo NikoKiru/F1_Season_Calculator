@@ -3,17 +3,16 @@
 {% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
 
 {% block content %}
-<section class="hero">
+<section class="hero hero--accented" style="--team-color: {{ championship.winner_color }}">
   <p class="hero__eyebrow">Scenario #{{ championship.championship_id }}</p>
-  <h1 class="hero__title">{{ championship.driver_names.get(championship.winner, championship.winner) }} wins</h1>
-  <p class="hero__lede">{{ championship.num_races }} races — rounds {{ championship.rounds }}</p>
-</section>
-
-<section class="section" aria-labelledby="rounds-heading">
-  <div class="section__head">
-    <h2 id="rounds-heading" class="section__title">Included rounds</h2>
-  </div>
-  <div class="row">
+  <h1 class="hero__title">{{ championship.num_races }}-race championship</h1>
+  {% if championship.margin and championship.margin > 0 %}
+  <p class="hero__lede">Won by +{{ championship.margin }} pts over {{ championship.runner_up_name }}</p>
+  {% elif championship.runner_up_name %}
+  <p class="hero__lede">Tiebreak win over {{ championship.runner_up_name }}</p>
+  {% endif %}
+  <div class="row hero__rounds">
+    <span class="hero__rounds-label">Included rounds:</span>
     {% for round_name in championship.round_names %}
       <span class="badge">
         {{ round_name }}
