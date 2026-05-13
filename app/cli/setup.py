@@ -1,13 +1,10 @@
 """`f1 setup` — first-time project initialization."""
 from __future__ import annotations
 
-from pathlib import Path
-
 import typer
 
 from app.config import get_settings
 from app.pipeline import init_db
-
 
 _SAMPLE_CSV = """Driver,1,2,3
 VER,25,18,25

@@ -27,7 +27,7 @@ def test_win_probability_rows_shape(conn):
         assert "total_titles" in row
         assert len(row["wins_per_length"]) == len(result["season_lengths"])
         assert len(row["percentages"]) == len(result["season_lengths"])
-        for wins, total in zip(row["wins_per_length"], result["possible_seasons"]):
+        for wins, total in zip(row["wins_per_length"], result["possible_seasons"], strict=True):
             assert 0 <= wins <= total
 
 

@@ -2,7 +2,6 @@ from fastapi import APIRouter
 
 from app.cache import service as cache_service
 
-
 router = APIRouter()
 
 

@@ -6,9 +6,8 @@ margin, win-probability-by-length) into O(1) lookups for the API layer.
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
-
 
 # Just the head-to-head table — running every SCHEMA_STATEMENTS would force
 # CREATE INDEX IF NOT EXISTS on position_results (335M rows on prod), which is

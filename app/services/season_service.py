@@ -4,6 +4,7 @@ Loads data/seasons/{year}.json exactly once per year and hands out immutable
 SeasonData objects. No module-level globals — get_season_data(year) is the
 only entry point.
 """
+import contextlib
 import json
 from functools import lru_cache
 
@@ -20,10 +21,8 @@ def available_seasons() -> tuple[int, ...]:
     years: list[int] = []
     for f in folder.iterdir():
         if f.suffix == ".json":
-            try:
+            with contextlib.suppress(ValueError):
                 years.append(int(f.stem))
-            except ValueError:
-                pass
     return tuple(sorted(years, reverse=True))
 
 

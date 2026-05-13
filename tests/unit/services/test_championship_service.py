@@ -43,7 +43,7 @@ def test_get_by_id_includes_round_points(conn):
     detail = championship_service.get_by_id(conn, cid)
     assert detail is not None
     assert "round_points_data" in detail
-    for driver, data in detail["round_points_data"].items():
+    for _driver, data in detail["round_points_data"].items():
         assert "round_points" in data
         assert "total_points" in data
         assert sum(data["round_points"]) == data["total_points"]
@@ -76,5 +76,5 @@ def test_min_races_to_win_for_each_winner(conn):
     wins = championship_service.all_wins(conn, 9999)
     min_races = championship_service.min_races_to_win(conn, 9999)
     assert set(min_races.keys()) == set(wins.keys())
-    for d, n in min_races.items():
+    for _d, n in min_races.items():
         assert 1 <= n <= 4

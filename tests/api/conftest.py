@@ -1,14 +1,14 @@
-"""API test fixtures — FastAPI TestClient bound to the seeded test DB."""
+"""API test fixtures — FastAPI TestClient bound to the seeded test DB.
+
+Session-scoped seeding fixtures live in tests/conftest.py (root conftest)
+so they're visible here without `pytest_plugins` indirection.
+"""
 from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.cache import service as cache
-
-
-# Reuse the session-scoped seeding from tests/unit/conftest.py
-pytest_plugins = ["tests.unit.conftest"]
 
 
 @pytest.fixture

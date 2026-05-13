@@ -1,14 +1,13 @@
 """HTTP error handlers — HTML for browser requests, JSON for /api/*."""
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.services import season_service
 from app.templating import render
-
 
 _TITLES = {
     400: ("Bad request", "The request couldn't be understood."),
@@ -56,7 +55,7 @@ def register(app: FastAPI) -> None:
         )
 
     @app.exception_handler(500)
-    async def _server_error(request: Request, exc):  # noqa: ARG001
+    async def _server_error(request: Request, exc):
         if _wants_json(request):
             return JSONResponse(status_code=500, content={"detail": "server_error"})
         season = season_service.default_season()

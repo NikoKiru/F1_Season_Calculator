@@ -1,15 +1,12 @@
 """Thin smoke tests for the Typer CLI — make sure every command wires up."""
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 from typer.testing import CliRunner
 
 from app import config as config_mod
 from app.cli import app as cli_app
 from app.services import season_service
-
 
 runner = CliRunner()
 

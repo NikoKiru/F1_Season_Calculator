@@ -6,7 +6,6 @@ revision captures this schema.
 """
 from sqlalchemy import Connection, text
 
-
 SCHEMA_STATEMENTS: tuple[str, ...] = (
     """
     CREATE TABLE IF NOT EXISTS championship_results (

@@ -14,7 +14,6 @@ import csv
 import re
 from pathlib import Path
 
-
 _DRIVER_RE = re.compile(r"^[A-Z]{3}$")
 
 

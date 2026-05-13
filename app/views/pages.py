@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.api.deps import ConnDep, SeasonDep, validated_driver
 from app.services import (
@@ -17,7 +17,6 @@ from app.services import (
     statistics_service,
 )
 from app.templating import render
-
 
 router = APIRouter()
 

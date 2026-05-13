@@ -49,18 +49,16 @@ def test_fetch_race_404_raises_round_not_found():
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(404, json={})
 
-    with _client(handler) as c:
-        with pytest.raises(jolpica_service.RoundNotFoundError):
-            jolpica_service.fetch_race(2026, 99, client=c)
+    with _client(handler) as c, pytest.raises(jolpica_service.RoundNotFoundError):
+        jolpica_service.fetch_race(2026, 99, client=c)
 
 
 def test_fetch_race_empty_races_raises_round_not_found():
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=_race_payload([]))
 
-    with _client(handler) as c:
-        with pytest.raises(jolpica_service.RoundNotFoundError):
-            jolpica_service.fetch_race(2026, 1, client=c)
+    with _client(handler) as c, pytest.raises(jolpica_service.RoundNotFoundError):
+        jolpica_service.fetch_race(2026, 1, client=c)
 
 
 def test_fetch_sprint_returns_empty_when_no_sprint_round():
@@ -129,6 +127,5 @@ def test_network_error_wrapped_as_jolpica_error():
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("boom")
 
-    with _client(handler) as c:
-        with pytest.raises(jolpica_service.JolpicaError):
-            jolpica_service.fetch_race(2026, 1, client=c)
+    with _client(handler) as c, pytest.raises(jolpica_service.JolpicaError):
+        jolpica_service.fetch_race(2026, 1, client=c)

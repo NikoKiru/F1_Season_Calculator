@@ -3,6 +3,10 @@
 Sharing one seeded DB across a pytest session keeps tests < 1s total without
 giving up fidelity: the same combinator + writer code that prod uses runs
 against a 3-driver × 4-race CSV, so every service sees real rows.
+
+This conftest lives at the test root so its fixtures are visible to every
+subdirectory (unit, api, e2e). pytest >=8 forbids `pytest_plugins` in
+non-rootdir conftests, which is what we used to rely on.
 """
 from __future__ import annotations
 
@@ -12,11 +16,10 @@ from pathlib import Path
 import pytest
 from sqlalchemy import Connection, create_engine
 
-from app.config import Settings, get_settings
+from app.config import Settings
 from app.data.schema import init_schema
 from app.pipeline import csv_loader, stats_compute, writer
 from app.services import season_service
-
 
 SAMPLE_CSV = """Driver,1,2,3,4
 VER,25,18,25,18

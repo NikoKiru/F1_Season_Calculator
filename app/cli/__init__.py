@@ -5,7 +5,6 @@ import typer
 
 from app.cli import add_race, compute_stats, fetch_race, process_data, setup
 
-
 app = typer.Typer(
     name="f1",
     help="F1 Season Calculator — data pipeline and maintenance commands.",

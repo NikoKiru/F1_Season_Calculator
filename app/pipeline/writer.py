@@ -7,14 +7,13 @@ safely take over the connection exclusively.
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 import numpy as np
 
-from app.pipeline.combinator import rank_standings, race_combinations, total_combinations
+from app.pipeline.combinator import race_combinations, rank_standings, total_combinations
 from app.pipeline.csv_loader import LoadedSeason
-
 
 INSERT_CHAMPIONSHIP = (
     "INSERT INTO championship_results (season, num_races, rounds, standings, winner, points) "
@@ -112,7 +111,7 @@ def _flush(
     for offset, (ordered_drivers, ordered_scores) in enumerate(stand_buf):
         cid = start_id + offset
         for pos, (driver, points) in enumerate(
-            zip(ordered_drivers.tolist(), ordered_scores.tolist()), start=1
+            zip(ordered_drivers.tolist(), ordered_scores.tolist(), strict=True), start=1
         ):
             position_rows.append((cid, driver, pos, int(points), season))
     conn.executemany(INSERT_POSITION, position_rows)

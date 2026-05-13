@@ -9,7 +9,7 @@ without materializing the full set in memory.
 from __future__ import annotations
 
 import itertools
-from typing import Iterator
+from collections.abc import Iterator
 
 import numpy as np
 

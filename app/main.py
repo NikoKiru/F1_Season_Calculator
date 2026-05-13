@@ -8,11 +8,10 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
-
 
 log = logging.getLogger("f1")
 
@@ -57,13 +56,13 @@ def create_app() -> FastAPI:
         )
 
     # Routers — wired up as each module is ported.
+    from app.api import admin as api_admin
     from app.api import championships as api_championships
     from app.api import drivers as api_drivers
-    from app.api import statistics as api_statistics
     from app.api import search as api_search
-    from app.api import admin as api_admin
-    from app.views import pages as view_pages
+    from app.api import statistics as api_statistics
     from app.views import errors as view_errors
+    from app.views import pages as view_pages
 
     app.include_router(api_championships.router, prefix="/api/championships", tags=["championships"])
     app.include_router(api_drivers.router, prefix="/api/drivers", tags=["drivers"])

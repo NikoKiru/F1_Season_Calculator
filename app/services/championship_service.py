@@ -33,7 +33,7 @@ def _format(row: dict, season: int, *, with_round_points: bool = False) -> dict:
     if row.get("standings") and row.get("points"):
         drivers = _parse_csv_list(row["standings"])
         points = _parse_csv_list(row["points"], int)
-        result["driver_points"] = dict(zip(drivers, points))
+        result["driver_points"] = dict(zip(drivers, points, strict=True))
         result["driver_names"] = {d: sd.driver_names.get(d, "Unknown") for d in drivers}
 
         if with_round_points and row.get("rounds"):
@@ -91,7 +91,7 @@ def _round_points(
     for d in drivers:
         race_pts = by_driver_race.get(d, [0] * len(round_numbers))
         sprint_pts = by_driver_sprint.get(d, [0] * len(round_numbers))
-        combined = [r + s for r, s in zip(race_pts, sprint_pts)]
+        combined = [r + s for r, s in zip(race_pts, sprint_pts, strict=True)]
         out[d] = {
             "round_points": combined,
             "race_points": race_pts,

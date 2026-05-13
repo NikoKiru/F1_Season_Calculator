@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import httpx
 
-
 BASE_URL = "https://api.jolpi.ca/ergast/f1"
 DEFAULT_TIMEOUT = 10.0
 

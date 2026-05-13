@@ -12,7 +12,6 @@ from cachetools import TTLCache
 
 from app.config import get_settings
 
-
 T = TypeVar("T")
 
 _lock = RLock()

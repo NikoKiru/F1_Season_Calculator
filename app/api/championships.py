@@ -3,7 +3,6 @@ from fastapi import APIRouter, HTTPException, Query, status
 from app.api.deps import ConnDep, SeasonDep
 from app.services import championship_service
 
-
 router = APIRouter()
 
 

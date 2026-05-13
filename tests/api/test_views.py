@@ -13,7 +13,6 @@ import re
 
 import pytest
 
-
 SEASON = 9999
 
 
@@ -73,7 +72,7 @@ def test_home_page_data_has_nonempty_cumulative(client):
     for d in data["drivers"]:
         assert d["cumulative"], f"driver {d['code']} has empty cumulative"
         # Cumulative must be monotonically non-decreasing (running sum of per-round points).
-        assert all(b >= a for a, b in zip(d["cumulative"], d["cumulative"][1:]))
+        assert all(b >= a for a, b in zip(d["cumulative"], d["cumulative"][1:], strict=False))
     # Length of each driver's cumulative array equals the rounds array.
     for d in data["drivers"]:
         assert len(d["cumulative"]) == len(data["rounds"])

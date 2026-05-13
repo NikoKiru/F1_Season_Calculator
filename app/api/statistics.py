@@ -3,7 +3,6 @@ from fastapi import APIRouter
 from app.api.deps import ConnDep, SeasonDep
 from app.services import statistics_service
 
-
 router = APIRouter()
 
 

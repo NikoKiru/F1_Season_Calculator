@@ -5,7 +5,6 @@ from fastapi import APIRouter, HTTPException, Query, status
 from app.api.deps import ConnDep, SeasonDep, validated_driver
 from app.services import driver_service
 
-
 router = APIRouter()
 
 

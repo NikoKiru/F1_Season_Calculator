@@ -4,7 +4,6 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import QueuePool
 
-
 _engines: dict[Path, Engine] = {}
 
 

@@ -60,7 +60,7 @@ def win_probability(conn: Connection, season: int) -> dict:
         row_wins = [wins_per_len.get(length, 0) for length in season_lengths]
         percentages = [
             round((wins / seasons_per_length.get(length, 1)) * 100, 2) if seasons_per_length.get(length) else 0.0
-            for length, wins in zip(season_lengths, row_wins)
+            for length, wins in zip(season_lengths, row_wins, strict=True)
         ]
         drivers_data.append({
             "driver": driver,

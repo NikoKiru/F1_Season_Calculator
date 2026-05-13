@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.data.engine import get_engine, dispose_engine
+from app.data.engine import dispose_engine, get_engine
 from app.data.schema import init_schema
 
 

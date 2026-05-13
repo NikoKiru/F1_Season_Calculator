@@ -10,8 +10,6 @@ import time
 
 import pytest
 
-pytest_plugins = ["tests.unit.conftest"]
-
 
 def _free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -22,6 +20,7 @@ def _free_port() -> int:
 @pytest.fixture(scope="session")
 def live_server(seeded_settings):
     import uvicorn
+
     from app.main import create_app
 
     port = _free_port()
