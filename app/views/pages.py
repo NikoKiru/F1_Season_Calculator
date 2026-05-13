@@ -149,6 +149,7 @@ def driver_page(request: Request, code: str, conn: ConnDep, season: SeasonDep):
         "driver": stats["driver_info"] | {"code": driver_code, "name": stats["driver_name"]},
         "stats": stats,
         "driver_names": sd.driver_names,
+        "driver_colors": {c: d.color for c, d in sd.drivers.items()},
         "other_drivers": [
             {"code": c, "name": d.name, "color": d.color}
             for c, d in sd.drivers.items() if c != driver_code
@@ -216,6 +217,10 @@ def championship_page(request: Request, championship_id: int, conn: ConnDep):
     data["runner_up_name"] = runner_up_name
     data["winner_color"] = sd.drivers[winner_code].color if winner_code in sd.drivers else "#666"
     data["winner_team"] = sd.drivers[winner_code].team if winner_code in sd.drivers else ""
+    data["driver_colors"] = {
+        code: (sd.drivers[code].color if code in sd.drivers else "#666")
+        for code in ordered
+    }
 
     # Cumulative-by-round chart data
     round_points = data.get("round_points_data", {}) or {}
@@ -334,7 +339,11 @@ def driver_positions_page(request: Request, season: SeasonDep):
         **_common(season),
         "crumbs": _breadcrumbs(("Home", "/"), ("Positions", None)),
         "positions": list(range(1, 21)),
-        "page_data": {"season": season, "driver_names": sd.driver_names},
+        "page_data": {
+            "season": season,
+            "driver_names": sd.driver_names,
+            "driver_colors": {c: d.color for c, d in sd.drivers.items()},
+        },
     }
     return render(request, "pages/driver_positions.html", context)
 

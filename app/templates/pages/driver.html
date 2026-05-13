@@ -60,10 +60,10 @@
   {% for code, h2h in stats.head_to_head.items() %}
     {% set total = h2h.wins + h2h.losses %}
     {% set pct = (h2h.wins / total * 100) if total else 0 %}
-    {% if h2h_rows.append({"code": code, "name": driver_names.get(code, code), "wins": h2h.wins, "losses": h2h.losses, "pct": pct}) %}{% endif %}
+    {% if h2h_rows.append({"code": code, "name": driver_names.get(code, code), "color": driver_colors.get(code, "#666"), "wins": h2h.wins, "losses": h2h.losses, "pct": pct}) %}{% endif %}
   {% endfor %}
   <div class="table-wrapper" data-responsive="true">
-    <table class="table h2h-table">
+    <table class="table h2h-table table--striped-rows">
       <thead>
         <tr>
           <th scope="col">Opponent</th>
@@ -75,7 +75,7 @@
       </thead>
       <tbody>
         {% for row in h2h_rows | sort(attribute="pct", reverse=True) %}
-          <tr>
+          <tr style="--team-color: {{ row.color }}">
             <th scope="row" data-label="Opponent">{{ row.name }}</th>
             <td class="num" data-label="W">{{ row.wins }}</td>
             <td class="num" data-label="L">{{ row.losses }}</td>

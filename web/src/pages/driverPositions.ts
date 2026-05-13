@@ -7,6 +7,7 @@ import { $, $$, readJsonScript, require$ } from "../lib/dom";
 interface PagePayload {
   season: number;
   driver_names: Record<string, string>;
+  driver_colors: Record<string, string>;
 }
 
 interface PositionRow {
@@ -54,8 +55,12 @@ function renderRows(payload: PagePayload, position: number, rows: PositionRow[])
       ${rows
         .map((r) => {
           const name = escapeHtml(payload.driver_names[r.driver] ?? r.driver);
+          const color = payload.driver_colors[r.driver] ?? "#666";
           return `
-        <li class="card">
+        <li class="card card--interactive"
+            style="--team-color: ${color}"
+            onclick="window.location.assign('/driver/${r.driver}')">
+          <div class="card__accent" aria-hidden="true"></div>
           <p class="card__title">${name}</p>
           <p class="card__subtitle">${r.count.toLocaleString()} championships (${r.percentage.toFixed(1)}%)</p>
         </li>`;

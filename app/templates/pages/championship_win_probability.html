@@ -9,7 +9,7 @@
 </section>
 
 <div class="table-wrapper">
-  <table class="table">
+  <table class="table table--striped-rows">
     <thead>
       <tr>
         <th>Driver</th>
@@ -21,10 +21,8 @@
     </thead>
     <tbody>
       {% for row in data.drivers_data %}
-        <tr>
-          <td style="color: {{ row.color }}; font-weight: 700;">
-            <a href="/driver/{{ row.driver }}">{{ row.name }}</a>
-          </td>
+        <tr style="--team-color: {{ row.color }}">
+          <td><strong><a href="/driver/{{ row.driver }}">{{ row.name }}</a></strong></td>
           {% for pct in row.percentages %}
             <td class="num">{{ "%.2f"|format(pct) }}%</td>
           {% endfor %}

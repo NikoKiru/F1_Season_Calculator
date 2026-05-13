@@ -302,6 +302,42 @@ def test_all_championship_wins_renders(client):
     assert r.status_code == 200
     assert "championships won" in r.text
     assert "Max Verstappen" in r.text
+    # Cards must be whole-card clickable (canonical card contract).
+    assert "card--interactive" in r.text
+
+
+def test_min_races_to_win_cards_are_canonical(client):
+    """min-races cards must carry the canonical card fundamentals:
+    top stripe (.card__accent), interactive lift, and click target."""
+    r = client.get(f"/min-races-to-win?season={SEASON}")
+    assert "card__accent" in r.text
+    assert "card--interactive" in r.text
+
+
+def test_championship_standings_has_team_stripe(client):
+    """Standings table rows must carry the team-color left band."""
+    r = client.get("/championship/1")
+    assert "table--striped-rows" in r.text
+    assert "--team-color:" in r.text
+
+
+def test_driver_h2h_table_has_team_stripe(client):
+    """Head-to-head table rows must carry the team-color left band."""
+    r = client.get(f"/driver/VER?season={SEASON}")
+    assert "table--striped-rows" in r.text
+
+
+def test_win_probability_table_has_team_stripe(client):
+    """Win-probability matrix rows must carry the team-color left band."""
+    r = client.get(f"/championship-win-probability?season={SEASON}")
+    assert "table--striped-rows" in r.text
+
+
+def test_driver_positions_payload_has_colors(client):
+    """The client-rendered cards on /driver-positions need driver_colors
+    threaded through page_data so each card can show its team stripe."""
+    r = client.get("/driver-positions")
+    assert "driver_colors" in r.text
 
 
 def test_highest_position_renders(client):
