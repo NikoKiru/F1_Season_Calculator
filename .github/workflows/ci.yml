@@ -5,6 +5,12 @@ on:
     branches: [main, feature/*]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+# Cancel an in-progress run for the same ref when a new commit lands.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   MIN_COVERAGE: 70
@@ -114,20 +120,41 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
 
+      - name: Download frontend build
+        uses: actions/download-artifact@v5
+        with:
+          name: web-dist
+          path: app/static/dist
+
       - name: Seed sample data + DB
         run: f1 setup
 
-      - name: Boot uvicorn and hit /
+      - name: Boot uvicorn and verify endpoints
         run: |
           uvicorn "app.main:create_app" --factory --host 127.0.0.1 --port 8000 &
-          sleep 4
-          curl -fsS http://127.0.0.1:8000/ -o /dev/null
+          BOOT_PID=$!
+          # Wait up to 15s for the port to start accepting connections.
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/ -o /dev/null 2>&1; then break; fi
+            sleep 0.5
+          done
+          # Validate SSR pages return 200 and serve real built assets.
+          curl -fsS http://127.0.0.1:8000/ -o /tmp/home.html
           curl -fsS http://127.0.0.1:8000/api/openapi.json -o /dev/null
+          # The page must reference a hashed JS asset emitted by Vite, not the
+          # dev-mode fallback (src/main.ts). Catches a missing/empty manifest.
+          if ! grep -qE 'static/dist/assets/main-[A-Za-z0-9_-]+\.js' /tmp/home.html; then
+            echo "::error::home page does not reference a hashed Vite asset — manifest missing?"
+            cat /tmp/home.html | head -30
+            kill $BOOT_PID
+            exit 1
+          fi
+          kill $BOOT_PID
 
   build:
     name: Build package
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, frontend-build]
     steps:
       - uses: actions/checkout@v6
 
@@ -137,11 +164,20 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
+      - name: Download frontend build
+        uses: actions/download-artifact@v5
+        with:
+          name: web-dist
+          path: app/static/dist
+
       - name: Create build info
         run: |
           echo "BUILD_SHA=${{ github.sha }}" > build-info.txt
           echo "BUILD_REF=${{ github.ref }}" >> build-info.txt
           echo "BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> build-info.txt
+
+      - name: Verify frontend assets present
+        run: test -f app/static/dist/manifest.json
 
       - name: Create deployment package
         run: |
@@ -156,6 +192,8 @@ jobs:
             --exclude='.venv' \
             --exclude='node_modules' \
             --exclude='dist' \
+            --exclude='web/dist' \
+            --exclude='./dist' \
             .
 
       - name: Upload build artifact
