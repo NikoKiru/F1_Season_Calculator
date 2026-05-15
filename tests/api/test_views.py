@@ -482,8 +482,99 @@ def test_each_page_wires_its_vite_entry(client):
         "/head-to-head",
         "/min-races-to-win",
         "/championship/1",
+        "/constructors",
+        "/all-constructor-wins",
+        "/constructor-win-probability",
+        "/constructor-min-races-to-win",
+        "/constructor-highest-position",
+        "/constructor-positions",
     ],
 )
 def test_all_pages_return_200(client, path):
     r = client.get(f"{path}{'?' if '?' not in path else '&'}season={SEASON}".rstrip("?"))
     assert r.status_code == 200, f"{path} returned {r.status_code}"
+
+
+# --- WCC pages ------------------------------------------------------------
+
+
+def test_header_includes_constructors_dropdown(client):
+    r = client.get("/")
+    html = r.text
+    assert 'aria-controls="nav-constructors-menu"' in html
+    for href in (
+        "/constructors",
+        "/all-constructor-wins",
+        "/constructor-win-probability",
+        "/constructor-highest-position",
+        "/constructor-positions",
+        "/constructor-min-races-to-win",
+    ):
+        assert f'href="{href}"' in html, f"nav missing {href}"
+
+
+def test_constructors_page_lists_seeded_teams(client):
+    """The /constructors list renders one card per team from the seed JSON."""
+    r = client.get(f"/constructors?season={SEASON}")
+    assert r.status_code == 200
+    html = r.text
+    assert "card--interactive" in html
+    assert "card__accent" in html
+    for name in ("Red Bull", "McLaren", "Ferrari"):
+        assert name in html, f"{name} missing from /constructors"
+
+
+def test_all_constructor_wins_renders(client):
+    r = client.get(f"/all-constructor-wins?season={SEASON}")
+    assert r.status_code == 200
+    assert "championships won" in r.text
+    assert "card--interactive" in r.text
+
+
+def test_constructor_win_probability_table_has_stripe(client):
+    r = client.get(f"/constructor-win-probability?season={SEASON}")
+    assert r.status_code == 200
+    assert "table--striped-rows" in r.text
+    assert "--team-color:" in r.text
+
+
+def test_constructor_min_races_cards_are_canonical(client):
+    """Canonical card fundamentals: top stripe, interactive lift, click target."""
+    r = client.get(f"/constructor-min-races-to-win?season={SEASON}")
+    assert r.status_code == 200
+    assert "card__accent" in r.text
+    assert "card--interactive" in r.text
+
+
+def test_constructor_highest_position_renders(client):
+    r = client.get(f"/constructor-highest-position?season={SEASON}")
+    assert r.status_code == 200
+    assert "P1" in r.text
+    assert "card__accent" in r.text
+
+
+def test_constructor_positions_renders_picker(client):
+    r = client.get(f"/constructor-positions?season={SEASON}")
+    assert r.status_code == 200
+    # At least P1 button renders.
+    assert 'data-position="1"' in r.text
+
+
+def test_constructor_positions_payload_has_colors(client):
+    """Client-rendered cards need constructor_colors threaded through page_data."""
+    r = client.get(f"/constructor-positions?season={SEASON}")
+    data = _page_data(r.text)
+    assert "constructor_colors" in data
+    assert "constructor_names" in data
+    # Slug → name mapping is present and round-trippable.
+    assert any(name in data["constructor_names"].values() for name in ("McLaren", "Ferrari"))
+
+
+def test_constructor_links_use_team_slugs(client):
+    """/constructors links each card to /constructor/{slug} where slug is the
+    lowercase-hyphenated team name (e.g. McLaren → mclaren, Red Bull → red-bull)."""
+    r = client.get(f"/constructors?season={SEASON}")
+    html = r.text
+    assert "/constructor/mclaren" in html
+    assert "/constructor/ferrari" in html
+    assert "/constructor/red-bull" in html

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Min races to clinch WCC — {{ current_season }}{% endblock %}
+{% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1 class="hero__title">Minimum races to clinch the WCC</h1>
+  <p class="hero__lede">Fewest rounds at which each constructor is mathematically a champion.</p>
+</section>
+
+<ol class="stack" style="counter-reset: rank">
+  {% for r in rows %}
+    <li
+      class="card card--row card--interactive"
+      style="--team-color: {{ r.color }}"
+      onclick="window.location.assign('/constructor/{{ r.slug }}')"
+    >
+      <div class="card__accent" aria-hidden="true"></div>
+      <div>
+        <p class="card__title">
+          <a href="/constructor/{{ r.slug }}" style="color: inherit; text-decoration: none;">{{ r.name }}</a>
+        </p>
+      </div>
+      <div style="text-align: right">
+        <p class="stat-tile__value">{{ r.min_races }}</p>
+        <p class="card__subtitle">race{% if r.min_races != 1 %}s{% endif %}</p>
+      </div>
+    </li>
+  {% endfor %}
+</ol>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Constructor highest position — {{ current_season }}{% endblock %}
+{% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1 class="hero__title">Highest position achieved (WCC)</h1>
+  <p class="hero__lede">The best WCC finish each constructor can attain across every scenario.</p>
+</section>
+
+<div class="grid grid--drivers">
+  {% for r in rows %}
+    {% set link = "/championship/" ~ r.scenario_id if r.scenario_id else "/constructor/" ~ r.slug %}
+    <article
+      class="card card--p{{ r.position }} {% if r.scenario_id %}card--interactive{% endif %}"
+      style="--team-color: {{ r.color }}"
+      {% if r.scenario_id %}onclick="window.location.assign('{{ link }}')"{% endif %}
+    >
+      <div class="card__accent" aria-hidden="true"></div>
+      <div class="card__head">
+        <div class="card__head-text">
+          <p class="card__title">
+            <a href="{{ link }}" style="color: inherit; text-decoration: none;">{{ r.name }}</a>
+          </p>
+        </div>
+        <span class="position-chip {% if r.position == 1 %}position-chip--gold{% elif r.position == 2 %}position-chip--silver{% elif r.position == 3 %}position-chip--bronze{% endif %}">
+          P{{ r.position }}
+        </span>
+      </div>
+      <div class="card__divider" aria-hidden="true"></div>
+      <div class="card__stat-row">
+        {% if r.best_margin is not none %}
+          <span class="card__stat-label">Best margin</span>
+          <span class="card__stat-value">+{{ r.best_margin }} pts</span>
+        {% elif r.max_races %}
+          <span class="card__stat-label">Longest at P{{ r.position }}</span>
+          <span class="card__stat-value">{{ r.max_races }} race{% if r.max_races != 1 %}s{% endif %}</span>
+        {% endif %}
+      </div>
+    </article>
+  {% endfor %}
+</div>
+{% endblock %}

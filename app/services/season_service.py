@@ -6,6 +6,7 @@ only entry point.
 """
 import contextlib
 import json
+import re
 from functools import lru_cache
 
 from app.config import get_settings
@@ -68,6 +69,7 @@ def get_season_data(season: int | None = None) -> SeasonData:
 def clear_cache() -> None:
     get_season_data.cache_clear()
     available_seasons.cache_clear()
+    resolve_team_slug.cache_clear()
 
 
 def resolve_driver_code(raw: str, season: int) -> str:
@@ -82,3 +84,31 @@ def resolve_driver_code(raw: str, season: int) -> str:
     if code not in season_data.drivers:
         raise ValueError(f"Driver '{code}' not found in {season} roster")
     return code
+
+
+_SLUG_NON_ALNUM = re.compile(r"[^a-z0-9]+")
+
+
+def team_slug(name: str) -> str:
+    """Lower-case URL slug for a team name. Deterministic, stable per name."""
+    lowered = name.strip().lower()
+    return _SLUG_NON_ALNUM.sub("-", lowered).strip("-")
+
+
+@lru_cache(maxsize=128)
+def resolve_team_slug(slug: str, season: int) -> str:
+    """Reverse `team_slug` against the season's roster.
+
+    Raises ValueError if the slug doesn't match any team in this season.
+    """
+    target = slug.strip().lower()
+    season_data = get_season_data(season)
+    for name in season_data.teams:
+        if team_slug(name) == target:
+            return name
+    raise ValueError(f"Constructor '{slug}' not found in {season} roster")
+
+
+def team_color_for(team_name: str, season: int) -> str:
+    season_data = get_season_data(season)
+    return season_data.teams.get(team_name, "#666")

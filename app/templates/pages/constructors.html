@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Constructors — {{ current_season }}{% endblock %}
+{% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <p class="hero__eyebrow">Season {{ current_season }}</p>
+  <h1 class="hero__title">Constructors</h1>
+  <p class="hero__lede">Click a constructor to see their WCC stats across every possible season-subset.</p>
+</section>
+
+<div class="grid grid--drivers" role="list">
+  {% for c in constructors %}
+    {% set constructor = c %}
+    {% include "partials/constructor_card.html" %}
+  {% endfor %}
+</div>
+{% endblock %}

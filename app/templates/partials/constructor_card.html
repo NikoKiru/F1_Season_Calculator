@@ -1,0 +1,14 @@
+<article class="card card--interactive" style="--team-color: {{ constructor.color }}" onclick="window.location.assign('/constructor/{{ constructor.slug }}')">
+  <div class="card__accent" aria-hidden="true"></div>
+  <div class="stack">
+    <h3 class="card__title">
+      <a href="/constructor/{{ constructor.slug }}" style="text-decoration: none; color: inherit;">
+        {{ constructor.name }}
+      </a>
+    </h3>
+    <p class="card__meta">
+      {% if constructor.points is defined %}<span>{{ constructor.points }} pts</span>{% endif %}
+      {% if constructor.wins is defined %}<span>{{ constructor.wins }} championships</span>{% endif %}
+    </p>
+  </div>
+</article>

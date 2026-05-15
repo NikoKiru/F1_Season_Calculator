@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from app.api.deps import ConnDep, SeasonDep, validated_driver
 from app.services import (
     championship_service,
+    constructor_service,
     driver_service,
     season_service,
     statistics_service,
@@ -385,3 +386,143 @@ def min_races_to_win_page(request: Request, conn: ConnDep, season: SeasonDep):
         "rows": ranked,
     }
     return render(request, "pages/min_races_to_win.html", context)
+
+
+# --- constructors (WCC) ---------------------------------------------------
+
+
+def _constructor_row(name: str, sd, *, extras: dict | None = None) -> dict:
+    base = {
+        "name": name,
+        "slug": season_service.team_slug(name),
+        "color": sd.teams.get(name, "#666"),
+    }
+    if extras:
+        base.update(extras)
+    return base
+
+
+@router.get("/constructors", include_in_schema=False)
+def constructors_page(request: Request, conn: ConnDep, season: SeasonDep):
+    sd = season_service.get_season_data(season)
+    live = constructor_service.live_points(conn, season)
+    wins = constructor_service.all_wins(conn, season)
+    constructors = [
+        _constructor_row(
+            name, sd,
+            extras={"points": int(live.get(name, 0)), "wins": int(wins.get(name, 0))},
+        )
+        for name in sd.teams
+    ]
+    constructors.sort(key=lambda c: -c["points"])
+    context = {
+        **_common(season),
+        "crumbs": _breadcrumbs(("Home", "/"), ("Constructors", None)),
+        "constructors": constructors,
+    }
+    return render(request, "pages/constructors.html", context)
+
+
+@router.get("/all-constructor-wins", include_in_schema=False)
+def all_constructor_wins_page(request: Request, conn: ConnDep, season: SeasonDep):
+    sd = season_service.get_season_data(season)
+    wins = constructor_service.all_wins(conn, season)
+    ranked = sorted(
+        [
+            _constructor_row(name, sd, extras={"wins": count})
+            for name, count in wins.items()
+        ],
+        key=lambda r: r["wins"],
+        reverse=True,
+    )
+    context = {
+        **_common(season),
+        "crumbs": _breadcrumbs(("Home", "/"), ("All constructor wins", None)),
+        "constructors": ranked,
+    }
+    return render(request, "pages/all_constructor_wins.html", context)
+
+
+@router.get("/constructor-win-probability", include_in_schema=False)
+def constructor_win_probability_page(
+    request: Request, conn: ConnDep, season: SeasonDep
+):
+    sd = season_service.get_season_data(season)
+    data = constructor_service.win_probability(conn, season)
+    for row in data["constructors_data"]:
+        row["slug"] = season_service.team_slug(row["constructor"])
+        row["color"] = sd.teams.get(row["constructor"], "#666")
+    context = {
+        **_common(season),
+        "crumbs": _breadcrumbs(("Home", "/"), ("Constructor win probability", None)),
+        "data": data,
+    }
+    return render(request, "pages/constructor_win_probability.html", context)
+
+
+@router.get("/constructor-min-races-to-win", include_in_schema=False)
+def constructor_min_races_page(request: Request, conn: ConnDep, season: SeasonDep):
+    sd = season_service.get_season_data(season)
+    data = constructor_service.min_races_to_win(conn, season)
+    ranked = sorted(
+        [
+            _constructor_row(name, sd, extras={"min_races": races})
+            for name, races in data.items()
+        ],
+        key=lambda r: r["min_races"],
+    )
+    context = {
+        **_common(season),
+        "crumbs": _breadcrumbs(("Home", "/"), ("Min races to clinch", None)),
+        "rows": ranked,
+    }
+    return render(request, "pages/constructor_min_races_to_win.html", context)
+
+
+@router.get("/constructor-highest-position", include_in_schema=False)
+def constructor_highest_position_page(
+    request: Request, conn: ConnDep, season: SeasonDep
+):
+    sd = season_service.get_season_data(season)
+    rows = constructor_service.highest_position_all(conn, season)
+    ranked = sorted(
+        [
+            {
+                **r,
+                "name": r["constructor"],
+                "slug": season_service.team_slug(r["constructor"]),
+                "color": sd.teams.get(r["constructor"], "#666"),
+                "scenario_id": r.get("best_margin_championship_id")
+                              or r.get("max_races_championship_id"),
+            }
+            for r in rows
+        ],
+        key=lambda r: (r["position"], -1 * (r["best_margin"] or 0)),
+    )
+    context = {
+        **_common(season),
+        "crumbs": _breadcrumbs(("Home", "/"), ("Constructor highest position", None)),
+        "rows": ranked,
+    }
+    return render(request, "pages/constructor_highest_position.html", context)
+
+
+@router.get("/constructor-positions", include_in_schema=False)
+def constructor_positions_page(request: Request, season: SeasonDep):
+    sd = season_service.get_season_data(season)
+    num_constructors = max(len(sd.teams), 1)
+    context = {
+        **_common(season),
+        "crumbs": _breadcrumbs(("Home", "/"), ("Constructor positions", None)),
+        "positions": list(range(1, num_constructors + 1)),
+        "page_data": {
+            "season": season,
+            "constructor_names": {
+                season_service.team_slug(name): name for name in sd.teams
+            },
+            "constructor_colors": {
+                season_service.team_slug(name): color for name, color in sd.teams.items()
+            },
+        },
+    }
+    return render(request, "pages/constructor_positions.html", context)
