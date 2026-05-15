@@ -18,7 +18,14 @@ from sqlalchemy import Connection, create_engine
 
 from app.config import Settings
 from app.data.schema import init_schema
-from app.pipeline import csv_loader, stats_compute, writer
+from app.pipeline import (
+    constructor_builder,
+    constructor_stats_compute,
+    constructor_writer,
+    csv_loader,
+    stats_compute,
+    writer,
+)
 from app.services import season_service
 
 SAMPLE_CSV = """Driver,1,2,3,4
@@ -97,6 +104,18 @@ def seeded_settings(test_data_root: Path, monkeypatch_session) -> Settings:
         if hasattr(mod, "get_settings"):
             monkeypatch_session.setattr(mod, "get_settings", lambda: test_settings)
     season_service.clear_cache()
+
+    # Constructor pipeline depends on the patched settings (season_service reads
+    # data/seasons/{year}.json via get_settings), so run it after the swap.
+    loaded = csv_loader.load(
+        test_settings.data_folder / f"championships_{TEST_SEASON}.csv"
+    )
+    built = constructor_builder.build(loaded, TEST_SEASON)
+    constructor_writer.process_season(
+        test_settings.database_path, built, season=TEST_SEASON, batch_size=5
+    )
+    constructor_stats_compute.compute(test_settings.database_path, TEST_SEASON)
+
     yield test_settings
     season_service.clear_cache()
 

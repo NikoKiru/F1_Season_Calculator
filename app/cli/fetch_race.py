@@ -10,7 +10,15 @@ import time
 import typer
 
 from app.config import get_settings
-from app.pipeline import csv_loader, race_csv, stats_compute, writer
+from app.pipeline import (
+    constructor_builder,
+    constructor_stats_compute,
+    constructor_writer,
+    csv_loader,
+    race_csv,
+    stats_compute,
+    writer,
+)
 from app.services import jolpica_service, season_service
 
 
@@ -69,4 +77,15 @@ def run(
     typer.echo(f"[OK] {inserted:,} championships ({time.time() - start:.1f}s)")
 
     stats_compute.compute(settings.database_path, season, on_progress=typer.echo)
+
+    typer.echo("Reprocessing constructors (WCC)…")
+    built = constructor_builder.build(loaded, season)
+    constructor_writer.clear_season(settings.database_path, season)
+    inserted_wcc = constructor_writer.process_season(
+        settings.database_path, built, season=season
+    )
+    typer.echo(f"[OK] {inserted_wcc:,} constructor championships")
+    constructor_stats_compute.compute(
+        settings.database_path, season, on_progress=typer.echo
+    )
     typer.echo(f"[OK] season {season} ready")

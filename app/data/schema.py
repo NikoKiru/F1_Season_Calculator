@@ -84,6 +84,80 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
         PRIMARY KEY (season, driver_code, position)
     )
     """,
+    # --- Constructors' Championship (WCC) — mirrors the driver tables ---
+    """
+    CREATE TABLE IF NOT EXISTS constructor_championship_results (
+        championship_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        season INTEGER NOT NULL,
+        num_races INTEGER NOT NULL,
+        rounds TEXT NOT NULL,
+        standings TEXT NOT NULL,
+        winner TEXT,
+        points TEXT NOT NULL
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_constructor_winner ON constructor_championship_results (winner)",
+    "CREATE INDEX IF NOT EXISTS idx_constructor_num_races ON constructor_championship_results (num_races)",
+    "CREATE INDEX IF NOT EXISTS idx_constructor_season ON constructor_championship_results (season)",
+    "CREATE INDEX IF NOT EXISTS idx_constructor_season_winner ON constructor_championship_results (season, winner)",
+    """
+    CREATE TABLE IF NOT EXISTS constructor_statistics (
+        constructor_name TEXT NOT NULL,
+        season INTEGER NOT NULL,
+        highest_position INTEGER NOT NULL,
+        highest_position_max_races INTEGER,
+        highest_position_championship_id INTEGER,
+        best_margin INTEGER,
+        best_margin_championship_id INTEGER,
+        win_count INTEGER DEFAULT 0,
+        computed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (constructor_name, season)
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS constructor_position_results (
+        championship_id INTEGER NOT NULL,
+        constructor_name TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        points INTEGER NOT NULL,
+        season INTEGER NOT NULL,
+        PRIMARY KEY (championship_id, constructor_name),
+        FOREIGN KEY (championship_id) REFERENCES constructor_championship_results(championship_id)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_constructor_position ON constructor_position_results (constructor_name, position)",
+    "CREATE INDEX IF NOT EXISTS idx_constructor_position_season ON constructor_position_results (season, constructor_name, position)",
+    """
+    CREATE TABLE IF NOT EXISTS constructor_win_probability_cache (
+        constructor_name TEXT NOT NULL,
+        num_races INTEGER NOT NULL,
+        win_count INTEGER NOT NULL DEFAULT 0,
+        total_at_length INTEGER NOT NULL DEFAULT 0,
+        season INTEGER NOT NULL,
+        PRIMARY KEY (constructor_name, num_races, season)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_constructor_prob_season ON constructor_win_probability_cache (season)",
+    """
+    CREATE TABLE IF NOT EXISTS constructor_head_to_head (
+        season INTEGER NOT NULL,
+        constructor_name TEXT NOT NULL,
+        opponent TEXT NOT NULL,
+        wins INTEGER NOT NULL DEFAULT 0,
+        losses INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (season, constructor_name, opponent)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_constructor_h2h_season ON constructor_head_to_head (season, constructor_name)",
+    """
+    CREATE TABLE IF NOT EXISTS constructor_position_distribution (
+        season INTEGER NOT NULL,
+        constructor_name TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        count INTEGER NOT NULL,
+        PRIMARY KEY (season, constructor_name, position)
+    )
+    """,
 )
 
 

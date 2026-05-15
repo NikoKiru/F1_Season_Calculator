@@ -3,7 +3,15 @@ from __future__ import annotations
 
 import typer
 
-from app.cli import add_race, compute_stats, fetch_race, process_data, setup
+from app.cli import (
+    add_race,
+    compute_constructor_stats,
+    compute_stats,
+    fetch_race,
+    process_constructors,
+    process_data,
+    setup,
+)
 
 app = typer.Typer(
     name="f1",
@@ -23,6 +31,14 @@ app.command(name="add-race", help="Add a single race to a season and re-process.
 app.command(name="fetch-race", help="Fetch a weekend's race + sprint results from Jolpica.")(
     fetch_race.run
 )
+app.command(
+    name="process-constructors",
+    help="Generate every constructor (WCC) championship combination for a season.",
+)(process_constructors.run)
+app.command(
+    name="compute-constructor-stats",
+    help="Pre-compute constructor_statistics + win-probability cache.",
+)(compute_constructor_stats.run)
 
 
 def main() -> None:  # entry point declared in pyproject.toml
