@@ -90,7 +90,7 @@ class ManagerUI:
 
         ttk.Label(
             build_frame,
-            text="Regenerate every championship combination + recompute stats.",
+            text="Regenerate every championship + constructor combination + recompute stats.",
         ).pack(side="left", padx=8, pady=8)
 
         self.build_btn = ttk.Button(build_frame, text="Build", command=self._on_build)
@@ -141,12 +141,37 @@ class ManagerUI:
 
     def _after_process_data(self, code: int) -> None:
         if code != 0:
-            self._log(f"process-data failed (exit {code}) — skipping compute-stats.")
+            self._log(f"process-data failed (exit {code}) — skipping the rest of the build.")
             return
-        # Chain compute-stats in a fresh subprocess so the UI stays interactive.
+        # Chain compute-stats → process-constructors → compute-constructor-stats.
+        # Each step waits for the previous to exit 0 before launching the next,
+        # so the UI stays interactive and a failure short-circuits the chain.
         self._run_command(
             ["compute-stats", "--season", str(self.season)],
             label="Build data: compute-stats",
+            on_done=lambda c: self._after_compute_stats(c),
+        )
+
+    def _after_compute_stats(self, code: int) -> None:
+        if code != 0:
+            self._log(f"compute-stats failed (exit {code}) — skipping WCC build.")
+            return
+        self._run_command(
+            ["process-constructors", "--season", str(self.season)],
+            label="Build data: process-constructors",
+            on_done=lambda c: self._after_process_constructors(c),
+        )
+
+    def _after_process_constructors(self, code: int) -> None:
+        if code != 0:
+            self._log(
+                f"process-constructors failed (exit {code}) — "
+                "skipping compute-constructor-stats."
+            )
+            return
+        self._run_command(
+            ["compute-constructor-stats", "--season", str(self.season)],
+            label="Build data: compute-constructor-stats",
         )
 
     def _on_toggle_web(self) -> None:
