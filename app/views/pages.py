@@ -507,6 +507,75 @@ def constructor_highest_position_page(
     return render(request, "pages/constructor_highest_position.html", context)
 
 
+@router.get("/constructor/{slug}", include_in_schema=False)
+def constructor_page(request: Request, slug: str, conn: ConnDep, season: SeasonDep):
+    try:
+        name = season_service.resolve_team_slug(slug, season)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    sd = season_service.get_season_data(season)
+    stats = constructor_service.get_stats(conn, name, season)
+    constructor_slugs = {n: season_service.team_slug(n) for n in sd.teams}
+    constructor_colors = dict(sd.teams)
+    context = {
+        **_common(season),
+        "crumbs": _breadcrumbs(
+            ("Home", "/"),
+            ("Constructors", "/constructors"),
+            (name, None),
+        ),
+        "constructor": {
+            "name": name,
+            "slug": slug,
+            "color": sd.teams.get(name, "#666"),
+        },
+        "stats": stats,
+        "constructor_slugs": constructor_slugs,
+        "constructor_colors": constructor_colors,
+        "page_data": {
+            "slug": slug,
+            "season": season,
+            "color": sd.teams.get(name, "#666"),
+        },
+    }
+    return render(request, "pages/constructor.html", context)
+
+
+@router.get("/constructor/{slug}/position/{position}", include_in_schema=False)
+def constructor_position_detail(
+    request: Request,
+    slug: str,
+    position: int,
+    conn: ConnDep,
+    season: SeasonDep,
+    page: Annotated[int, Query(ge=1)] = 1,
+    per_page: Annotated[int, Query(ge=1, le=500)] = 50,
+):
+    if position < 1:
+        raise HTTPException(status_code=400, detail="Position must be ≥ 1")
+    try:
+        name = season_service.resolve_team_slug(slug, season)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    data = constructor_service.championships_at_position(
+        conn, name, position, season, page, per_page
+    )
+    data["constructor_name"] = name
+    context = {
+        **_common(season),
+        "crumbs": _breadcrumbs(
+            ("Home", "/"),
+            ("Constructors", "/constructors"),
+            (name, f"/constructor/{slug}"),
+            (f"P{position}", None),
+        ),
+        "data": data,
+        "position": position,
+        "slug": slug,
+    }
+    return render(request, "pages/constructor_position_detail.html", context)
+
+
 @router.get("/constructor-positions", include_in_schema=False)
 def constructor_positions_page(request: Request, season: SeasonDep):
     sd = season_service.get_season_data(season)

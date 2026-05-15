@@ -58,6 +58,7 @@ def create_app() -> FastAPI:
     # Routers — wired up as each module is ported.
     from app.api import admin as api_admin
     from app.api import championships as api_championships
+    from app.api import constructors as api_constructors
     from app.api import drivers as api_drivers
     from app.api import search as api_search
     from app.api import statistics as api_statistics
@@ -66,6 +67,7 @@ def create_app() -> FastAPI:
 
     app.include_router(api_championships.router, prefix="/api/championships", tags=["championships"])
     app.include_router(api_drivers.router, prefix="/api/drivers", tags=["drivers"])
+    app.include_router(api_constructors.router, prefix="/api/constructors", tags=["constructors"])
     app.include_router(api_statistics.router, prefix="/api/statistics", tags=["statistics"])
     app.include_router(api_search.router, prefix="/api/search", tags=["search"])
     app.include_router(api_admin.router, prefix="/api/admin", tags=["admin"])

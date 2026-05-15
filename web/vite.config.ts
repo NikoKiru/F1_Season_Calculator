@@ -26,6 +26,8 @@ export default defineConfig({
         createChampionship: resolve(__dirname, "src", "pages", "createChampionship.ts"),
         driverPositions: resolve(__dirname, "src", "pages", "driverPositions.ts"),
         championship: resolve(__dirname, "src", "pages", "championship.ts"),
+        constructor: resolve(__dirname, "src", "pages", "constructor.ts"),
+        constructorPositions: resolve(__dirname, "src", "pages", "constructorPositions.ts"),
       },
     },
   },

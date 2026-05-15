@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}{{ constructor.name }} — {{ current_season }}{% endblock %}
+{% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
+
+{% block content %}
+<section class="hero hero--accented" style="--team-color: {{ constructor.color }}">
+  <p class="hero__eyebrow">Constructor</p>
+  <h1 class="hero__title">{{ constructor.name }}</h1>
+  <p class="hero__lede">{{ stats.total_wins }} WCC scenarios won across {{ "{:,}".format(stats.total_championships) }} possible seasons.</p>
+</section>
+
+<section class="section" aria-label="Key stats">
+  <div class="grid grid--stats">
+    <div class="stat-tile">
+      <p class="stat-tile__label">Championships won</p>
+      <p class="stat-tile__value">{{ "{:,}".format(stats.total_wins) }}</p>
+      <p class="stat-tile__hint">of {{ "{:,}".format(stats.total_championships) }} scenarios</p>
+    </div>
+    <div class="stat-tile">
+      <p class="stat-tile__label">Win probability</p>
+      <p class="stat-tile__value">{{ "%.2f"|format(stats.win_percentage) }}%</p>
+    </div>
+    <div class="stat-tile">
+      <p class="stat-tile__label">Highest finish</p>
+      <p class="stat-tile__value">P{{ stats.highest_position }}</p>
+      {% if stats.highest_position_championship_id %}
+      <p class="stat-tile__hint">
+        <a href="/championship/{{ stats.highest_position_championship_id }}">Scenario #{{ stats.highest_position_championship_id }}</a>
+      </p>
+      {% endif %}
+    </div>
+    <div class="stat-tile">
+      <p class="stat-tile__label">Min races to clinch</p>
+      <p class="stat-tile__value">{{ stats.min_races_to_win or "—" }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="charts-heading">
+  <div class="section__head">
+    <h2 id="charts-heading" class="section__title">Position & season-length charts</h2>
+  </div>
+  <div data-state-host></div>
+  <div class="grid" data-charts-wrapper hidden style="grid-template-columns: repeat(auto-fit, minmax(340px, 1fr))">
+    <div class="chart-surface">
+      <canvas data-chart="position-distribution" aria-label="Position distribution bar chart"></canvas>
+    </div>
+    <div class="chart-surface">
+      <canvas data-chart="win-probability-by-length" aria-label="Win probability by season length line chart"></canvas>
+    </div>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="h2h-heading">
+  <div class="section__head">
+    <h2 id="h2h-heading" class="section__title">Head-to-head</h2>
+    <p class="section__lede">How {{ constructor.name }} compares against every other constructor this season.</p>
+  </div>
+  {% set h2h_rows = [] %}
+  {% for name, h2h in stats.head_to_head.items() %}
+    {% set total = h2h.wins + h2h.losses %}
+    {% set pct = (h2h.wins / total * 100) if total else 0 %}
+    {% if h2h_rows.append({"name": name, "slug": constructor_slugs.get(name, name), "color": constructor_colors.get(name, "#666"), "wins": h2h.wins, "losses": h2h.losses, "pct": pct}) %}{% endif %}
+  {% endfor %}
+  <div class="table-wrapper" data-responsive="true">
+    <table class="table h2h-table table--striped-rows">
+      <thead>
+        <tr>
+          <th scope="col">Opponent</th>
+          <th scope="col" class="num">W</th>
+          <th scope="col" class="num">L</th>
+          <th scope="col" class="num">Win %</th>
+          <th scope="col" aria-label="Open"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in h2h_rows | sort(attribute="pct", reverse=True) %}
+          <tr style="--team-color: {{ row.color }}">
+            <th scope="row" data-label="Opponent">{{ row.name }}</th>
+            <td class="num" data-label="W">{{ row.wins }}</td>
+            <td class="num" data-label="L">{{ row.losses }}</td>
+            <td class="num h2h-table__pct" data-label="Win %">
+              <span class="pct-bar" style="--pct: {{ row.pct }}%" aria-hidden="true"></span>
+              <span class="pct-value">{{ "%.1f"|format(row.pct) }}%</span>
+            </td>
+            <td class="num" data-label="">
+              <a class="btn btn--sm btn--ghost" href="/constructor/{{ row.slug }}">Open →</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script type="application/json" id="page-data">{{ page_data | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+{{ vite_script("src/pages/constructor.ts") }}
+{% endblock %}
