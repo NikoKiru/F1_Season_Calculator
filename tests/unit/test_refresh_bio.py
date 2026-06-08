@@ -10,7 +10,6 @@ from app.cli import refresh_bio
 from app.config import Settings
 from app.services import jolpica_service, season_service
 
-
 SEASON = 8888
 
 

@@ -354,6 +354,36 @@ def test_min_races_to_win_renders(client):
     assert "Verstappen" in r.text or "Norris" in r.text or "Leclerc" in r.text
 
 
+# --- notable scenarios ----------------------------------------------------
+
+
+def test_notable_scenarios_renders(client):
+    r = client.get(f"/notable-scenarios?season={SEASON}")
+    assert r.status_code == 200
+    html = r.text
+    for title in (
+        "The Nail-Biter",
+        "The Demolition",
+        "Against All Odds",
+        "The Cinderella Story",
+        "The Kingmaker",
+    ):
+        assert title in html, f"missing card: {title}"
+    # Canonical card contract + each card links to a championship detail page.
+    assert "card--interactive" in html
+    assert "card__accent" in html
+    assert "/championship/" in html
+
+
+def test_notable_scenarios_kingmaker_names_the_flip(client):
+    """The Kingmaker card should narrate the swing: NOR -> VER when round 1
+    joins the {2,3,4} scenario (see the seeded-fixture hand calc)."""
+    r = client.get(f"/notable-scenarios?season={SEASON}")
+    html = r.text
+    assert "Max Verstappen" in html
+    assert "Lando Norris" in html
+
+
 # --- driver positions -----------------------------------------------------
 
 
@@ -481,6 +511,7 @@ def test_each_page_wires_its_vite_entry(client):
         "/driver-positions",
         "/head-to-head",
         "/min-races-to-win",
+        "/notable-scenarios",
         "/championship/1",
         "/constructors",
         "/all-constructor-wins",

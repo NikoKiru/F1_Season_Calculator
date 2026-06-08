@@ -130,6 +130,23 @@ def test_win_probability_endpoint(client):
     assert body["possible_seasons"] == [4, 6, 4, 1]
 
 
+def test_notable_scenarios_endpoint(client):
+    r = client.get("/api/statistics/notable-scenarios", params={"season": 9999})
+    assert r.status_code == 200
+    body = r.json()
+    cats = [s["category"] for s in body["scenarios"]]
+    assert cats == [
+        "nail_biter",
+        "demolition",
+        "against_all_odds",
+        "cinderella",
+        "kingmaker",
+    ]
+    for s in body["scenarios"]:
+        assert s["championship_id"]
+        assert s["headline"]["winner_name"]
+
+
 def test_search_championship_found(client):
     r = client.get("/api/search/championship", params={"season": 9999, "rounds": "1,2,3,4"})
     assert r.status_code == 200

@@ -39,3 +39,14 @@ def win_probability_cache(conn: Connection, season: int) -> list[dict]:
         {"s": season},
     ).mappings().all()
     return [dict(r) for r in rows]
+
+
+def notable_scenarios(conn: Connection, season: int) -> list[dict]:
+    rows = conn.execute(
+        text(
+            "SELECT category, championship_id, metric_value, detail "
+            "FROM notable_scenarios WHERE season = :s"
+        ),
+        {"s": season},
+    ).mappings().all()
+    return [dict(r) for r in rows]

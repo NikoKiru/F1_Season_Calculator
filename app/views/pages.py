@@ -401,6 +401,17 @@ def min_races_to_win_page(request: Request, conn: ConnDep, season: SeasonDep):
     return render(request, "pages/min_races_to_win.html", context)
 
 
+@router.get("/notable-scenarios", include_in_schema=False)
+def notable_scenarios_page(request: Request, conn: ConnDep, season: SeasonDep):
+    data = statistics_service.notable_scenarios(conn, season)
+    context = {
+        **_common(season),
+        "crumbs": _breadcrumbs(("Home", "/"), ("Notable scenarios", None)),
+        "scenarios": data["scenarios"],
+    }
+    return render(request, "pages/notable_scenarios.html", context)
+
+
 # --- constructors (WCC) ---------------------------------------------------
 
 
