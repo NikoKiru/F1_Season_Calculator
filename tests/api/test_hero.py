@@ -1,7 +1,6 @@
 """Hero strip rendering — bio chips, career tiles, palmarès tiles, fallbacks."""
 from __future__ import annotations
 
-
 # --- driver page ---------------------------------------------------------
 
 
