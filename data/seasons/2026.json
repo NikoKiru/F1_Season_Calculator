@@ -40,133 +40,539 @@
             "name": "Oscar Piastri",
             "team": "McLaren",
             "number": 81,
-            "flag": "\ud83c\udde6\ud83c\uddfa"
+            "flag": "🇦🇺",
+            "nationality": "Australian",
+            "birthdate": "2001-04-06",
+            "debut_year": 2023,
+            "jolpica_id": "piastri",
+            "career": {
+                "wins": 9,
+                "podiums": 28,
+                "poles": 14,
+                "starts": 76,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "NOR": {
             "name": "Lando Norris",
             "team": "McLaren",
             "number": 1,
-            "flag": "\ud83c\uddec\ud83c\udde7"
+            "flag": "🇬🇧",
+            "nationality": "British",
+            "birthdate": "1999-11-13",
+            "debut_year": 2019,
+            "jolpica_id": "norris",
+            "career": {
+                "wins": 11,
+                "podiums": 45,
+                "poles": 29,
+                "starts": 158,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "VER": {
             "name": "Max Verstappen",
             "team": "Red Bull Racing",
             "number": 3,
-            "flag": "\ud83c\uddf3\ud83c\uddf1"
+            "flag": "🇳🇱",
+            "nationality": "Dutch",
+            "birthdate": "1997-09-30",
+            "debut_year": 2015,
+            "jolpica_id": "max_verstappen",
+            "career": {
+                "wins": 71,
+                "podiums": 128,
+                "poles": 64,
+                "championships": 4,
+                "starts": 239,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "RUS": {
             "name": "George Russell",
             "team": "Mercedes",
             "number": 63,
-            "flag": "\ud83c\uddec\ud83c\udde7"
+            "flag": "🇬🇧",
+            "nationality": "British",
+            "birthdate": "1998-02-15",
+            "debut_year": 2019,
+            "jolpica_id": "russell",
+            "career": {
+                "wins": 6,
+                "podiums": 26,
+                "poles": 14,
+                "starts": 158,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "LEC": {
             "name": "Charles Leclerc",
             "team": "Ferrari",
             "number": 16,
-            "flag": "\ud83c\uddf2\ud83c\udde8"
+            "flag": "🇲🇨",
+            "nationality": "Monégasque",
+            "birthdate": "1997-10-16",
+            "debut_year": 2018,
+            "jolpica_id": "leclerc",
+            "career": {
+                "wins": 8,
+                "podiums": 52,
+                "poles": 34,
+                "starts": 179,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "HAM": {
             "name": "Lewis Hamilton",
             "team": "Ferrari",
             "number": 44,
-            "flag": "\ud83c\uddec\ud83c\udde7"
+            "flag": "🇬🇧",
+            "nationality": "British",
+            "birthdate": "1985-01-07",
+            "debut_year": 2007,
+            "jolpica_id": "hamilton",
+            "career": {
+                "championships": 7,
+                "wins": 105,
+                "podiums": 205,
+                "poles": 117,
+                "starts": 386,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "ANT": {
             "name": "Andrea Kimi Antonelli",
             "team": "Mercedes",
             "number": 12,
-            "flag": "\ud83c\uddee\ud83c\uddf9"
+            "flag": "🇮🇹",
+            "nationality": "Italian",
+            "birthdate": "2006-08-25",
+            "debut_year": 2025,
+            "jolpica_id": "antonelli",
+            "career": {
+                "wins": 5,
+                "podiums": 9,
+                "poles": 5,
+                "starts": 30,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "ALB": {
             "name": "Alex Albon",
             "team": "Williams",
             "number": 23,
-            "flag": "\ud83c\uddf9\ud83c\udded"
+            "flag": "🇹🇭",
+            "nationality": "Thai",
+            "birthdate": "1996-03-23",
+            "debut_year": 2019,
+            "jolpica_id": "albon",
+            "career": {
+                "wins": 0,
+                "podiums": 2,
+                "poles": 1,
+                "starts": 135,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "HAD": {
             "name": "Isack Hadjar",
             "team": "Red Bull Racing",
             "number": 6,
-            "flag": "\ud83c\uddeb\ud83c\uddf7"
+            "flag": "🇫🇷",
+            "nationality": "French",
+            "birthdate": "2004-09-28",
+            "debut_year": 2025,
+            "jolpica_id": "hadjar",
+            "career": {
+                "wins": 0,
+                "podiums": 2,
+                "poles": 2,
+                "starts": 30,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "HUL": {
             "name": "Nico Hulkenberg",
             "team": "Audi",
             "number": 27,
-            "flag": "\ud83c\udde9\ud83c\uddea"
+            "flag": "🇩🇪",
+            "nationality": "German",
+            "birthdate": "1987-08-19",
+            "debut_year": 2010,
+            "jolpica_id": "hulkenberg",
+            "career": {
+                "wins": 0,
+                "podiums": 1,
+                "poles": 1,
+                "starts": 260,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "STR": {
             "name": "Lance Stroll",
             "team": "Aston Martin",
             "number": 18,
-            "flag": "\ud83c\udde8\ud83c\udde6"
+            "flag": "🇨🇦",
+            "nationality": "Canadian",
+            "birthdate": "1998-10-29",
+            "debut_year": 2017,
+            "jolpica_id": "stroll",
+            "career": {
+                "wins": 0,
+                "podiums": 3,
+                "poles": 1,
+                "starts": 197,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "SAI": {
             "name": "Carlos Sainz",
             "team": "Williams",
             "number": 55,
-            "flag": "\ud83c\uddea\ud83c\uddf8"
+            "flag": "🇪🇸",
+            "nationality": "Spanish",
+            "birthdate": "1994-09-01",
+            "debut_year": 2015,
+            "jolpica_id": "sainz",
+            "career": {
+                "wins": 4,
+                "podiums": 29,
+                "poles": 11,
+                "starts": 238,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "LAW": {
             "name": "Liam Lawson",
             "team": "Racing Bulls",
             "number": 30,
-            "flag": "\ud83c\uddf3\ud83c\uddff"
+            "flag": "🇳🇿",
+            "nationality": "New Zealander",
+            "birthdate": "2002-02-11",
+            "debut_year": 2023,
+            "jolpica_id": "lawson",
+            "career": {
+                "wins": 0,
+                "podiums": 0,
+                "poles": 0,
+                "starts": 41,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "ALO": {
             "name": "Fernando Alonso",
             "team": "Aston Martin",
             "number": 14,
-            "flag": "\ud83c\uddea\ud83c\uddf8"
+            "flag": "🇪🇸",
+            "nationality": "Spanish",
+            "birthdate": "1981-07-29",
+            "debut_year": 2001,
+            "jolpica_id": "alonso",
+            "career": {
+                "championships": 2,
+                "wins": 32,
+                "podiums": 106,
+                "poles": 23,
+                "starts": 434,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "OCO": {
             "name": "Esteban Ocon",
             "team": "Haas",
             "number": 31,
-            "flag": "\ud83c\uddeb\ud83c\uddf7"
+            "flag": "🇫🇷",
+            "nationality": "French",
+            "birthdate": "1996-09-17",
+            "debut_year": 2016,
+            "jolpica_id": "ocon",
+            "career": {
+                "wins": 1,
+                "podiums": 4,
+                "poles": 0,
+                "starts": 186,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "GAS": {
             "name": "Pierre Gasly",
             "team": "Alpine",
             "number": 10,
-            "flag": "\ud83c\uddeb\ud83c\uddf7"
+            "flag": "🇫🇷",
+            "nationality": "French",
+            "birthdate": "1996-02-07",
+            "debut_year": 2017,
+            "jolpica_id": "gasly",
+            "career": {
+                "wins": 1,
+                "podiums": 5,
+                "poles": 0,
+                "starts": 184,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "BOR": {
             "name": "Gabriel Bortoleto",
             "team": "Audi",
             "number": 5,
-            "flag": "\ud83c\udde7\ud83c\uddf7"
+            "flag": "🇧🇷",
+            "nationality": "Brazilian",
+            "birthdate": "2004-10-14",
+            "debut_year": 2025,
+            "jolpica_id": "bortoleto",
+            "career": {
+                "wins": 0,
+                "podiums": 0,
+                "poles": 0,
+                "starts": 30,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "BEA": {
             "name": "Oliver Bearman",
             "team": "Haas",
             "number": 87,
-            "flag": "\ud83c\uddec\ud83c\udde7"
+            "flag": "🇬🇧",
+            "nationality": "British",
+            "birthdate": "2005-05-08",
+            "debut_year": 2024,
+            "jolpica_id": "bearman",
+            "career": {
+                "wins": 0,
+                "podiums": 0,
+                "poles": 0,
+                "starts": 33,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "COL": {
             "name": "Franco Colapinto",
             "team": "Alpine",
             "number": 43,
-            "flag": "\ud83c\udde6\ud83c\uddf7"
+            "flag": "🇦🇷",
+            "nationality": "Argentine",
+            "birthdate": "2003-05-27",
+            "debut_year": 2024,
+            "jolpica_id": "colapinto",
+            "career": {
+                "wins": 0,
+                "podiums": 0,
+                "poles": 0,
+                "starts": 33,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "PER": {
             "name": "Sergio Perez",
             "team": "Cadillac",
             "number": 11,
-            "flag": "\ud83c\uddf2\ud83c\uddfd"
+            "flag": "🇲🇽",
+            "nationality": "Mexican",
+            "birthdate": "1990-01-26",
+            "debut_year": 2011,
+            "jolpica_id": "perez",
+            "career": {
+                "wins": 6,
+                "podiums": 39,
+                "poles": 4,
+                "starts": 289,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "BOT": {
             "name": "Valtteri Bottas",
             "team": "Cadillac",
             "number": 77,
-            "flag": "\ud83c\uddeb\ud83c\uddee"
+            "flag": "🇫🇮",
+            "nationality": "Finnish",
+            "birthdate": "1989-08-28",
+            "debut_year": 2013,
+            "jolpica_id": "bottas",
+            "career": {
+                "wins": 10,
+                "podiums": 67,
+                "poles": 19,
+                "starts": 253,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         },
         "LIN": {
             "name": "Arvid Lindblad",
             "team": "Racing Bulls",
             "number": 41,
-            "flag": "\ud83c\uddec\ud83c\udde7"
+            "flag": "🇬🇧",
+            "nationality": "British",
+            "birthdate": "2007-08-08",
+            "debut_year": 2026,
+            "jolpica_id": "arvid_lindblad",
+            "career": {
+                "wins": 0,
+                "podiums": 0,
+                "poles": 0,
+                "starts": 6,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
+        }
+    },
+    "constructors": {
+        "McLaren": {
+            "country": "United Kingdom",
+            "founded": 1963,
+            "principal": "Andrea Stella",
+            "power_unit": "Mercedes",
+            "chassis": "MCL40",
+            "jolpica_id": "mclaren",
+            "palmares": {
+                "championships": 9,
+                "wins": 199,
+                "podiums": 545,
+                "first_race_year": 1968,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
+        },
+        "Red Bull Racing": {
+            "country": "Austria",
+            "founded": 2005,
+            "principal": "Laurent Mekies",
+            "power_unit": "Ford-Honda RBPT",
+            "chassis": "RB22",
+            "jolpica_id": "red_bull",
+            "palmares": {
+                "championships": 6,
+                "wins": 130,
+                "podiums": 299,
+                "first_race_year": 2005,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
+        },
+        "Mercedes": {
+            "country": "United Kingdom",
+            "founded": 2010,
+            "principal": "Toto Wolff",
+            "power_unit": "Mercedes",
+            "chassis": "W17",
+            "jolpica_id": "mercedes",
+            "palmares": {
+                "championships": 8,
+                "wins": 137,
+                "podiums": 318,
+                "first_race_year": 1954,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
+        },
+        "Ferrari": {
+            "country": "Italy",
+            "founded": 1929,
+            "principal": "Frédéric Vasseur",
+            "power_unit": "Ferrari",
+            "chassis": "SF-26",
+            "jolpica_id": "ferrari",
+            "palmares": {
+                "championships": 16,
+                "wins": 249,
+                "podiums": 853,
+                "first_race_year": 1950,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
+        },
+        "Aston Martin": {
+            "country": "United Kingdom",
+            "founded": 2021,
+            "principal": "Andy Cowell",
+            "power_unit": "Honda",
+            "chassis": "AMR26",
+            "jolpica_id": "aston_martin",
+            "palmares": {
+                "wins": 0,
+                "podiums": 9,
+                "first_race_year": 1959,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
+        },
+        "Williams": {
+            "country": "United Kingdom",
+            "founded": 1977,
+            "principal": "James Vowles",
+            "power_unit": "Mercedes",
+            "chassis": "FW48",
+            "jolpica_id": "williams",
+            "palmares": {
+                "championships": 9,
+                "wins": 114,
+                "podiums": 316,
+                "first_race_year": 1975,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
+        },
+        "Racing Bulls": {
+            "country": "Italy",
+            "founded": 2024,
+            "principal": "Alan Permane",
+            "power_unit": "Honda RBPT",
+            "chassis": "VCARB 02",
+            "jolpica_id": "rb",
+            "palmares": {
+                "wins": 0,
+                "podiums": 1,
+                "first_race_year": 2024,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
+        },
+        "Audi": {
+            "country": "Switzerland",
+            "founded": 2026,
+            "principal": "Mattia Binotto",
+            "power_unit": "Audi",
+            "chassis": "C46",
+            "jolpica_id": "audi",
+            "palmares": {
+                "wins": 0,
+                "podiums": 0,
+                "first_race_year": 2026,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
+        },
+        "Haas": {
+            "country": "United States",
+            "founded": 2016,
+            "principal": "Ayao Komatsu",
+            "power_unit": "Ferrari",
+            "chassis": "VF-26",
+            "jolpica_id": "haas",
+            "palmares": {
+                "wins": 0,
+                "podiums": 0,
+                "first_race_year": 2016,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
+        },
+        "Alpine": {
+            "country": "France",
+            "founded": 2021,
+            "principal": "Steve Nielsen",
+            "power_unit": "Mercedes",
+            "chassis": "A526",
+            "jolpica_id": "alpine",
+            "palmares": {
+                "wins": 1,
+                "podiums": 6,
+                "first_race_year": 2021,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
+        },
+        "Cadillac": {
+            "country": "United States",
+            "founded": 2026,
+            "principal": "Graeme Lowdon",
+            "power_unit": "Ferrari",
+            "chassis": "C26",
+            "jolpica_id": "cadillac",
+            "palmares": {
+                "wins": 0,
+                "podiums": 0,
+                "first_race_year": 2026,
+                "updated_at": "2026-06-08T15:05:34.478625+00:00"
+            }
         }
     },
     "rounds": {
@@ -193,5 +599,12 @@
         "21": "QAT",
         "22": "ABU"
     },
-    "sprint_rounds": [2, 4, 5, 9, 12, 16]
+    "sprint_rounds": [
+        2,
+        4,
+        5,
+        9,
+        12,
+        16
+    ]
 }

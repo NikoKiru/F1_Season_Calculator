@@ -172,6 +172,18 @@ class ManagerUI:
         self._run_command(
             ["compute-constructor-stats", "--season", str(self.season)],
             label="Build data: compute-constructor-stats",
+            on_done=lambda c: self._after_compute_constructor_stats(c),
+        )
+
+    def _after_compute_constructor_stats(self, code: int) -> None:
+        if code != 0:
+            self._log(
+                f"compute-constructor-stats failed (exit {code}) — skipping refresh-bio."
+            )
+            return
+        self._run_command(
+            ["refresh-bio", "--season", str(self.season)],
+            label="Build data: refresh-bio",
         )
 
     def _on_toggle_web(self) -> None:

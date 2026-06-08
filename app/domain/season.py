@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+from app.domain.constructor import ConstructorInfo
 from app.domain.driver import DriverInfo
 
 
@@ -12,6 +13,10 @@ class SeasonData(BaseModel):
     round_names: dict[int, str] = Field(description="Round number → circuit abbreviation.")
     sprint_rounds: tuple[int, ...] = Field(
         default=(), description="Round numbers that include a sprint session."
+    )
+    constructors: dict[str, ConstructorInfo] = Field(
+        default_factory=dict,
+        description="Team name → hero-info record (identity + palmarès).",
     )
 
     def is_sprint(self, round_number: int) -> bool:

@@ -41,9 +41,32 @@ SAMPLE_SEASON_JSON = {
         "Ferrari": {"color": "#F91536"},
     },
     "drivers": {
-        "VER": {"name": "Max Verstappen", "team": "Red Bull", "number": 1, "flag": "🇳🇱"},
+        "VER": {
+            "name": "Max Verstappen", "team": "Red Bull", "number": 1, "flag": "🇳🇱",
+            "nationality": "Dutch", "birthdate": "1997-09-30", "debut_year": 2015,
+            "jolpica_id": "max_verstappen",
+            "career": {
+                "wins": 60, "podiums": 110, "poles": 40, "championships": 4,
+                "starts": 200, "updated_at": "2026-05-17T12:00:00+00:00",
+            },
+        },
         "NOR": {"name": "Lando Norris", "team": "McLaren", "number": 4, "flag": "🇬🇧"},
         "LEC": {"name": "Charles Leclerc", "team": "Ferrari", "number": 16, "flag": "🇲🇨"},
+    },
+    "constructors": {
+        "Red Bull": {
+            "country": "Austria", "founded": 2005, "principal": "Laurent Mekies",
+            "power_unit": "Honda RBPT", "chassis": "RB22", "jolpica_id": "red_bull",
+            "palmares": {
+                "championships": 6, "wins": 122, "podiums": 280,
+                "first_race_year": 1997, "updated_at": "2026-05-17T12:00:00+00:00",
+            },
+        },
+        "McLaren": {
+            "country": "United Kingdom", "founded": 1963, "principal": "Andrea Stella",
+            "power_unit": "Mercedes", "chassis": "MCL40", "jolpica_id": "mclaren",
+            "palmares": None,
+        },
     },
     "rounds": {"1": "Round 1", "2": "Round 2", "3": "Round 3", "4": "Round 4"},
 }

@@ -13,10 +13,13 @@ MRData.RaceTable.Races[0].Results. Driver codes are 3-letter uppercase.
 """
 from __future__ import annotations
 
+import time
+
 import httpx
 
 BASE_URL = "https://api.jolpi.ca/ergast/f1"
 DEFAULT_TIMEOUT = 10.0
+THROTTLE_SECONDS = 0.4  # Jolpica allows 4 req/sec — stay safely under.
 
 
 class JolpicaError(Exception):
@@ -54,11 +57,18 @@ def _fetch(path: str, *, client: httpx.Client | None = None) -> dict:
     owns_client = client is None
     c = client or httpx.Client(timeout=DEFAULT_TIMEOUT)
     try:
-        resp = c.get(url)
-        if resp.status_code == 404:
-            raise RoundNotFoundError(f"Jolpica 404 for {url}")
-        resp.raise_for_status()
-        return resp.json()
+        for attempt in range(3):  # initial + 2 retries on 429
+            resp = c.get(url)
+            if resp.status_code == 429:
+                # Rate limited — back off and retry. Honor Retry-After if set.
+                wait = float(resp.headers.get("Retry-After", 0)) or (2 ** attempt)
+                time.sleep(wait)
+                continue
+            if resp.status_code == 404:
+                raise RoundNotFoundError(f"Jolpica 404 for {url}")
+            resp.raise_for_status()
+            return resp.json()
+        raise JolpicaError(f"Jolpica rate-limited after retries: {url}")
     except httpx.HTTPError as e:
         raise JolpicaError(f"Jolpica request failed: {e}") from e
     finally:
@@ -103,3 +113,90 @@ def fetch_weekend(
     finally:
         if client is None:
             c.close()
+
+
+# --- Bio/career helpers ---------------------------------------------------
+#
+# The `MRData.total` count trick: every Ergast/Jolpica list endpoint reports
+# the total number of matching records in MRData.total. By passing limit=1 we
+# pay for just one row of body but read the count from the envelope — far
+# cheaper than paging the full result list. Used for career wins, podiums,
+# poles, championships, starts.
+
+
+def _count(path: str, *, client: httpx.Client) -> int | None:
+    """Return MRData.total for a list endpoint, or None on failure/404."""
+    try:
+        payload = _fetch(f"{path}?limit=1", client=client)
+    except JolpicaError:
+        return None
+    try:
+        return int(payload.get("MRData", {}).get("total", 0))
+    except (TypeError, ValueError):
+        return None
+
+
+def fetch_driver_career(
+    jolpica_id: str, *, client: httpx.Client
+) -> dict[str, int] | None:
+    """Aggregate career totals for a driver. Returns None if not found.
+
+    Championships are NOT fetched: Jolpica requires season_year on
+    driverStandings, so counting across all seasons isn't a single query.
+    Curate `championships` by hand in seasons/{year}.json — the CLI
+    preserves it across refreshes.
+    """
+    base = f"/drivers/{jolpica_id}"
+    starts = _count(f"{base}/results.json", client=client)
+    if starts is None:
+        return None
+    time.sleep(THROTTLE_SECONDS)
+    wins = _count(f"{base}/results/1.json", client=client) or 0
+    time.sleep(THROTTLE_SECONDS)
+    p2 = _count(f"{base}/results/2.json", client=client) or 0
+    time.sleep(THROTTLE_SECONDS)
+    p3 = _count(f"{base}/results/3.json", client=client) or 0
+    time.sleep(THROTTLE_SECONDS)
+    poles = _count(f"{base}/qualifying/1.json", client=client) or 0
+    return {
+        "wins": wins,
+        "podiums": wins + p2 + p3,
+        "poles": poles,
+        "starts": starts,
+    }
+
+
+def fetch_constructor_palmares(
+    jolpica_id: str, *, client: httpx.Client
+) -> dict[str, int] | None:
+    """Aggregate palmarès for a constructor. Returns None if not found.
+
+    `championships` is NOT fetched (same Jolpica limitation as drivers) —
+    hand-curate it in seasons/{year}.json.
+    """
+    base = f"/constructors/{jolpica_id}"
+    wins = _count(f"{base}/results/1.json", client=client)
+    if wins is None:
+        return None
+    time.sleep(THROTTLE_SECONDS)
+    p2 = _count(f"{base}/results/2.json", client=client) or 0
+    time.sleep(THROTTLE_SECONDS)
+    p3 = _count(f"{base}/results/3.json", client=client) or 0
+    time.sleep(THROTTLE_SECONDS)
+    first_race_year: int | None = None
+    try:
+        seasons_payload = _fetch(f"{base}/seasons.json?limit=1", client=client)
+        seasons = (
+            seasons_payload.get("MRData", {})
+            .get("SeasonTable", {})
+            .get("Seasons", [])
+        )
+        if seasons:
+            first_race_year = int(seasons[0].get("season"))
+    except (JolpicaError, TypeError, ValueError):
+        first_race_year = None
+    return {
+        "wins": wins,
+        "podiums": wins + p2 + p3,
+        "first_race_year": first_race_year,
+    }

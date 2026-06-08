@@ -10,6 +10,7 @@ from app.cli import (
     fetch_race,
     process_constructors,
     process_data,
+    refresh_bio,
     setup,
 )
 
@@ -39,6 +40,10 @@ app.command(
     name="compute-constructor-stats",
     help="Pre-compute constructor_statistics + win-probability cache.",
 )(compute_constructor_stats.run)
+app.command(
+    name="refresh-bio",
+    help="Top up driver + constructor career totals from Jolpica.",
+)(refresh_bio.run)
 
 
 def main() -> None:  # entry point declared in pyproject.toml

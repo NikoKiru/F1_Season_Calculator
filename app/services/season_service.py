@@ -10,6 +10,7 @@ import re
 from functools import lru_cache
 
 from app.config import get_settings
+from app.domain.constructor import ConstructorInfo
 from app.domain.driver import DriverInfo
 from app.domain.season import SeasonData
 
@@ -51,10 +52,27 @@ def get_season_data(season: int | None = None) -> SeasonData:
             number=int(info["number"]),
             flag=info["flag"],
             color=team_colors.get(info["team"], "#FFFFFF"),
+            nationality=info.get("nationality"),
+            birthdate=info.get("birthdate"),
+            debut_year=info.get("debut_year"),
+            jolpica_id=info.get("jolpica_id"),
+            career=info.get("career"),
         )
     driver_names = {code: d.name for code, d in drivers.items()}
     round_names = {int(num): name for num, name in raw["rounds"].items()}
     sprint_rounds = tuple(int(r) for r in raw.get("sprint_rounds", []))
+
+    constructors: dict[str, ConstructorInfo] = {}
+    for name, cinfo in raw.get("constructors", {}).items():
+        constructors[name] = ConstructorInfo(
+            country=cinfo.get("country"),
+            founded=cinfo.get("founded"),
+            principal=cinfo.get("principal"),
+            power_unit=cinfo.get("power_unit"),
+            chassis=cinfo.get("chassis"),
+            jolpica_id=cinfo.get("jolpica_id"),
+            palmares=cinfo.get("palmares"),
+        )
 
     return SeasonData(
         season=year,
@@ -63,6 +81,7 @@ def get_season_data(season: int | None = None) -> SeasonData:
         driver_names=driver_names,
         round_names=round_names,
         sprint_rounds=sprint_rounds,
+        constructors=constructors,
     )
 
 

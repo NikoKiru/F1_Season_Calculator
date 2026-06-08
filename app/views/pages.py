@@ -5,6 +5,7 @@ directly in this module — that's the whole point of the services layer.
 """
 from __future__ import annotations
 
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -139,6 +140,9 @@ def driver_page(request: Request, code: str, conn: ConnDep, season: SeasonDep):
     driver_code = validated_driver(code, season)
     stats = driver_service.get_stats(conn, driver_code, season)
     sd = season_service.get_season_data(season)
+    driver = stats["driver_info"] | {"code": driver_code, "name": stats["driver_name"]}
+    bd = driver.get("birthdate")
+    driver["age"] = _years_between(bd, date.today()) if bd else None
     context = {
         **_common(season),
         "crumbs": _breadcrumbs(
@@ -146,7 +150,8 @@ def driver_page(request: Request, code: str, conn: ConnDep, season: SeasonDep):
             ("Drivers", "/drivers"),
             (stats["driver_name"], None),
         ),
-        "driver": stats["driver_info"] | {"code": driver_code, "name": stats["driver_name"]},
+        "driver": driver,
+        "career": driver.get("career"),
         "stats": stats,
         "driver_names": sd.driver_names,
         "driver_colors": {c: d.color for c, d in sd.drivers.items()},
@@ -161,6 +166,14 @@ def driver_page(request: Request, code: str, conn: ConnDep, season: SeasonDep):
         },
     }
     return render(request, "pages/driver.html", context)
+
+
+def _years_between(start: date, end: date) -> int:
+    """Whole years from start to end (correct across leap-year birthdays)."""
+    years = end.year - start.year
+    if (end.month, end.day) < (start.month, start.day):
+        years -= 1
+    return years
 
 
 @router.get("/driver/{code}/position/{position}", include_in_schema=False)
@@ -517,6 +530,9 @@ def constructor_page(request: Request, slug: str, conn: ConnDep, season: SeasonD
     stats = constructor_service.get_stats(conn, name, season)
     constructor_slugs = {n: season_service.team_slug(n) for n in sd.teams}
     constructor_colors = dict(sd.teams)
+    ctor = sd.constructors.get(name)
+    identity = ctor.model_dump(exclude={"palmares"}) if ctor else None
+    palmares = ctor.palmares.model_dump() if ctor and ctor.palmares else None
     context = {
         **_common(season),
         "crumbs": _breadcrumbs(
@@ -529,6 +545,8 @@ def constructor_page(request: Request, slug: str, conn: ConnDep, season: SeasonD
             "slug": slug,
             "color": sd.teams.get(name, "#666"),
         },
+        "identity": identity,
+        "palmares": palmares,
         "stats": stats,
         "constructor_slugs": constructor_slugs,
         "constructor_colors": constructor_colors,

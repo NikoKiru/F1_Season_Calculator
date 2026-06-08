@@ -49,6 +49,40 @@ main {
   color: var(--fg-muted);
 }
 
+.hero__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+  list-style: none;
+  padding: 0;
+}
+.hero__chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  padding: var(--s-1, 0.25rem) var(--s-3);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+}
+.hero__chip-label {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-muted);
+}
+.hero__chip-value {
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+}
+.hero__updated {
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .section {
   margin: var(--s-7) 0;
 }

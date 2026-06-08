@@ -7,6 +7,40 @@
   <p class="hero__eyebrow">Constructor</p>
   <h1 class="hero__title">{{ constructor.name }}</h1>
   <p class="hero__lede">{{ stats.total_wins }} WCC scenarios won across {{ "{:,}".format(stats.total_championships) }} possible seasons.</p>
+  {% if identity and (identity.country or identity.founded or identity.principal or identity.power_unit or identity.chassis) %}
+  <ul class="hero__chips" aria-label="Team identity">
+    {% if identity.country %}<li class="hero__chip"><span class="hero__chip-label">Base</span><span class="hero__chip-value">{{ identity.country }}</span></li>{% endif %}
+    {% if identity.founded %}<li class="hero__chip"><span class="hero__chip-label">Founded</span><span class="hero__chip-value">{{ identity.founded }}</span></li>{% endif %}
+    {% if identity.principal %}<li class="hero__chip"><span class="hero__chip-label">Principal</span><span class="hero__chip-value">{{ identity.principal }}</span></li>{% endif %}
+    {% if identity.power_unit %}<li class="hero__chip"><span class="hero__chip-label">Power unit</span><span class="hero__chip-value">{{ identity.power_unit }}</span></li>{% endif %}
+    {% if identity.chassis %}<li class="hero__chip"><span class="hero__chip-label">Chassis</span><span class="hero__chip-value">{{ identity.chassis }}</span></li>{% endif %}
+  </ul>
+  {% endif %}
+</section>
+
+<section class="section" aria-labelledby="palmares-heading">
+  <div class="section__head">
+    <h2 id="palmares-heading" class="section__title">Palmarès</h2>
+    {% if palmares and palmares.updated_at %}<p class="hero__updated">Updated {{ palmares.updated_at.strftime('%Y-%m-%d') if palmares.updated_at.strftime is defined else palmares.updated_at }}</p>{% endif %}
+  </div>
+  <div class="grid grid--stats">
+    <div class="stat-tile">
+      <p class="stat-tile__label">Constructors' titles</p>
+      <p class="stat-tile__value">{{ palmares.championships if palmares and palmares.championships is not none else "—" }}</p>
+    </div>
+    <div class="stat-tile">
+      <p class="stat-tile__label">Race wins</p>
+      <p class="stat-tile__value">{{ palmares.wins if palmares and palmares.wins is not none else "—" }}</p>
+    </div>
+    <div class="stat-tile">
+      <p class="stat-tile__label">Podiums</p>
+      <p class="stat-tile__value">{{ palmares.podiums if palmares and palmares.podiums is not none else "—" }}</p>
+    </div>
+    <div class="stat-tile">
+      <p class="stat-tile__label">First race</p>
+      <p class="stat-tile__value">{{ palmares.first_race_year if palmares and palmares.first_race_year is not none else "—" }}</p>
+    </div>
+  </div>
 </section>
 
 <section class="section" aria-label="Key stats">
