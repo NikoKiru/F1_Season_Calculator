@@ -4,12 +4,14 @@ Uses the pre-computed `win_probability_cache` table when available; falls
 back to live aggregation only if the cache is missing (should only happen
 before compute-stats has run for a new season).
 """
+import json
+
 from sqlalchemy import Connection
 
 from app.cache import service as cache
 from app.data.queries import championships as q_c
 from app.data.queries import statistics as q_s
-from app.services import season_service
+from app.services import championship_service, season_service
 
 
 def win_probability(conn: Connection, season: int) -> dict:
@@ -83,5 +85,110 @@ def win_probability(conn: Connection, season: int) -> dict:
         "drivers_data": drivers_data,
         "driver_names": sd.driver_names,
     }
+    cache.set(key, result)
+    return result
+
+
+_NOTABLE_CARD_ORDER = (
+    "nail_biter",
+    "demolition",
+    "against_all_odds",
+    "cinderella",
+    "kingmaker",
+)
+
+
+def _scenario_summary(conn: Connection, sd, cid: int | None) -> dict | None:
+    """Resolve a championship_id to display fields: winner/runner-up names,
+    colours, margin, round names. Reuses the cached championship formatter."""
+    if cid is None:
+        return None
+    champ = championship_service.get_by_id(conn, cid)
+    if not champ:
+        return None
+    driver_points = champ.get("driver_points", {}) or {}
+    names = champ.get("driver_names", {}) or {}
+    codes = list(driver_points)
+    winner_code = codes[0] if codes else champ.get("winner")
+    runner_up_code = codes[1] if len(codes) > 1 else None
+    margin = (
+        int(driver_points[winner_code]) - int(driver_points[runner_up_code])
+        if runner_up_code is not None
+        else 0
+    )
+
+    def _color(code: str | None) -> str:
+        d = sd.drivers.get(code) if code else None
+        return d.color if d else "#666"
+
+    return {
+        "id": cid,
+        "num_races": champ.get("num_races"),
+        "winner_code": winner_code,
+        "winner_name": names.get(winner_code, winner_code),
+        "winner_color": _color(winner_code),
+        "runner_up_code": runner_up_code,
+        "runner_up_name": names.get(runner_up_code) if runner_up_code else None,
+        "margin": margin,
+        "round_names": champ.get("round_names", []),
+    }
+
+
+def notable_scenarios(conn: Connection, season: int) -> dict:
+    """Curated "hall of fame of what-ifs" for a season.
+
+    Reads the precomputed `notable_scenarios` table and decorates each category
+    with the linked championship (winner/runner-up names, margin, rounds) plus
+    a small per-category `extra` block for rendering.
+    """
+    key = cache.key_notable_scenarios(season)
+    cached = cache.get(key)
+    if cached is not None:
+        return cached
+
+    sd = season_service.get_season_data(season)
+    raw = {r["category"]: r for r in q_s.notable_scenarios(conn, season)}
+
+    scenarios = []
+    for category in _NOTABLE_CARD_ORDER:
+        row = raw.get(category)
+        if row is None:
+            continue
+        headline = _scenario_summary(conn, sd, row["championship_id"])
+        if headline is None:
+            continue
+        detail = json.loads(row["detail"]) if row["detail"] else {}
+        extra: dict = {}
+        if category == "against_all_odds":
+            rc = detail.get("real_champion")
+            extra["real_champion_name"] = sd.driver_names.get(rc, rc)
+        elif category == "cinderella":
+            code = detail.get("driver_code")
+            d = sd.drivers.get(code)
+            extra.update({
+                "driver_code": code,
+                "driver_name": sd.driver_names.get(code, code),
+                "driver_color": d.color if d else "#666",
+            })
+        elif category == "kingmaker":
+            before = _scenario_summary(conn, sd, detail.get("before_cid"))
+            rnd = detail.get("round")
+            extra.update({
+                "round": rnd,
+                "round_name": sd.round_names.get(rnd, f"Round {rnd}"),
+                "before_id": detail.get("before_cid"),
+                "before_winner_name": before["winner_name"] if before else None,
+                "after_winner_name": headline["winner_name"],
+            })
+        scenarios.append({
+            "category": category,
+            "championship_id": row["championship_id"],
+            "metric_value": row["metric_value"],
+            "detail": detail,
+            "headline": headline,
+            "extra": extra,
+        })
+
+    result = {"season": season, "scenarios": scenarios}
     cache.set(key, result)
     return result

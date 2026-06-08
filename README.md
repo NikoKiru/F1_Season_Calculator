@@ -9,8 +9,15 @@
 > non-empty subsets of rounds (up to 16,777,215 for a 24-race year) and
 > tells you who wins, by how much, and on which round.
 
-## What's new (2026-05-09)
+## What's new (2026-06-08)
 
+- **Notable Scenarios** — a new discovery page (Championships ▾ → Notable
+  Scenarios, plus `GET /api/statistics/notable-scenarios`) that surfaces the
+  season's most extreme what-ifs: the closest title (**Nail-Biter**), the
+  biggest blowout (**Demolition**), the most rounds counted while still
+  crowning a different champion (**Against All Odds**), the rarest champion
+  (**Cinderella**), and the single most decisive round (**Kingmaker**). It's
+  precomputed during `f1 compute-stats`, so rebuild after pulling.
 - **Home chart fix** — the cumulative-points line on the home page now
   spans the full longest championship instead of collapsing to a single
   round.
@@ -154,6 +161,7 @@ and interactive docs at `/api/docs`. Highlights:
 | `GET /api/drivers/highest-position` | Each driver's best-ever finish |
 | `GET /api/drivers/positions?position=N` | Share of scenarios per driver at position N |
 | `GET /api/statistics/win-probability` | Win probability by season length |
+| `GET /api/statistics/notable-scenarios` | Curated "most extreme" what-if championships (closest title, biggest blowout, biggest upset, rarest champion, most decisive round) |
 | `GET /api/search/championship?rounds=1,2,3` | Look up a championship by rounds |
 
 ## Project layout

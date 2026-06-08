@@ -84,6 +84,16 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
         PRIMARY KEY (season, driver_code, position)
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS notable_scenarios (
+        season INTEGER NOT NULL,
+        category TEXT NOT NULL,
+        championship_id INTEGER,
+        metric_value INTEGER,
+        detail TEXT,
+        PRIMARY KEY (season, category)
+    )
+    """,
     # --- Constructors' Championship (WCC) — mirrors the driver tables ---
     """
     CREATE TABLE IF NOT EXISTS constructor_championship_results (

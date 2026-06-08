@@ -59,6 +59,27 @@ Comprehensive statistics for each driver in a season.
 - Points per race average
 - Sprint race performance (where applicable)
 
+### Notable Scenarios
+
+A curated "hall of fame of what-ifs" — the most extreme championships hiding in
+the season's race combinations. Reachable from **Championships ▾ → Notable
+Scenarios** (and `GET /api/statistics/notable-scenarios`).
+
+**Cards**:
+- **The Nail-Biter** — the closest title: smallest points gap between champion
+  and runner-up (a zero gap means it was decided on countback).
+- **The Demolition** — the biggest winning margin of any scenario.
+- **Against All Odds** — the most rounds you can count and still crown someone
+  other than the real season champion.
+- **The Cinderella Story** — the rarest champion: the driver who takes the
+  title in the fewest scenarios.
+- **The Kingmaker** — the single round that swings the title in the most
+  scenarios, with the biggest before/after flip.
+
+Each card links straight to that championship's full breakdown. The data is
+**precomputed** during `f1 compute-stats` (alongside the other statistics
+caches), so it stays an instant lookup no matter how large the season grows.
+
 ## Data Management
 
 ### Automatic Data Fetching

@@ -87,5 +87,9 @@ def key_win_probability(season: int) -> str:
     return f"win-probability:{season}"
 
 
+def key_notable_scenarios(season: int) -> str:
+    return f"notable-scenarios:{season}"
+
+
 def key_search_rounds(rounds_csv: str, season: int) -> str:
     return f"search:{season}:{rounds_csv}"

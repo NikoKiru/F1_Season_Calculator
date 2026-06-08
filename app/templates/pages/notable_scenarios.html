@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Notable scenarios — {{ current_season }}{% endblock %}
+{% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
+
+{% block content %}
+{% set meta = {
+  "nail_biter": {"title": "The Nail-Biter", "blurb": "The closest title of the season — the smallest gap between champion and runner-up."},
+  "demolition": {"title": "The Demolition", "blurb": "Total domination — the biggest winning margin of any scenario."},
+  "against_all_odds": {"title": "Against All Odds", "blurb": "The most rounds you can count and still crown a different champion."},
+  "cinderella": {"title": "The Cinderella Story", "blurb": "The rarest champion — the driver who takes the title in the fewest scenarios."},
+  "kingmaker": {"title": "The Kingmaker", "blurb": "The single round that swings the title in the most scenarios."}
+} %}
+
+<section class="hero">
+  <h1 class="hero__title">Notable scenarios</h1>
+  <p class="hero__lede">
+    A hall of fame of what-ifs — the most extreme championships hiding in
+    {{ current_season }}'s race combinations.
+  </p>
+</section>
+
+{% if scenarios %}
+<ol class="stack">
+  {% for s in scenarios %}
+    {% set m = meta[s.category] %}
+    <li
+      class="card card--row card--interactive"
+      style="--team-color: {{ s.headline.winner_color }}"
+      onclick="window.location.assign('/championship/{{ s.championship_id }}')"
+    >
+      <div class="card__accent" aria-hidden="true"></div>
+      <div>
+        <p class="card__title">
+          <a href="/championship/{{ s.championship_id }}"
+             style="color: inherit; text-decoration: none;">{{ m.title }}</a>
+        </p>
+        <p class="card__subtitle">{{ m.blurb }}</p>
+        <p class="card__subtitle">
+          {% if s.category == "nail_biter" %}
+            {% if s.headline.margin == 0 %}
+              {{ s.headline.winner_name }} tied {{ s.headline.runner_up_name }} on
+              points over {{ s.headline.num_races }} rounds — decided on countback.
+            {% else %}
+              {{ s.headline.winner_name }} beat {{ s.headline.runner_up_name }} by
+              {{ s.headline.margin }} pt{{ "s" if s.headline.margin != 1 else "" }}
+              over {{ s.headline.num_races }} rounds.
+            {% endif %}
+          {% elif s.category == "demolition" %}
+            {{ s.headline.winner_name }} won by {{ s.headline.margin }} pts across
+            {{ s.headline.num_races }} rounds.
+          {% elif s.category == "against_all_odds" %}
+            {{ s.headline.winner_name }} takes the title over {{ s.headline.num_races }}
+            rounds — not {{ s.extra.real_champion_name }}, the real champion.
+          {% elif s.category == "cinderella" %}
+            {{ s.extra.driver_name }} is champion in only {{ s.metric_value }}
+            scenario{{ "s" if s.metric_value != 1 else "" }}. Their finest is this one.
+          {% elif s.category == "kingmaker" %}
+            Round {{ s.extra.round }} ({{ s.extra.round_name }}) swings it:
+            {{ s.extra.before_winner_name }} → {{ s.extra.after_winner_name }}.
+          {% endif %}
+        </p>
+      </div>
+      <div style="text-align: right">
+        {% if s.category in ("nail_biter", "demolition") %}
+          <p class="stat-tile__value">{{ s.headline.margin }}</p>
+          <p class="card__subtitle">pt margin</p>
+        {% elif s.category == "against_all_odds" %}
+          <p class="stat-tile__value">{{ s.metric_value }}</p>
+          <p class="card__subtitle">rounds</p>
+        {% elif s.category == "cinderella" %}
+          <p class="stat-tile__value">{{ s.metric_value }}</p>
+          <p class="card__subtitle">title{{ "s" if s.metric_value != 1 else "" }}</p>
+        {% elif s.category == "kingmaker" %}
+          <p class="stat-tile__value">R{{ s.extra.round }}</p>
+          <p class="card__subtitle">{{ s.metric_value }} flips</p>
+        {% endif %}
+      </div>
+    </li>
+  {% endfor %}
+</ol>
+{% else %}
+<p class="hero__lede">
+  No scenarios yet — run <code>f1 compute-stats --season {{ current_season }}</code>
+  to populate them.
+</p>
+{% endif %}
+{% endblock %}

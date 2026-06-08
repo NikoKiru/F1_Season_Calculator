@@ -5,9 +5,12 @@ margin, win-probability-by-length) into O(1) lookups for the API layer.
 """
 from __future__ import annotations
 
+import json
 import sqlite3
 from collections.abc import Callable
 from pathlib import Path
+
+import numpy as np
 
 # Just the head-to-head table — running every SCHEMA_STATEMENTS would force
 # CREATE INDEX IF NOT EXISTS on position_results (335M rows on prod), which is
@@ -32,6 +35,16 @@ _HEAD_TO_HEAD_DDL = (
         position INTEGER NOT NULL,
         count INTEGER NOT NULL,
         PRIMARY KEY (season, driver_code, position)
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS notable_scenarios (
+        season INTEGER NOT NULL,
+        category TEXT NOT NULL,
+        championship_id INTEGER,
+        metric_value INTEGER,
+        detail TEXT,
+        PRIMARY KEY (season, category)
     )
     """,
 )
@@ -216,15 +229,21 @@ def _compute_locked(
         conn, season, all_drivers, say
     )
 
+    notable = _compute_notable_scenarios(
+        conn, season, all_drivers, max_races, driver_stats, say
+    )
+
     say(
         f"  done: {len(driver_stats)} drivers, {len(cache_rows)} probability rows, "
-        f"{h2h_pairs} h2h pairs, {position_rows} position rows"
+        f"{h2h_pairs} h2h pairs, {position_rows} position rows, "
+        f"{notable} notable scenarios"
     )
     return {
         "drivers": len(driver_stats),
         "probability_rows": len(cache_rows),
         "head_to_head_pairs": h2h_pairs,
         "position_distribution_rows": position_rows,
+        "notable_scenarios": notable,
     }
 
 
@@ -316,3 +335,168 @@ def _compute_pair_and_position_caches(
     )
     conn.commit()
     return len(h2h_rows), len(position_rows)
+
+
+def _cid_for_mask(
+    conn: sqlite3.Connection, season: int, mask: int, round_order: list[int]
+) -> int | None:
+    """Resolve a weekend-bitmask back to its championship_id via the `rounds`
+    string the writer stored (ascending round order, matching `round_order`)."""
+    rounds_csv = ",".join(
+        str(round_order[i]) for i in range(len(round_order)) if mask & (1 << i)
+    )
+    row = conn.execute(
+        "SELECT championship_id FROM championship_results "
+        "WHERE season = ? AND rounds = ?",
+        (season, rounds_csv),
+    ).fetchone()
+    return int(row["championship_id"]) if row else None
+
+
+def _compute_notable_scenarios(
+    conn: sqlite3.Connection,
+    season: int,
+    all_drivers: list[str],
+    max_races: int,
+    driver_stats: dict[str, dict],
+    say: Callable[[str], None],
+) -> int:
+    """Mine the enumerated championships for the most extreme/interesting
+    scenarios and store one pointer row per category in `notable_scenarios`.
+
+    Categories: nail_biter (smallest winning margin), demolition (largest
+    margin), against_all_odds (most rounds counted while crowning someone other
+    than the real season champion), cinderella (rarest champion), and kingmaker
+    (the round that flips the title in the most `(S, S+round)` pairs).
+
+    Cost: one O(C) scan over `championship_results` plus an O(N) vectorised
+    round-pairing pass over a bitmask-indexed winner array.
+    """
+    say("  mining notable scenarios")
+
+    # The single full-length scenario gives both the real champion and the
+    # weekend-index -> round-number ordering used to bitmask every subset.
+    full = conn.execute(
+        "SELECT rounds, winner FROM championship_results "
+        "WHERE season = ? AND num_races = ? LIMIT 1",
+        (season, max_races),
+    ).fetchone()
+    if full is None:
+        say("    no full-length scenario — skipping")
+        return 0
+    round_order = [int(r) for r in full["rounds"].split(",")]
+    index_of_round = {r: i for i, r in enumerate(round_order)}
+    real_champion = full["winner"]
+    n_weekends = len(round_order)
+
+    driver_idx = {d: i for i, d in enumerate(all_drivers)}
+    winners_by_mask = np.full(1 << n_weekends, -1, dtype=np.int32)
+
+    nail: tuple[int, int, int] | None = None   # (margin, num_races, cid) -> minimise
+    demo: tuple[int, int, int] | None = None   # (margin, num_races, cid) -> maximise
+    upset: tuple[int, int] | None = None       # (num_races, cid) for winner != real
+
+    for row in conn.execute(
+        "SELECT championship_id, num_races, rounds, winner, points "
+        "FROM championship_results WHERE season = ? ORDER BY championship_id",
+        (season,),
+    ):
+        cid = row["championship_id"]
+        nr = row["num_races"]
+
+        mask = 0
+        for r in row["rounds"].split(","):
+            mask |= 1 << index_of_round[int(r)]
+        winners_by_mask[mask] = driver_idx.get(row["winner"], -1)
+
+        parts = row["points"].split(",") if row["points"] else []
+        if len(parts) >= 2:
+            try:
+                margin = int(parts[0]) - int(parts[1])
+            except ValueError:
+                margin = None
+            if margin is not None:
+                # Smallest margin; tie-break most races, then lowest cid (scan
+                # is id-ordered, so the first row at a tie already has lowest id).
+                if nail is None or (margin, -nr) < (nail[0], -nail[1]):
+                    nail = (margin, nr, cid)
+                # Largest margin; same tie-break.
+                if demo is None or (margin, nr) > (demo[0], demo[1]):
+                    demo = (margin, nr, cid)
+
+        if row["winner"] != real_champion and (upset is None or nr > upset[0]):
+            upset = (nr, cid)
+
+    rows: list[tuple] = []
+    if nail is not None:
+        rows.append((season, "nail_biter", nail[2], nail[0], None))
+    if demo is not None:
+        rows.append((season, "demolition", demo[2], demo[0], None))
+    if upset is not None:
+        rows.append((
+            season, "against_all_odds", upset[1], upset[0],
+            json.dumps({"real_champion": real_champion}),
+        ))
+
+    # Cinderella: rarest champion (fewest titles, >= 1). Tie-break: most
+    # dramatic single win (largest best margin), then alphabetical code.
+    champions = sorted(
+        (s["win_count"], -(s["best_margin"] or 0), d)
+        for d, s in driver_stats.items()
+        if s["win_count"] >= 1 and s["best_margin_championship_id"] is not None
+    )
+    if champions:
+        win_count, _, code = champions[0]
+        rows.append((
+            season, "cinderella",
+            driver_stats[code]["best_margin_championship_id"],
+            win_count, json.dumps({"driver_code": code}),
+        ))
+
+    # Kingmaker: the round that flips the champion in the most (S, S+round)
+    # pairs. One vectorised comparison per weekend over the bitmask array.
+    if n_weekends >= 2:
+        all_masks = np.arange(1 << n_weekends)
+        best_round_idx, best_flips = -1, -1
+        for bit_i in range(n_weekends):
+            bit = 1 << bit_i
+            without = all_masks[(all_masks & bit) == 0]
+            without = without[without != 0]            # drop the empty set
+            flips = int(np.count_nonzero(
+                winners_by_mask[without] != winners_by_mask[without | bit]
+            ))
+            if flips > best_flips:                     # ties keep the lowest round
+                best_round_idx, best_flips = bit_i, flips
+
+        if best_flips > 0:
+            bit = 1 << best_round_idx
+            without = all_masks[(all_masks & bit) == 0]
+            without = without[without != 0]
+            flip_befores = without[
+                winners_by_mask[without] != winners_by_mask[without | bit]
+            ]
+            # Representative = the biggest 'before' scenario that flips.
+            popcount = np.array([int(m).bit_count() for m in flip_befores])
+            order = np.lexsort((flip_befores, -popcount))
+            before_mask = int(flip_befores[order[0]])
+            before_cid = _cid_for_mask(conn, season, before_mask, round_order)
+            after_cid = _cid_for_mask(conn, season, before_mask | bit, round_order)
+            rows.append((
+                season, "kingmaker", after_cid, best_flips,
+                json.dumps({
+                    "round": round_order[best_round_idx],
+                    "before_cid": before_cid,
+                }),
+            ))
+
+    conn.execute("BEGIN IMMEDIATE")
+    conn.execute("DELETE FROM notable_scenarios WHERE season = ?", (season,))
+    conn.executemany(
+        "INSERT INTO notable_scenarios "
+        "(season, category, championship_id, metric_value, detail) "
+        "VALUES (?, ?, ?, ?, ?)",
+        rows,
+    )
+    conn.commit()
+    say(f"    wrote {len(rows)} notable scenarios")
+    return len(rows)
