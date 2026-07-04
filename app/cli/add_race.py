@@ -1,20 +1,10 @@
 """`f1 add-race` — splice a new race (and optional sprint) into a season's CSV."""
 from __future__ import annotations
 
-import time
-
 import typer
 
 from app.config import get_settings
-from app.pipeline import (
-    constructor_builder,
-    constructor_stats_compute,
-    constructor_writer,
-    csv_loader,
-    race_csv,
-    stats_compute,
-    writer,
-)
+from app.pipeline import race_csv, rebuild
 
 
 def run(
@@ -47,23 +37,4 @@ def run(
         f"(round {race}{' + sprint' if sprint_parsed else ''})"
     )
 
-    typer.echo("Reprocessing season (this regenerates every combination)…")
-    loaded = csv_loader.load(csv_path)
-    writer.clear_season(settings.database_path, season)
-    start = time.time()
-    inserted = writer.process_season(settings.database_path, loaded, season=season)
-    typer.echo(f"[OK] {inserted:,} championships ({time.time() - start:.1f}s)")
-
-    stats_compute.compute(settings.database_path, season, on_progress=typer.echo)
-
-    typer.echo("Reprocessing constructors (WCC)…")
-    built = constructor_builder.build(loaded, season)
-    constructor_writer.clear_season(settings.database_path, season)
-    inserted_wcc = constructor_writer.process_season(
-        settings.database_path, built, season=season
-    )
-    typer.echo(f"[OK] {inserted_wcc:,} constructor championships")
-    constructor_stats_compute.compute(
-        settings.database_path, season, on_progress=typer.echo
-    )
-    typer.echo(f"[OK] season {season} ready")
+    rebuild.rebuild_season(settings, season, echo=typer.echo)
