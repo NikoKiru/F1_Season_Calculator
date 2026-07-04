@@ -47,7 +47,16 @@ def cli_settings(tmp_path, monkeypatch):
 def test_help_lists_all_commands():
     result = runner.invoke(cli_app, ["--help"])
     assert result.exit_code == 0
-    for cmd in ("setup", "process-data", "compute-stats", "add-race", "fetch-race"):
+    for cmd in (
+        "setup",
+        "process-data",
+        "compute-stats",
+        "add-race",
+        "fetch-race",
+        "sync",
+        "new-season",
+        "refresh-bio",
+    ):
         assert cmd in result.stdout
 
 

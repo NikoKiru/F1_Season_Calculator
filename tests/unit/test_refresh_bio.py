@@ -172,6 +172,57 @@ def test_refresh_bio_preserves_hand_curated_championships(tmp_season, monkeypatc
     assert ver["updated_at"]
 
 
+def test_refresh_bio_is_idempotent_when_values_unchanged(tmp_season, monkeypatch):
+    """Re-running refresh-bio with identical upstream numbers must not touch
+    the file at all — no updated_at churn, no noisy git diffs."""
+    career = {"wins": 65, "podiums": 112, "poles": 41, "starts": 220}
+    palmares = {"wins": 122, "podiums": 280, "first_race_year": 1997}
+    monkeypatch.setattr(
+        jolpica_service, "fetch_driver_career",
+        lambda jid, *, client: dict(career) if jid == "max_verstappen" else None,
+    )
+    monkeypatch.setattr(
+        jolpica_service, "fetch_constructor_palmares",
+        lambda jid, *, client: dict(palmares) if jid == "red_bull" else None,
+    )
+
+    refresh_bio.run(season=SEASON, driver=None, constructor=None)
+    first = tmp_season.read_bytes()
+    first_stamp = json.loads(first)["drivers"]["VER"]["career"]["updated_at"]
+
+    refresh_bio.run(season=SEASON, driver=None, constructor=None)
+    second = tmp_season.read_bytes()
+
+    assert second == first  # byte-identical: nothing rewritten
+    assert json.loads(second)["drivers"]["VER"]["career"]["updated_at"] == first_stamp
+
+
+def test_refresh_bio_stamps_updated_at_when_values_change(tmp_season, monkeypatch):
+    counters = {"wins": 65}
+    monkeypatch.setattr(
+        jolpica_service, "fetch_driver_career",
+        lambda jid, *, client: (
+            {"wins": counters["wins"], "podiums": 1, "poles": 1, "starts": 1}
+            if jid == "max_verstappen"
+            else None
+        ),
+    )
+    monkeypatch.setattr(
+        jolpica_service, "fetch_constructor_palmares", lambda jid, *, client: None
+    )
+
+    refresh_bio.run(season=SEASON, driver="VER", constructor=None)
+    first_stamp = json.loads(tmp_season.read_text(encoding="utf-8"))["drivers"]["VER"][
+        "career"
+    ]["updated_at"]
+
+    counters["wins"] = 66  # a race was won upstream
+    refresh_bio.run(season=SEASON, driver="VER", constructor=None)
+    ver = json.loads(tmp_season.read_text(encoding="utf-8"))["drivers"]["VER"]["career"]
+    assert ver["wins"] == 66
+    assert ver["updated_at"] >= first_stamp
+
+
 def test_refresh_bio_writes_atomically(tmp_season, monkeypatch):
     """A failure mid-iteration must not leave a half-written .json on disk."""
     monkeypatch.setattr(

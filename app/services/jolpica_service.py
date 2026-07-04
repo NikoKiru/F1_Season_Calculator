@@ -115,6 +115,117 @@ def fetch_weekend(
             c.close()
 
 
+# --- Season schedule + rosters ---------------------------------------------
+
+
+def fetch_schedule(season: int, *, client: httpx.Client | None = None) -> list[dict]:
+    """Return the season calendar as a list of plain dicts.
+
+    Each entry: {round:int, name:str, circuit_id:str, country:str,
+    date:"YYYY-MM-DD", has_sprint:bool}. Sprint weekends are detected by the
+    presence of the `Sprint` session block in the schedule payload.
+    Raises RoundNotFoundError when Jolpica has no calendar for the season yet.
+    """
+    payload = _fetch(f"/{season}.json?limit=100", client=client)
+    races = payload.get("MRData", {}).get("RaceTable", {}).get("Races", [])
+    if not races:
+        raise RoundNotFoundError(f"Jolpica has no schedule for season {season}")
+    out: list[dict] = []
+    for race in races:
+        try:
+            round_num = int(race.get("round"))
+        except (TypeError, ValueError):
+            continue
+        circuit = race.get("Circuit") or {}
+        location = circuit.get("Location") or {}
+        out.append(
+            {
+                "round": round_num,
+                "name": str(race.get("raceName", "")),
+                "circuit_id": str(circuit.get("circuitId", "")),
+                "country": str(location.get("country", "")),
+                "date": str(race.get("date", "")),
+                "has_sprint": "Sprint" in race,
+            }
+        )
+    return out
+
+
+def fetch_season_drivers(
+    season: int, *, client: httpx.Client | None = None
+) -> dict[str, dict]:
+    """Return {code: {jolpica_id, name, number, birthdate, nationality}} for a season.
+
+    Entries without a 3-letter code are skipped (pre-2014 drivers mostly).
+    """
+    payload = _fetch(f"/{season}/drivers.json?limit=100", client=client)
+    drivers = payload.get("MRData", {}).get("DriverTable", {}).get("Drivers", [])
+    out: dict[str, dict] = {}
+    for entry in drivers:
+        code = str(entry.get("code", "")).strip().upper()
+        if len(code) != 3:
+            continue
+        try:
+            number = int(entry.get("permanentNumber", 0))
+        except (TypeError, ValueError):
+            number = 0
+        name = f"{entry.get('givenName', '')} {entry.get('familyName', '')}".strip()
+        out[code] = {
+            "jolpica_id": str(entry.get("driverId", "")),
+            "name": name,
+            "number": number,
+            "birthdate": str(entry.get("dateOfBirth", "")),
+            "nationality": str(entry.get("nationality", "")),
+        }
+    return out
+
+
+def fetch_driver_constructor(
+    season: int, driver_id: str, *, client: httpx.Client | None = None
+) -> str | None:
+    """Return the constructorId a driver raced for in a season (last if several)."""
+    try:
+        payload = _fetch(
+            f"/{season}/drivers/{driver_id}/constructors.json?limit=10", client=client
+        )
+    except JolpicaError:
+        return None
+    ctors = payload.get("MRData", {}).get("ConstructorTable", {}).get("Constructors", [])
+    if not ctors:
+        return None
+    return str(ctors[-1].get("constructorId", "")) or None
+
+
+def fetch_season_constructors(
+    season: int, *, client: httpx.Client | None = None
+) -> list[dict]:
+    """Return [{jolpica_id, name, nationality}] for a season's constructors."""
+    payload = _fetch(f"/{season}/constructors.json?limit=100", client=client)
+    ctors = payload.get("MRData", {}).get("ConstructorTable", {}).get("Constructors", [])
+    return [
+        {
+            "jolpica_id": str(c.get("constructorId", "")),
+            "name": str(c.get("name", "")),
+            "nationality": str(c.get("nationality", "")),
+        }
+        for c in ctors
+    ]
+
+
+def fetch_driver_first_season(
+    driver_id: str, *, client: httpx.Client | None = None
+) -> int | None:
+    """Return the first year a driver appears in, or None."""
+    try:
+        payload = _fetch(f"/drivers/{driver_id}/seasons.json?limit=1", client=client)
+        seasons = payload.get("MRData", {}).get("SeasonTable", {}).get("Seasons", [])
+        if not seasons:
+            return None
+        return int(seasons[0].get("season"))
+    except (JolpicaError, TypeError, ValueError):
+        return None
+
+
 # --- Bio/career helpers ---------------------------------------------------
 #
 # The `MRData.total` count trick: every Ergast/Jolpica list endpoint reports

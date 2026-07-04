@@ -8,10 +8,12 @@ from app.cli import (
     compute_constructor_stats,
     compute_stats,
     fetch_race,
+    new_season,
     process_constructors,
     process_data,
     refresh_bio,
     setup,
+    sync,
 )
 
 app = typer.Typer(
@@ -44,6 +46,14 @@ app.command(
     name="refresh-bio",
     help="Top up driver + constructor career totals from Jolpica.",
 )(refresh_bio.run)
+app.command(
+    name="sync",
+    help="Bring a season fully up to date from Jolpica: calendar, results, roster, bios.",
+)(sync.run)
+app.command(
+    name="new-season",
+    help="Scaffold data/seasons/{YYYY}.json for a new season from Jolpica.",
+)(new_season.run)
 
 
 def main() -> None:  # entry point declared in pyproject.toml

@@ -8,6 +8,31 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `f1 sync` — one idempotent command that brings a season fully up to
+  date from the Jolpica-F1 API: calendar + sprint flags merged into
+  `seasons/{YYYY}.json`, missing race results spliced into the CSV,
+  roster stubs for mid-season substitutes, career/palmarès refresh, and
+  a full rebuild when new results landed. `--dry-run`, `--no-reprocess`,
+  `--bio/--no-bio` flags.
+- `f1 new-season` — scaffolds `data/seasons/{YYYY}.json` for a new year
+  from the API, carrying over curated fields (team colors, principals,
+  championship titles) from the previous season.
+- `data-sync.yml` workflow — scheduled twice-weekly GitHub Action that
+  runs `f1 sync --no-reprocess` and auto-commits refreshed data files,
+  so the repo stays current with zero manual work.
+- **Sync** button in the Tkinter manager (`tools/manage_ui.py`) — one
+  click replaces the fetch-round-then-build dance.
+
+### Fixed
+
+- `f1 refresh-bio` no longer rewrites `seasons/{YYYY}.json` when nothing
+  changed upstream — `updated_at` timestamps only move on real changes,
+  killing the noisy no-op git diffs.
+- `.env.example` still documented the removed Flask stack; it now lists
+  the real pydantic-settings fields.
+- `data/README.md`/`README.md` sprint-weekend lists updated to the
+  renumbered 2026 calendar (sprints at rounds 2, 4, 5, 9, 12, 16).
+
 - Precomputed `driver_position_distribution` cache table — driver detail
   page now reads position counts via PK lookup instead of scanning
   `position_results` (16M+ rows). Run `f1 compute-stats --season YYYY`
