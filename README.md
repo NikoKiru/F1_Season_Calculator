@@ -9,7 +9,24 @@
 > non-empty subsets of rounds (up to 16,777,215 for a 24-race year) and
 > tells you who wins, by how much, and on which round.
 
-## What's new (2026-06-08)
+## What's new (2026-07-04)
+
+- **`f1 sync`** — one command keeps a live season current: it pulls the
+  calendar (incl. sprint flags) from Jolpica, fetches any completed round
+  missing from the CSV, scaffolds roster entries for substitutes, tops up
+  career stats, and rebuilds the database. Idempotent — re-running when
+  up to date touches nothing. The Tkinter manager grew a **Sync** button
+  that does the same in one click.
+- **`f1 new-season`** — scaffolds `data/seasons/{YYYY}.json` from the API
+  when a new year starts, carrying over team colors, principals, and
+  championship titles from the previous season's file.
+- **Scheduled data sync** — `.github/workflows/data-sync.yml` runs twice a
+  week and auto-commits refreshed data files, so `git pull` is all the
+  local machine needs before rebuilding.
+- **Quieter `refresh-bio`** — `updated_at` only moves when a number
+  actually changed; no more no-op commits after every refresh.
+
+## Previously (2026-06-08)
 
 - **Notable Scenarios** — a new discovery page (Championships ▾ → Notable
   Scenarios, plus `GET /api/statistics/notable-scenarios`) that surfaces the
@@ -107,37 +124,64 @@ The CSV is the single source of truth for points. See
 ### Keeping a live season current
 
 ```bash
+f1 sync
+```
+
+That's it. `sync` compares the local data against the Jolpica-F1 API and
+fixes every gap: calendar/sprint metadata, missing race + sprint results,
+roster stubs for substitute drivers, career stats, then one full rebuild.
+Flags: `--dry-run` (show the plan), `--no-reprocess` (data files only,
+what CI uses), `--bio/--no-bio` (career stats; default refreshes only
+when new rounds landed), `--season YYYY`.
+
+A scheduled GitHub Action (`data-sync.yml`) runs `f1 sync --no-reprocess`
+twice a week and commits any new data, so a deployment machine only needs
+`git pull` + the manager's **Build** (or a local `f1 sync`).
+
+The older manual paths still work:
+
+```bash
 # Manual entry (optional --sprint on sprint weekends)
 f1 add-race --season 2026 --race 3 \
   --results "VER:25,NOR:18,LEC:15,PIA:12" \
   --sprint  "VER:8,NOR:7,LEC:6"
 
-# Or pull from Jolpica-F1 (Ergast-compatible API)
+# Pull one specific round from Jolpica
 f1 fetch-race --season 2026 --round 3
 ```
 
-Both commands rewrite the season CSV and reprocess the season. Use
-`--no-reprocess` when batching multiple rounds and reprocess once at the
-end.
+### Starting a new season
+
+```bash
+f1 new-season --season 2027   # once Jolpica publishes the calendar
+f1 sync --season 2027         # then this keeps it current all year
+```
+
+Colors, team principals, power units, and championship titles carry over
+from the previous season's JSON; the command prints a short checklist of
+anything that still needs hand-curation.
 
 ## 2026 calendar notes
 
-- **Canceled:** Round 4 (Bahrain), Round 5 (Saudi Arabia)
-- **Sprint weekends:** Rounds 2 (China), 6 (Miami), 7 (Canada),
-  11 (Silverstone), 14 (Zandvoort), 18 (Singapore)
-
-The app respects the real round numbering — canceled rounds are absent
-from the CSV header, not padded with zeros.
+- Bahrain and Saudi Arabia were canceled; Jolpica renumbered the calendar
+  to 22 sequential rounds and this repo follows that numbering (round 4 =
+  Miami, round 5 = Canada, …).
+- **Sprint weekends:** rounds 2 (China), 4 (Miami), 5 (Canada),
+  9 (Silverstone), 12 (Zandvoort), 16 (Singapore) — `f1 sync` keeps
+  `sprint_rounds` aligned with the API automatically.
 
 ## CLI
 
 | Command | Description |
 | --- | --- |
+| `f1 sync [--season YYYY] [--dry-run]` | **Bring a season fully up to date from the API** (calendar, results, roster, bios, rebuild) |
+| `f1 new-season --season YYYY` | Scaffold `seasons/{YYYY}.json` from the API with carry-over from last year |
 | `f1 setup` | Create `data/`, `instance/`, sample CSV, empty DB |
 | `f1 process-data --season YYYY` | Generate all championships from CSV |
 | `f1 compute-stats --season YYYY` | Pre-compute driver statistics + win probability cache |
 | `f1 add-race --season YYYY --race N --results "…" [--sprint "…"]` | Append a weekend's results |
 | `f1 fetch-race --season YYYY --round N [--no-reprocess]` | Pull race + sprint from Jolpica and splice in |
+| `f1 refresh-bio --season YYYY` | Top up career totals + palmarès (skips the write when nothing changed) |
 
 > The `f1` script is registered by `pip install -e .`. If your shell
 > can't find it after install, reopen the terminal so the new `Scripts/`

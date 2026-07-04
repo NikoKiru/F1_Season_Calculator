@@ -1,0 +1,52 @@
+name: Data sync
+
+# Keep data/ current from the Jolpica-F1 API with zero manual work.
+# Races run on Sundays; results are up within hours, so Monday 06:00 UTC
+# catches every weekend. Thursday's run picks up stragglers (rescheduled
+# races, corrected results, bio-count drift).
+on:
+  schedule:
+    - cron: '0 6 * * MON'
+    - cron: '0 6 * * THU'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      # Data files only: the SQLite rebuild is heavy and local-only, so CI
+      # syncs the CSV/JSON and the app machine rebuilds on next Sync/Build.
+      - name: Sync season data from Jolpica
+        run: f1 sync --no-reprocess
+
+      - name: Commit and push if data changed
+        run: |
+          if [ -z "$(git status --porcelain data/)" ]; then
+            echo "Data already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git commit -m "data: auto-sync from Jolpica ($(date -u +%Y-%m-%d))"
+          git push

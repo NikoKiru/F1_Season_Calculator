@@ -72,6 +72,18 @@ class ManagerUI:
         )
         header.pack(anchor="w", **pad)
 
+        # --- Row 0: Sync (the one-click path) ---
+        sync_frame = ttk.LabelFrame(self.root, text="Sync season")
+        sync_frame.pack(fill="x", padx=12, pady=4)
+
+        ttk.Label(
+            sync_frame,
+            text="Pull calendar + any new race results from Jolpica, then rebuild.",
+        ).pack(side="left", padx=8, pady=8)
+
+        self.sync_btn = ttk.Button(sync_frame, text="Sync", command=self._on_sync)
+        self.sync_btn.pack(side="right", padx=8, pady=8)
+
         # --- Row 1: Load race ---
         load_frame = ttk.LabelFrame(self.root, text="Load race")
         load_frame.pack(fill="x", padx=12, pady=4)
@@ -115,6 +127,16 @@ class ManagerUI:
         self.log.pack(fill="both", expand=True, padx=4, pady=4)
 
     # ---- button handlers -------------------------------------------------
+
+    def _on_sync(self) -> None:
+        if self.busy:
+            self._log("Another command is already running — please wait.")
+            return
+        # `sync` chains everything itself: fetch, roster, bios, full rebuild.
+        self._run_command(
+            ["sync", "--season", str(self.season)],
+            label="Sync season",
+        )
 
     def _on_load(self) -> None:
         if self.busy:
@@ -305,6 +327,7 @@ class ManagerUI:
         def apply() -> None:
             self.busy = busy
             state = "disabled" if busy else "normal"
+            self.sync_btn.configure(state=state)
             self.load_btn.configure(state=state)
             self.build_btn.configure(state=state)
 
