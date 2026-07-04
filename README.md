@@ -172,16 +172,16 @@ anything that still needs hand-curation.
 
 ## CLI
 
-| Command | Description |
-| --- | --- |
-| `f1 sync [--season YYYY] [--dry-run]` | **Bring a season fully up to date from the API** (calendar, results, roster, bios, rebuild) |
-| `f1 new-season --season YYYY` | Scaffold `seasons/{YYYY}.json` from the API with carry-over from last year |
-| `f1 setup` | Create `data/`, `instance/`, sample CSV, empty DB |
-| `f1 process-data --season YYYY` | Generate all championships from CSV |
-| `f1 compute-stats --season YYYY` | Pre-compute driver statistics + win probability cache |
-| `f1 add-race --season YYYY --race N --results "…" [--sprint "…"]` | Append a weekend's results |
-| `f1 fetch-race --season YYYY --round N [--no-reprocess]` | Pull race + sprint from Jolpica and splice in |
-| `f1 refresh-bio --season YYYY` | Top up career totals + palmarès (skips the write when nothing changed) |
+| Command                                                               | Description                                                                                       |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `f1 sync [--season YYYY] [--dry-run]`                               | **Bring a season fully up to date from the API** (calendar, results, roster, bios, rebuild) |
+| `f1 new-season --season YYYY`                                       | Scaffold`seasons/{YYYY}.json` from the API with carry-over from last year                       |
+| `f1 setup`                                                          | Create`data/`, `instance/`, sample CSV, empty DB                                              |
+| `f1 process-data --season YYYY`                                     | Generate all championships from CSV                                                               |
+| `f1 compute-stats --season YYYY`                                    | Pre-compute driver statistics + win probability cache                                             |
+| `f1 add-race --season YYYY --race N --results "…" [--sprint "…"]` | Append a weekend's results                                                                        |
+| `f1 fetch-race --season YYYY --round N [--no-reprocess]`            | Pull race + sprint from Jolpica and splice in                                                     |
+| `f1 refresh-bio --season YYYY`                                      | Top up career totals + palmarès (skips the write when nothing changed)                           |
 
 > The `f1` script is registered by `pip install -e .`. If your shell
 > can't find it after install, reopen the terminal so the new `Scripts/`
@@ -193,20 +193,20 @@ anything that still needs hand-curation.
 The REST surface lives under `/api/*` — full schema at `/api/openapi.json`
 and interactive docs at `/api/docs`. Highlights:
 
-| Endpoint | Purpose |
-| --- | --- |
-| `GET /api/championships` | Paginated championship list |
-| `GET /api/championships/{id}` | Full championship detail incl. per-round race/sprint points |
-| `GET /api/championships/wins` | Wins per driver |
-| `GET /api/championships/min-races-to-win` | Fewest rounds needed to win per driver |
-| `GET /api/drivers/{code}/stats` | Consolidated driver stats (one query) |
-| `GET /api/drivers/{code}/position/{n}` | Paginated scenarios where driver finished Pn |
-| `GET /api/drivers/head-to-head/{a}/{b}` | Win/loss split between two drivers |
-| `GET /api/drivers/highest-position` | Each driver's best-ever finish |
-| `GET /api/drivers/positions?position=N` | Share of scenarios per driver at position N |
-| `GET /api/statistics/win-probability` | Win probability by season length |
-| `GET /api/statistics/notable-scenarios` | Curated "most extreme" what-if championships (closest title, biggest blowout, biggest upset, rarest champion, most decisive round) |
-| `GET /api/search/championship?rounds=1,2,3` | Look up a championship by rounds |
+| Endpoint                                      | Purpose                                                                                                                            |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/championships`                    | Paginated championship list                                                                                                        |
+| `GET /api/championships/{id}`               | Full championship detail incl. per-round race/sprint points                                                                        |
+| `GET /api/championships/wins`               | Wins per driver                                                                                                                    |
+| `GET /api/championships/min-races-to-win`   | Fewest rounds needed to win per driver                                                                                             |
+| `GET /api/drivers/{code}/stats`             | Consolidated driver stats (one query)                                                                                              |
+| `GET /api/drivers/{code}/position/{n}`      | Paginated scenarios where driver finished Pn                                                                                       |
+| `GET /api/drivers/head-to-head/{a}/{b}`     | Win/loss split between two drivers                                                                                                 |
+| `GET /api/drivers/highest-position`         | Each driver's best-ever finish                                                                                                     |
+| `GET /api/drivers/positions?position=N`     | Share of scenarios per driver at position N                                                                                        |
+| `GET /api/statistics/win-probability`       | Win probability by season length                                                                                                   |
+| `GET /api/statistics/notable-scenarios`     | Curated "most extreme" what-if championships (closest title, biggest blowout, biggest upset, rarest champion, most decisive round) |
+| `GET /api/search/championship?rounds=1,2,3` | Look up a championship by rounds                                                                                                   |
 
 ## Project layout
 
@@ -238,16 +238,15 @@ tests/                   unit/ + api/ + e2e/
 
 The `web/` directory is a standard Vite + TypeScript project. From inside it:
 
-| Command | What it does |
-| --- | --- |
-| `npm install` | Install frontend dependencies |
-| `npm run build` | One-off production build → `app/static/dist/` |
-| `npm run dev` | Vite dev server with HMR (run alongside `uvicorn --reload`) |
-| `npm run typecheck` | `tsc --noEmit` |
+| Command               | What it does                                                 |
+| --------------------- | ------------------------------------------------------------ |
+| `npm install`       | Install frontend dependencies                                |
+| `npm run build`     | One-off production build →`app/static/dist/`              |
+| `npm run dev`       | Vite dev server with HMR (run alongside`uvicorn --reload`) |
+| `npm run typecheck` | `tsc --noEmit`                                             |
 
 FastAPI reads `app/static/dist/manifest.json` at startup to resolve hashed
-asset URLs, so rebuild after changing any TS/CSS file (or leave `npm run
-dev` running).
+asset URLs, so rebuild after changing any TS/CSS file (or leave `npm run dev` running).
 
 ## Tests
 
