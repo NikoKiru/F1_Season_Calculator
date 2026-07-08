@@ -6,5 +6,5 @@ router = APIRouter()
 
 
 @router.post("/clear-cache", status_code=204)
-async def clear_cache() -> None:
+def clear_cache() -> None:
     cache_service.clear()

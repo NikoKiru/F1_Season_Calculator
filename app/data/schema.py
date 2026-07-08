@@ -24,6 +24,7 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
     "CREATE INDEX IF NOT EXISTS idx_rounds ON championship_results (rounds)",
     "CREATE INDEX IF NOT EXISTS idx_season ON championship_results (season)",
     "CREATE INDEX IF NOT EXISTS idx_season_winner ON championship_results (season, winner)",
+    "CREATE INDEX IF NOT EXISTS idx_season_num_races ON championship_results (season, num_races)",
     """
     CREATE TABLE IF NOT EXISTS driver_statistics (
         driver_code TEXT NOT NULL,
@@ -110,6 +111,7 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
     "CREATE INDEX IF NOT EXISTS idx_constructor_num_races ON constructor_championship_results (num_races)",
     "CREATE INDEX IF NOT EXISTS idx_constructor_season ON constructor_championship_results (season)",
     "CREATE INDEX IF NOT EXISTS idx_constructor_season_winner ON constructor_championship_results (season, winner)",
+    "CREATE INDEX IF NOT EXISTS idx_constructor_season_num_races ON constructor_championship_results (season, num_races)",
     """
     CREATE TABLE IF NOT EXISTS constructor_statistics (
         constructor_name TEXT NOT NULL,

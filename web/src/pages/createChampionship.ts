@@ -23,13 +23,21 @@ function selectedRounds(): number[] {
     .sort((a, b) => a - b);
 }
 
-function randomise(total: number): void {
-  const count = Math.max(1, Math.floor(Math.random() * total) + 1);
-  const picks = new Set<number>();
-  while (picks.size < count) picks.add(Math.floor(Math.random() * total) + 1);
-  for (const input of $$<HTMLInputElement>("input[name='round']")) {
-    input.checked = picks.has(Number(input.value));
+function randomise(): void {
+  // Sample from the actual checkboxes — round numbers can be non-contiguous
+  // (e.g. a cancelled round mid-season), so guessing 1..total_rounds can miss.
+  const inputs = $$<HTMLInputElement>("input[name='round']");
+  if (inputs.length === 0) return;
+  const count = Math.floor(Math.random() * inputs.length) + 1;
+  const pool = [...inputs];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = pool[i]!;
+    pool[i] = pool[j]!;
+    pool[j] = tmp;
   }
+  const picked = new Set(pool.slice(0, count));
+  for (const input of inputs) input.checked = picked.has(input);
 }
 
 async function submit(
@@ -66,7 +74,7 @@ const payload = readJsonScript<PagePayload>("page-data");
 if (payload) {
   const submitBtn = require$<HTMLButtonElement>("[data-submit]");
   const feedback = require$<HTMLElement>("[data-feedback]");
-  $<HTMLButtonElement>("[data-random]")?.addEventListener("click", () => randomise(payload.total_rounds));
+  $<HTMLButtonElement>("[data-random]")?.addEventListener("click", () => randomise());
   submitBtn.addEventListener("click", () => submit(payload, feedback, submitBtn));
   // Browsers snapshot the DOM into the back-forward cache at navigation
   // time. Without this, returning to the page (e.g. clicking back from

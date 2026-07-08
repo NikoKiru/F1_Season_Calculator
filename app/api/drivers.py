@@ -12,7 +12,7 @@ router = APIRouter()
     "/highest-position",
     summary="Best finish position for every driver in a season.",
 )
-async def highest_position(conn: ConnDep, season: SeasonDep) -> list[dict]:
+def highest_position(conn: ConnDep, season: SeasonDep) -> list[dict]:
     return driver_service.highest_position_all(conn, season)
 
 
@@ -20,7 +20,7 @@ async def highest_position(conn: ConnDep, season: SeasonDep) -> list[dict]:
     "/positions",
     summary="How often each driver finished in a given position.",
 )
-async def positions(
+def positions(
     conn: ConnDep,
     season: SeasonDep,
     position: Annotated[int, Query(ge=1, le=24)],
@@ -32,7 +32,7 @@ async def positions(
     "/head-to-head/{driver1}/{driver2}",
     summary="Who finished ahead more often across all shared championships.",
 )
-async def head_to_head(
+def head_to_head(
     driver1: str,
     driver2: str,
     conn: ConnDep,
@@ -53,7 +53,7 @@ async def head_to_head(
     "/{code}/stats",
     summary="Full stats bundle for a driver (one endpoint powers the detail page).",
 )
-async def driver_stats(
+def driver_stats(
     code: str,
     conn: ConnDep,
     season: SeasonDep,
@@ -66,7 +66,7 @@ async def driver_stats(
     "/{code}/position/{position}",
     summary="Paginated championships where driver finished at a specific position.",
 )
-async def driver_position_championships(
+def driver_position_championships(
     code: str,
     position: int,
     conn: ConnDep,

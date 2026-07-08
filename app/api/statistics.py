@@ -10,7 +10,7 @@ router = APIRouter()
     "/win-probability",
     summary="Championship win probability by driver × season length.",
 )
-async def win_probability(conn: ConnDep, season: SeasonDep) -> dict:
+def win_probability(conn: ConnDep, season: SeasonDep) -> dict:
     return statistics_service.win_probability(conn, season)
 
 
@@ -18,5 +18,5 @@ async def win_probability(conn: ConnDep, season: SeasonDep) -> dict:
     "/notable-scenarios",
     summary="Curated 'most extreme' what-if championships for the season.",
 )
-async def notable_scenarios(conn: ConnDep, season: SeasonDep) -> dict:
+def notable_scenarios(conn: ConnDep, season: SeasonDep) -> dict:
     return statistics_service.notable_scenarios(conn, season)

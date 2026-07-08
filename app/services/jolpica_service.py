@@ -52,6 +52,16 @@ def _to_points_map(entries: list[dict]) -> dict[str, int]:
     return out
 
 
+def _retry_after_seconds(raw: str | None) -> float | None:
+    """Seconds from a Retry-After header, or None when absent/HTTP-date form."""
+    if not raw:
+        return None
+    try:
+        return float(raw)
+    except ValueError:
+        return None
+
+
 def _fetch(path: str, *, client: httpx.Client | None = None) -> dict:
     url = f"{BASE_URL}{path}"
     owns_client = client is None
@@ -61,7 +71,7 @@ def _fetch(path: str, *, client: httpx.Client | None = None) -> dict:
             resp = c.get(url)
             if resp.status_code == 429:
                 # Rate limited — back off and retry. Honor Retry-After if set.
-                wait = float(resp.headers.get("Retry-After", 0)) or (2 ** attempt)
+                wait = _retry_after_seconds(resp.headers.get("Retry-After")) or (2 ** attempt)
                 time.sleep(wait)
                 continue
             if resp.status_code == 404:

@@ -326,39 +326,32 @@ Understanding the codebase structure:
 
 ```
 F1_Season_Calculator/
-├── championship/           # Core business logic
-│   ├── api.py             # REST API endpoints
-│   ├── commands.py        # CLI commands
-│   ├── views.py           # Web routes
-│   ├── logic.py           # Calculations
-│   ├── models.py          # Data models
-│   └── errors.py          # Error handlers
+├── app/                   # FastAPI application
+│   ├── api/              # JSON API routers
+│   ├── views/            # SSR page controllers
+│   ├── services/         # Business logic (championships, drivers, sync…)
+│   ├── data/             # Engine, schema, SQL queries
+│   ├── pipeline/         # CSV → championships build pipeline
+│   ├── cli/              # `f1` Typer commands
+│   ├── domain/           # Pydantic models
+│   └── templates/        # Jinja2 templates
 │
-├── static/                # Frontend assets
-│   ├── js/               # JavaScript files
-│   └── style.css         # Stylesheets
+├── web/                   # Vite + TypeScript frontend
+│   └── src/              # Pages, chart factories, styles
 │
-├── templates/             # HTML templates
-│
+├── data/                  # Season CSVs + seasons/{year}.json
 ├── docs/                  # Documentation
-│   ├── setup/            # Setup guides
-│   ├── architecture/     # Architecture docs
-│   ├── performance/      # Performance docs
-│   └── ui/               # UI/UX docs
-│
-├── tests/                 # Test suite
-│
+├── tests/                 # Test suite (unit, api, e2e)
 ├── scripts/               # Utility scripts
-│
-└── config/                # Configuration files
+└── tools/                 # Tkinter season manager
 ```
 
 ### Key Files
 
-* `app.py` - Application entry point
-* `db.py` - Database initialization
-* `setup.py` - Package configuration
-* `requirements.txt` - Dependencies
+* `app/main.py` - FastAPI app factory
+* `app/config.py` - Settings (env-driven)
+* `pyproject.toml` - Package configuration + dependencies
+* `app/data/schema.py` - Canonical SQLite schema
 
 ## 🧪 Testing
 

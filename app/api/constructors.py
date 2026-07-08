@@ -23,7 +23,7 @@ def _resolved_constructor(slug: str, season: int) -> str:
     "/highest-position",
     summary="Best WCC finish position for every constructor in a season.",
 )
-async def highest_position(conn: ConnDep, season: SeasonDep) -> list[dict]:
+def highest_position(conn: ConnDep, season: SeasonDep) -> list[dict]:
     return constructor_service.highest_position_all(conn, season)
 
 
@@ -31,7 +31,7 @@ async def highest_position(conn: ConnDep, season: SeasonDep) -> list[dict]:
     "/positions",
     summary="How often each constructor finished in a given position.",
 )
-async def positions(
+def positions(
     conn: ConnDep,
     season: SeasonDep,
     position: Annotated[int, Query(ge=1, le=24)],
@@ -43,7 +43,7 @@ async def positions(
     "/head-to-head/{c1}/{c2}",
     summary="Who finished ahead more often across all shared championships (WCC).",
 )
-async def head_to_head(
+def head_to_head(
     c1: str,
     c2: str,
     conn: ConnDep,
@@ -64,7 +64,7 @@ async def head_to_head(
     "/{slug}/stats",
     summary="Full stats bundle for a constructor (one endpoint powers the detail page).",
 )
-async def constructor_stats(
+def constructor_stats(
     slug: str,
     conn: ConnDep,
     season: SeasonDep,
@@ -77,7 +77,7 @@ async def constructor_stats(
     "/{slug}/position/{position}",
     summary="Paginated championships where constructor finished at a specific position.",
 )
-async def constructor_position_championships(
+def constructor_position_championships(
     slug: str,
     position: int,
     conn: ConnDep,

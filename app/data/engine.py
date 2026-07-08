@@ -1,10 +1,12 @@
 from pathlib import Path
+from threading import Lock
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import QueuePool
 
 _engines: dict[Path, Engine] = {}
+_engines_lock = Lock()
 
 
 def get_engine(db_path: Path) -> Engine:
@@ -14,9 +16,13 @@ def get_engine(db_path: Path) -> Engine:
     perf profile carries over — see db.py:18-63 in the old code.
     """
     resolved = db_path.resolve()
-    if resolved in _engines:
-        return _engines[resolved]
+    with _engines_lock:
+        if resolved in _engines:
+            return _engines[resolved]
+        return _engines.setdefault(resolved, _build_engine(resolved))
 
+
+def _build_engine(resolved: Path) -> Engine:
     resolved.parent.mkdir(parents=True, exist_ok=True)
 
     engine = create_engine(
@@ -41,12 +47,12 @@ def get_engine(db_path: Path) -> Engine:
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
 
-    _engines[resolved] = engine
     return engine
 
 
 def dispose_engine(db_path: Path) -> None:
     resolved = db_path.resolve()
-    engine = _engines.pop(resolved, None)
+    with _engines_lock:
+        engine = _engines.pop(resolved, None)
     if engine is not None:
         engine.dispose()

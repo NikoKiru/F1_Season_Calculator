@@ -129,3 +129,25 @@ def test_network_error_wrapped_as_jolpica_error():
 
     with _client(handler) as c, pytest.raises(jolpica_service.JolpicaError):
         jolpica_service.fetch_race(2026, 1, client=c)
+
+
+def test_429_with_http_date_retry_after_backs_off_and_retries(monkeypatch):
+    """An HTTP-date Retry-After (RFC 9110) must not crash the retry loop."""
+    sleeps: list[float] = []
+    monkeypatch.setattr(jolpica_service.time, "sleep", sleeps.append)
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return httpx.Response(
+                429, headers={"Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"}, json={}
+            )
+        return httpx.Response(
+            200, json=_race_payload([{"Driver": {"code": "VER"}, "points": "25"}])
+        )
+
+    with _client(handler) as c:
+        result = jolpica_service.fetch_race(2026, 3, client=c)
+    assert result == {"VER": 25}
+    assert sleeps == [1]  # exponential-backoff fallback, not a parsed date

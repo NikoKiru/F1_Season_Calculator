@@ -30,7 +30,7 @@ def _parse_rounds(raw: str) -> list[int]:
     "/championship",
     summary="Find an existing championship by its exact round combination.",
 )
-async def find_championship(
+def find_championship(
     conn: ConnDep,
     season: SeasonDep,
     rounds: Annotated[str, Query(description="Comma-separated round numbers (1–24)")],
