@@ -89,48 +89,39 @@ def _compute_locked(
 
     say(f"  drivers={len(all_drivers)} max_races={max_races}")
 
-    # Highest position per driver: iterate from longest season down, short-circuit
-    # once every driver has claimed a win (position 1 cannot be beaten).
+    # Highest position per driver: one exact pass over every championship.
+    # A per-length LIMIT sample is NOT safe here — once a length exceeds the
+    # sample size (16+ rounds), a driver's best long-season result can live
+    # entirely in the skipped combinations and the stats silently go wrong.
     say("  scanning highest positions")
     driver_stats: dict[str, dict] = {}
-    drivers_to_find = set(all_drivers)
 
-    for n in range(max_races, 0, -1):
-        if not drivers_to_find:
-            break
-        rows = conn.execute(
-            "SELECT championship_id, standings, num_races FROM championship_results "
-            "WHERE num_races = ? AND season = ? ORDER BY championship_id DESC LIMIT 10000",
-            (n, season),
-        ).fetchall()
-        for row in rows:
-            cid = row["championship_id"]
-            drivers_list = [d.strip() for d in row["standings"].split(",")]
-            for position, driver in enumerate(drivers_list, start=1):
-                entry = driver_stats.get(driver)
-                if entry is None:
-                    driver_stats[driver] = {
-                        "highest_position": position,
-                        "highest_position_max_races": row["num_races"],
-                        "highest_position_championship_id": cid,
-                        "best_margin": None,
-                        "best_margin_championship_id": None,
-                        "win_count": 0,
-                    }
-                    if position == 1:
-                        drivers_to_find.discard(driver)
-                elif position < entry["highest_position"]:
-                    entry["highest_position"] = position
-                    entry["highest_position_max_races"] = row["num_races"]
-                    entry["highest_position_championship_id"] = cid
-                    if position == 1:
-                        drivers_to_find.discard(driver)
-                elif (
-                    position == entry["highest_position"]
-                    and row["num_races"] > entry["highest_position_max_races"]
-                ):
-                    entry["highest_position_max_races"] = row["num_races"]
-                    entry["highest_position_championship_id"] = cid
+    for row in conn.execute(
+        "SELECT championship_id, standings, num_races FROM championship_results "
+        "WHERE season = ?",
+        (season,),
+    ):
+        cid = row["championship_id"]
+        nr = row["num_races"]
+        for position, driver in enumerate(row["standings"].split(","), start=1):
+            driver = driver.strip()
+            entry = driver_stats.get(driver)
+            if entry is None:
+                driver_stats[driver] = {
+                    "highest_position": position,
+                    "highest_position_max_races": nr,
+                    "highest_position_championship_id": cid,
+                    "best_margin": None,
+                    "best_margin_championship_id": None,
+                    "win_count": 0,
+                }
+            elif position < entry["highest_position"] or (
+                position == entry["highest_position"]
+                and nr > entry["highest_position_max_races"]
+            ):
+                entry["highest_position"] = position
+                entry["highest_position_max_races"] = nr
+                entry["highest_position_championship_id"] = cid
 
     say("  counting wins")
     for row in conn.execute(

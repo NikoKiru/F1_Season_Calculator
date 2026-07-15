@@ -79,48 +79,37 @@ def _compute_locked(
 
     say(f"  constructors={len(all_constructors)} max_races={max_races}")
 
+    # One exact pass over every championship — a per-length LIMIT sample goes
+    # wrong once a length exceeds the sample size (see stats_compute.py).
     say("  scanning highest positions")
     constructor_stats: dict[str, dict] = {}
-    constructors_to_find = set(all_constructors)
 
-    for n in range(max_races, 0, -1):
-        if not constructors_to_find:
-            break
-        rows = conn.execute(
-            "SELECT championship_id, standings, num_races "
-            "FROM constructor_championship_results "
-            "WHERE num_races = ? AND season = ? "
-            "ORDER BY championship_id DESC LIMIT 10000",
-            (n, season),
-        ).fetchall()
-        for row in rows:
-            cid = row["championship_id"]
-            order = [c.strip() for c in row["standings"].split(",")]
-            for position, constructor in enumerate(order, start=1):
-                entry = constructor_stats.get(constructor)
-                if entry is None:
-                    constructor_stats[constructor] = {
-                        "highest_position": position,
-                        "highest_position_max_races": row["num_races"],
-                        "highest_position_championship_id": cid,
-                        "best_margin": None,
-                        "best_margin_championship_id": None,
-                        "win_count": 0,
-                    }
-                    if position == 1:
-                        constructors_to_find.discard(constructor)
-                elif position < entry["highest_position"]:
-                    entry["highest_position"] = position
-                    entry["highest_position_max_races"] = row["num_races"]
-                    entry["highest_position_championship_id"] = cid
-                    if position == 1:
-                        constructors_to_find.discard(constructor)
-                elif (
-                    position == entry["highest_position"]
-                    and row["num_races"] > entry["highest_position_max_races"]
-                ):
-                    entry["highest_position_max_races"] = row["num_races"]
-                    entry["highest_position_championship_id"] = cid
+    for row in conn.execute(
+        "SELECT championship_id, standings, num_races "
+        "FROM constructor_championship_results WHERE season = ?",
+        (season,),
+    ):
+        cid = row["championship_id"]
+        nr = row["num_races"]
+        for position, constructor in enumerate(row["standings"].split(","), start=1):
+            constructor = constructor.strip()
+            entry = constructor_stats.get(constructor)
+            if entry is None:
+                constructor_stats[constructor] = {
+                    "highest_position": position,
+                    "highest_position_max_races": nr,
+                    "highest_position_championship_id": cid,
+                    "best_margin": None,
+                    "best_margin_championship_id": None,
+                    "win_count": 0,
+                }
+            elif position < entry["highest_position"] or (
+                position == entry["highest_position"]
+                and nr > entry["highest_position_max_races"]
+            ):
+                entry["highest_position"] = position
+                entry["highest_position_max_races"] = nr
+                entry["highest_position_championship_id"] = cid
 
     say("  counting wins")
     for row in conn.execute(
