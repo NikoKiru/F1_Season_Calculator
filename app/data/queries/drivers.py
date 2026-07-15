@@ -77,6 +77,9 @@ def head_to_head_pair(conn: Connection, d1: str, d2: str, season: int) -> tuple[
 
 
 def position_driver_counts(conn: Connection, position: int, season: int) -> list[dict]:
+    """Live aggregation over `position_results` — the fallback path when the
+    `driver_position_distribution` cache hasn't been computed for the season.
+    Expensive on full seasons (the table holds championships × drivers rows)."""
     rows = conn.execute(
         text(
             "SELECT driver_code, COUNT(*) AS count FROM position_results "
@@ -86,6 +89,21 @@ def position_driver_counts(conn: Connection, position: int, season: int) -> list
         {"p": position, "s": season},
     ).mappings().all()
     return [dict(r) for r in rows]
+
+
+def position_driver_counts_from_distribution(
+    conn: Connection, position: int, season: int
+) -> list[dict]:
+    """Indexed lookup in the precomputed `driver_position_distribution` cache.
+    Same shape as `position_driver_counts`; empty when compute-stats hasn't run."""
+    rows = conn.execute(
+        text(
+            "SELECT driver_code, count AS cnt FROM driver_position_distribution "
+            "WHERE season = :s AND position = :p ORDER BY cnt DESC"
+        ),
+        {"p": position, "s": season},
+    ).mappings().all()
+    return [{"driver_code": r["driver_code"], "count": int(r["cnt"])} for r in rows]
 
 
 def position_championships_paginated(

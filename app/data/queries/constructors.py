@@ -196,6 +196,7 @@ def position_counts(
 def position_constructor_counts(
     conn: Connection, position: int, season: int
 ) -> list[dict]:
+    """Live aggregation fallback — see position_constructor_counts_from_distribution."""
     rows = conn.execute(
         text(
             "SELECT constructor_name, COUNT(*) AS count "
@@ -206,6 +207,25 @@ def position_constructor_counts(
         {"p": position, "s": season},
     ).mappings().all()
     return [dict(r) for r in rows]
+
+
+def position_constructor_counts_from_distribution(
+    conn: Connection, position: int, season: int
+) -> list[dict]:
+    """Indexed lookup in the precomputed `constructor_position_distribution`
+    cache. Same shape as the live aggregation; empty before compute-stats."""
+    rows = conn.execute(
+        text(
+            "SELECT constructor_name, count AS cnt "
+            "FROM constructor_position_distribution "
+            "WHERE season = :s AND position = :p ORDER BY cnt DESC"
+        ),
+        {"p": position, "s": season},
+    ).mappings().all()
+    return [
+        {"constructor_name": r["constructor_name"], "count": int(r["cnt"])}
+        for r in rows
+    ]
 
 
 def position_championships_paginated(

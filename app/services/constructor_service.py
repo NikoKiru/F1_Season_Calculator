@@ -154,7 +154,11 @@ def win_probability(conn: Connection, season: int) -> dict:
 
 def position_summary(conn: Connection, position: int, season: int) -> list[dict]:
     def compute():
-        rows = q.position_constructor_counts(conn, position, season)
+        # INSTANT path: precomputed distribution. Fall back to the live
+        # GROUP BY over constructor_position_results before compute-stats.
+        rows = q.position_constructor_counts_from_distribution(conn, position, season)
+        if not rows:
+            rows = q.position_constructor_counts(conn, position, season)
         total = sum(int(r["count"]) for r in rows)
         return [
             {

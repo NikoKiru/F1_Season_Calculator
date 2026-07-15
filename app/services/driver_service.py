@@ -102,7 +102,11 @@ def head_to_head(conn: Connection, d1: str, d2: str, season: int) -> dict[str, i
 
 def position_summary(conn: Connection, position: int, season: int) -> list[dict]:
     def compute():
-        rows = q_d.position_driver_counts(conn, position, season)
+        # INSTANT path: precomputed distribution. Fall back to the live
+        # GROUP BY over position_results only before compute-stats has run.
+        rows = q_d.position_driver_counts_from_distribution(conn, position, season)
+        if not rows:
+            rows = q_d.position_driver_counts(conn, position, season)
         total = sum(int(r["count"]) for r in rows)
         return [
             {

@@ -106,6 +106,38 @@ def test_position_summary_percentages_sum_to_100(conn):
     assert abs(total_pct - 100.0) < 0.1
 
 
+def test_position_summary_reads_precomputed_distribution(conn):
+    """position_summary must hit `driver_position_distribution` (a few hundred
+    rows) instead of GROUP-BY-scanning `position_results` (hundreds of millions
+    of rows on a full 24-round season). Prove it by skewing the distribution
+    table inside this rolled-back transaction and expecting the skew back."""
+    from sqlalchemy import text
+
+    conn.execute(
+        text(
+            "UPDATE driver_position_distribution SET count = 77 "
+            "WHERE season = 9999 AND driver_code = 'VER' AND position = 1"
+        )
+    )
+    summary = driver_service.position_summary(conn, 1, 9999)
+    ver = next(r for r in summary if r["driver"] == "VER")
+    assert ver["count"] == 77
+
+
+def test_position_summary_falls_back_to_live_scan_when_cache_empty(conn):
+    """Before compute-stats has run for a season the distribution table is
+    empty — the summary must then aggregate position_results directly."""
+    from sqlalchemy import text
+
+    baseline = driver_service.position_summary(conn, 1, 9999)
+    cache.clear()
+    conn.execute(
+        text("DELETE FROM driver_position_distribution WHERE season = 9999")
+    )
+    live = driver_service.position_summary(conn, 1, 9999)
+    assert live == baseline
+
+
 def test_championships_at_position_pagination(conn):
     result = driver_service.championships_at_position(
         conn, "VER", 1, 9999, page=1, per_page=3
