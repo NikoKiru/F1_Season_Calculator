@@ -212,6 +212,9 @@ def championship_page(request: Request, championship_id: int, conn: ConnDep):
     data = championship_service.get_by_id(conn, championship_id)
     if data is None:
         raise HTTPException(status_code=404, detail="Championship not found")
+    # get_by_id returns the TTL-cached dict itself — copy before decorating
+    # with view-only keys, or they leak into /api/championships/{id}.
+    data = dict(data)
     season = int(data["season"])
     sd = season_service.get_season_data(season)
 
@@ -284,9 +287,17 @@ def create_championship_page(request: Request, season: SeasonDep):
 def win_probability_page(request: Request, conn: ConnDep, season: SeasonDep):
     sd = season_service.get_season_data(season)
     data = statistics_service.win_probability(conn, season)
-    for row in data["drivers_data"]:
-        row["name"] = sd.driver_names.get(row["driver"], row["driver"])
-        row["color"] = sd.drivers[row["driver"]].color if row["driver"] in sd.drivers else "#666"
+    # Copy rows before decorating — the rows live in the TTL cache and the
+    # bare /api/statistics/win-probability response must keep its shape.
+    data = dict(data)
+    data["drivers_data"] = [
+        {
+            **row,
+            "name": sd.driver_names.get(row["driver"], row["driver"]),
+            "color": sd.drivers[row["driver"]].color if row["driver"] in sd.drivers else "#666",
+        }
+        for row in data["drivers_data"]
+    ]
     context = {
         **_common(season),
         "crumbs": _breadcrumbs(("Home", "/"), ("Win probability", None)),
@@ -473,9 +484,16 @@ def constructor_win_probability_page(
 ):
     sd = season_service.get_season_data(season)
     data = constructor_service.win_probability(conn, season)
-    for row in data["constructors_data"]:
-        row["slug"] = season_service.team_slug(row["constructor"])
-        row["color"] = sd.teams.get(row["constructor"], "#666")
+    # Same cache-isolation copy as the driver win-probability page.
+    data = dict(data)
+    data["constructors_data"] = [
+        {
+            **row,
+            "slug": season_service.team_slug(row["constructor"]),
+            "color": sd.teams.get(row["constructor"], "#666"),
+        }
+        for row in data["constructors_data"]
+    ]
     context = {
         **_common(season),
         "crumbs": _breadcrumbs(("Home", "/"), ("Constructor win probability", None)),
