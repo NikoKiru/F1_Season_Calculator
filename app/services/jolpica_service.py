@@ -70,6 +70,8 @@ def _fetch(path: str, *, client: httpx.Client | None = None) -> dict:
         for attempt in range(3):  # initial + 2 retries on 429
             resp = c.get(url)
             if resp.status_code == 429:
+                if attempt == 2:
+                    break  # out of retries — raise now, don't sleep first
                 # Rate limited — back off and retry. Honor Retry-After if set.
                 wait = _retry_after_seconds(resp.headers.get("Retry-After")) or (2 ** attempt)
                 time.sleep(wait)

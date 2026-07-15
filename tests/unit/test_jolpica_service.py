@@ -151,3 +151,20 @@ def test_429_with_http_date_retry_after_backs_off_and_retries(monkeypatch):
         result = jolpica_service.fetch_race(2026, 3, client=c)
     assert result == {"VER": 25}
     assert sleeps == [1]  # exponential-backoff fallback, not a parsed date
+
+
+def test_429_exhaustion_raises_without_final_sleep(monkeypatch):
+    """When every attempt is rate-limited the client must raise straight after
+    the last response — sleeping again first just delays the error."""
+    sleeps: list[float] = []
+    monkeypatch.setattr(jolpica_service.time, "sleep", sleeps.append)
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        return httpx.Response(429, headers={"Retry-After": "2"}, json={})
+
+    with _client(handler) as c, pytest.raises(jolpica_service.JolpicaError):
+        jolpica_service.fetch_race(2026, 3, client=c)
+    assert calls["n"] == 3  # initial + 2 retries
+    assert sleeps == [2.0, 2.0]  # no sleep after the final 429
