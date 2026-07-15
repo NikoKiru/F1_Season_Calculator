@@ -14,10 +14,13 @@ import numpy as np
 from app.pipeline.combinator import race_combinations, rank_standings, total_combinations
 from app.pipeline.constructor_builder import LoadedConstructorSeason
 
+# championship_id is set explicitly — same AUTOINCREMENT drift guard as
+# app/pipeline/writer.py: auto-assigned ids continue from sqlite_sequence
+# after a clear_season, desyncing from the position rows we pair them with.
 INSERT_CHAMPIONSHIP = (
     "INSERT INTO constructor_championship_results "
-    "(season, num_races, rounds, standings, winner, points) "
-    "VALUES (?, ?, ?, ?, ?, ?)"
+    "(championship_id, season, num_races, rounds, standings, winner, points) "
+    "VALUES (?, ?, ?, ?, ?, ?, ?)"
 )
 INSERT_POSITION = (
     "INSERT INTO constructor_position_results "
@@ -74,8 +77,9 @@ def process_season(
             points_str = ",".join(str(int(p)) for p in ordered_scores)
             winner = str(ordered[0])
 
+            cid = next_id + len(champ_buf)
             champ_buf.append(
-                (season, len(subset), rounds_str, standings_str, winner, points_str)
+                (cid, season, len(subset), rounds_str, standings_str, winner, points_str)
             )
             stand_buf.append((ordered, ordered_scores))
 

@@ -15,9 +15,14 @@ import numpy as np
 from app.pipeline.combinator import race_combinations, rank_standings, total_combinations
 from app.pipeline.csv_loader import LoadedSeason
 
+# championship_id is set explicitly: the table is AUTOINCREMENT, and after a
+# clear_season + reprocess cycle sqlite_sequence keeps counting from the old
+# maximum — auto-assigned ids would drift from the ids we pair with
+# position_results rows.
 INSERT_CHAMPIONSHIP = (
-    "INSERT INTO championship_results (season, num_races, rounds, standings, winner, points) "
-    "VALUES (?, ?, ?, ?, ?, ?)"
+    "INSERT INTO championship_results "
+    "(championship_id, season, num_races, rounds, standings, winner, points) "
+    "VALUES (?, ?, ?, ?, ?, ?, ?)"
 )
 INSERT_POSITION = (
     "INSERT INTO position_results (championship_id, driver_code, position, points, season) "
@@ -73,7 +78,10 @@ def process_season(
             points_str = ",".join(str(int(p)) for p in ordered_scores)
             winner = str(ordered_drivers[0])
 
-            champ_buf.append((season, len(subset), rounds_str, standings_str, winner, points_str))
+            cid = next_id + len(champ_buf)
+            champ_buf.append(
+                (cid, season, len(subset), rounds_str, standings_str, winner, points_str)
+            )
             stand_buf.append((ordered_drivers, ordered_scores))
 
             if len(champ_buf) >= batch_size:
