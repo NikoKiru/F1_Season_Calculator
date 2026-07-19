@@ -49,8 +49,8 @@
                 "wins": 9,
                 "podiums": 28,
                 "poles": 14,
-                "starts": 79,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 80,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "NOR": {
@@ -65,9 +65,9 @@
             "career": {
                 "wins": 11,
                 "podiums": 46,
-                "poles": 29,
-                "starts": 161,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "poles": 30,
+                "starts": 162,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "VER": {
@@ -81,11 +81,11 @@
             "jolpica_id": "max_verstappen",
             "career": {
                 "wins": 71,
-                "podiums": 129,
+                "podiums": 130,
                 "poles": 64,
                 "championships": 4,
-                "starts": 242,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 243,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "RUS": {
@@ -101,8 +101,8 @@
                 "wins": 7,
                 "podiums": 29,
                 "poles": 16,
-                "starts": 161,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 162,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "LEC": {
@@ -116,10 +116,10 @@
             "jolpica_id": "leclerc",
             "career": {
                 "wins": 9,
-                "podiums": 53,
+                "podiums": 54,
                 "poles": 34,
-                "starts": 182,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 183,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "HAM": {
@@ -136,8 +136,8 @@
                 "wins": 106,
                 "podiums": 207,
                 "poles": 118,
-                "starts": 389,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 390,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "ANT": {
@@ -150,11 +150,11 @@
             "debut_year": 2025,
             "jolpica_id": "antonelli",
             "career": {
-                "wins": 5,
-                "podiums": 10,
-                "poles": 7,
-                "starts": 33,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "wins": 6,
+                "podiums": 11,
+                "poles": 8,
+                "starts": 34,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "ALB": {
@@ -170,8 +170,8 @@
                 "wins": 0,
                 "podiums": 2,
                 "poles": 1,
-                "starts": 138,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 139,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "HAD": {
@@ -187,8 +187,8 @@
                 "wins": 0,
                 "podiums": 1,
                 "poles": 3,
-                "starts": 33,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 34,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "HUL": {
@@ -204,8 +204,8 @@
                 "wins": 0,
                 "podiums": 1,
                 "poles": 1,
-                "starts": 263,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 264,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "STR": {
@@ -221,8 +221,8 @@
                 "wins": 0,
                 "podiums": 3,
                 "poles": 1,
-                "starts": 200,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 201,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "SAI": {
@@ -238,8 +238,8 @@
                 "wins": 4,
                 "podiums": 29,
                 "poles": 11,
-                "starts": 241,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 242,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "LAW": {
@@ -255,8 +255,8 @@
                 "wins": 0,
                 "podiums": 0,
                 "poles": 0,
-                "starts": 44,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 45,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "ALO": {
@@ -273,8 +273,8 @@
                 "wins": 32,
                 "podiums": 106,
                 "poles": 23,
-                "starts": 437,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 438,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "OCO": {
@@ -290,8 +290,8 @@
                 "wins": 1,
                 "podiums": 4,
                 "poles": 0,
-                "starts": 189,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 190,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "GAS": {
@@ -307,8 +307,8 @@
                 "wins": 1,
                 "podiums": 6,
                 "poles": 0,
-                "starts": 187,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 188,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "BOR": {
@@ -324,8 +324,8 @@
                 "wins": 0,
                 "podiums": 0,
                 "poles": 0,
-                "starts": 33,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 34,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "BEA": {
@@ -341,8 +341,8 @@
                 "wins": 0,
                 "podiums": 0,
                 "poles": 0,
-                "starts": 36,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 37,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "COL": {
@@ -358,8 +358,8 @@
                 "wins": 0,
                 "podiums": 0,
                 "poles": 0,
-                "starts": 36,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 37,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "PER": {
@@ -375,8 +375,8 @@
                 "wins": 6,
                 "podiums": 39,
                 "poles": 4,
-                "starts": 292,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 293,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "BOT": {
@@ -392,8 +392,8 @@
                 "wins": 10,
                 "podiums": 67,
                 "poles": 19,
-                "starts": 256,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 257,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "LIN": {
@@ -409,8 +409,8 @@
                 "wins": 0,
                 "podiums": 0,
                 "poles": 0,
-                "starts": 9,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "starts": 10,
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         }
     },
@@ -440,9 +440,9 @@
             "palmares": {
                 "championships": 6,
                 "wins": 130,
-                "podiums": 299,
+                "podiums": 300,
                 "first_race_year": 2005,
-                "updated_at": "2026-06-28T19:10:43.627555+00:00"
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "Mercedes": {
@@ -454,10 +454,10 @@
             "jolpica_id": "mercedes",
             "palmares": {
                 "championships": 8,
-                "wins": 138,
-                "podiums": 322,
+                "wins": 139,
+                "podiums": 323,
                 "first_race_year": 1954,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "Ferrari": {
@@ -470,9 +470,9 @@
             "palmares": {
                 "championships": 16,
                 "wins": 251,
-                "podiums": 856,
+                "podiums": 857,
                 "first_race_year": 1950,
-                "updated_at": "2026-07-06T09:54:47.650758+00:00"
+                "updated_at": "2026-07-19T19:07:14.157745+00:00"
             }
         },
         "Aston Martin": {
