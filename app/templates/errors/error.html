@@ -2,8 +2,8 @@
 {% block title %}{{ status }} — {{ title }}{% endblock %}
 
 {% block content %}
-<section class="hero">
-  <p class="hero__eyebrow">Error {{ status }}</p>
+<section class="hero hero--error">
+  <p class="hero__eyebrow">Red flag · {{ status }}</p>
   <h1 class="hero__title">{{ title }}</h1>
   <p class="hero__lede">{{ message }}</p>
 </section>

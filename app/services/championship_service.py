@@ -149,6 +149,16 @@ def get_by_id(conn: Connection, championship_id: int) -> dict | None:
     return formatted
 
 
+def raced_rounds(conn: Connection, season: int) -> list[int]:
+    """Round numbers that have results — the rounds championships are built
+    from. The first page-1 result is the full-enumeration scenario, whose
+    `rounds` CSV lists every raced round."""
+    first = next(iter(get_page(conn, season, 1, 1)["results"]), None)
+    if not first or not first.get("rounds"):
+        return []
+    return _parse_csv_list(first["rounds"], int)
+
+
 def find_by_rounds(conn: Connection, rounds: list[int], season: int) -> int | None:
     """Returns championship_id if the exact round combination exists for this season."""
     sorted_rounds = sorted(set(rounds))

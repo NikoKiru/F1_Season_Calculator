@@ -67,6 +67,19 @@ async function hydrateCharts(payload: PagePayload): Promise<void> {
 
   const lengths = Object.keys(stats.win_probability_by_length).sort((a, b) => Number(a) - Number(b));
   const winRates = lengths.map((l) => stats.win_probability_by_length[l] ?? 0);
+  // A flat zero line hugs the axis and reads as a broken chart — say it
+  // plainly instead.
+  if (winRates.length === 0 || winRates.every((v) => v === 0)) {
+    const surface = lineCanvas.closest<HTMLElement>(".chart-surface");
+    if (surface) {
+      surface.innerHTML = `
+        <div class="chart-surface__empty">
+          <p>No title-winning scenarios</p>
+          <p>Win probability is 0% at every season length.</p>
+        </div>`;
+    }
+    return;
+  }
   await lineChart(
     lineCanvas,
     lengths,

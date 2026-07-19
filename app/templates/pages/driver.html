@@ -6,11 +6,11 @@
 <section class="hero" style="--team-color: {{ driver.color }}">
   <p class="hero__eyebrow">{{ driver.team }}</p>
   <h1 class="hero__title">{{ driver.name }}</h1>
-  <p class="hero__lede">{{ driver.flag }} · #{{ driver.number }} · {{ driver.code }}</p>
+  <p class="hero__lede">{{ nat_flag(driver.nationality) or driver.flag }} · #{{ driver.number }} · {{ driver.code }}</p>
   {% if driver.age or driver.nationality or driver.debut_year %}
   <ul class="hero__chips" aria-label="Driver bio">
     {% if driver.age %}<li class="hero__chip"><span class="hero__chip-label">Age</span><span class="hero__chip-value">{{ driver.age }}</span></li>{% endif %}
-    {% if driver.nationality %}<li class="hero__chip"><span class="hero__chip-label">Nationality</span><span class="hero__chip-value">{{ driver.nationality }}</span></li>{% endif %}
+    {% if driver.nationality %}<li class="hero__chip"><span class="hero__chip-label">Nationality</span><span class="hero__chip-value">{{ nat_flag(driver.nationality) }} {{ driver.nationality }}</span></li>{% endif %}
     {% if driver.debut_year %}<li class="hero__chip"><span class="hero__chip-label">F1 debut</span><span class="hero__chip-value">{{ driver.debut_year }}</span></li>{% endif %}
   </ul>
   {% endif %}

@@ -1,10 +1,9 @@
 <article class="card card--interactive" style="--team-color: {{ constructor.color }}" onclick="window.location.assign('/constructor/{{ constructor.slug }}')">
   <div class="card__accent" aria-hidden="true"></div>
+  <span class="card__code" aria-hidden="true">{{ constructor.name[:3] | upper }}</span>
   <div class="stack">
     <h3 class="card__title">
-      <a href="/constructor/{{ constructor.slug }}" style="text-decoration: none; color: inherit;">
-        {{ constructor.name }}
-      </a>
+      <a href="/constructor/{{ constructor.slug }}">{{ constructor.name }}</a>
     </h3>
     <p class="card__meta">
       {% if constructor.points is defined %}<span>{{ constructor.points }} pts</span>{% endif %}

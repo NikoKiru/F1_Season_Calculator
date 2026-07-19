@@ -65,12 +65,13 @@ function renderRows(payload: PagePayload, position: number, rows: PositionRow[])
           const name = escapeHtml(r.constructor);
           const slug = slugFor(r.constructor, payload);
           const color = payload.constructor_colors[slug] ?? "#666";
+          const href = `/constructor/${encodeURIComponent(slug)}`;
           return `
         <li class="card card--interactive"
             style="--team-color: ${color}"
-            onclick="window.location.assign('/constructor/${slug}')">
+            onclick="window.location.assign('${href}')">
           <div class="card__accent" aria-hidden="true"></div>
-          <p class="card__title">${name}</p>
+          <p class="card__title"><a href="${href}">${name}</a></p>
           <p class="card__subtitle">${r.count.toLocaleString()} championships (${r.percentage.toFixed(1)}%)</p>
         </li>`;
         })

@@ -1,4 +1,6 @@
-/* Loading / error / empty state patterns — every async surface uses these. */
+/* Loading / error / empty states, badges, and position chips.
+ * Loading is the start-light gantry: five lights come on in sequence, hold,
+ * then go out together — lights out and away we go. */
 
 .state-panel {
   display: flex;
@@ -10,16 +12,56 @@
   text-align: center;
   min-height: 200px;
   background: var(--bg-surface);
-  border: 1px dashed var(--border-default);
+  border: 1px dashed var(--border-strong);
   border-radius: var(--r-lg);
   color: var(--fg-muted);
 }
 
 .state-panel__title {
   color: var(--fg-default);
-  font-weight: var(--fw-medium);
+  font-weight: var(--fw-semibold);
 }
 
+/* ── Start-light gantry ───────────────────────────────────────────── */
+.start-lights {
+  display: flex;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  background: var(--carbon);
+  border-radius: var(--r-full);
+  border: 1px solid var(--carbon-border);
+}
+.start-lights i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: light-dark(rgba(15, 23, 42, 0.18), rgba(255, 255, 255, 0.12));
+  animation: light-up 2.1s var(--light-delay, 0s) infinite;
+}
+.start-lights i:nth-child(1) { --light-delay: 0s; }
+.start-lights i:nth-child(2) { --light-delay: 0.18s; }
+.start-lights i:nth-child(3) { --light-delay: 0.36s; }
+.start-lights i:nth-child(4) { --light-delay: 0.54s; }
+.start-lights i:nth-child(5) { --light-delay: 0.72s; }
+
+@keyframes light-up {
+  0%   { background: rgba(255, 255, 255, 0.12); box-shadow: none; }
+  12%,
+  70%  { background: var(--red-brand); box-shadow: 0 0 10px 1px rgba(225, 6, 0, 0.7); }
+  78%,
+  100% { background: rgba(255, 255, 255, 0.12); box-shadow: none; }
+}
+
+/* Reduced motion: hold all five lit — still reads as "waiting". */
+@media (prefers-reduced-motion: reduce) {
+  .start-lights i {
+    animation: none;
+    background: var(--red-brand);
+    box-shadow: 0 0 10px 1px rgba(225, 6, 0, 0.5);
+  }
+}
+
+/* Legacy spinner (kept for inline uses). */
 .spinner {
   width: 32px;
   height: 32px;
@@ -39,22 +81,51 @@
   to { transform: rotate(1turn); }
 }
 
+/* ── Flags ────────────────────────────────────────────────────────── */
+/* SVG country flags (app/static/flags). Sized by the surrounding text; the
+ * hairline ring keeps white flag fields (Japan, Poland…) visible on any
+ * surface in both themes. */
+.flag {
+  display: inline-block;
+  height: 0.95em;
+  width: auto;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px light-dark(rgba(15, 23, 42, 0.16), rgba(255, 255, 255, 0.18));
+  vertical-align: -0.08em;
+}
+.hero__lede .flag {
+  height: 1.05em;
+  vertical-align: -0.12em;
+}
+.round-toggle .flag {
+  height: 12px;
+  vertical-align: -1px;
+}
+.card__meta .flag {
+  height: 14px;
+}
+
+/* ── Badges ───────────────────────────────────────────────────────── */
 .badge {
   display: inline-flex;
   align-items: center;
+  gap: var(--s-1);
   padding: var(--s-1) var(--s-2);
   font-size: var(--fs-xs);
   font-weight: var(--fw-medium);
   background: var(--bg-sunken);
-  border-radius: var(--r-full);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-sm);
   color: var(--fg-muted);
 }
 .badge--win {
   background: var(--success);
-  color: #fff;
+  border-color: transparent;
+  color: light-dark(#ffffff, #052e12);
 }
 .badge--accent {
   background: var(--accent);
+  border-color: transparent;
   color: var(--fg-on-brand);
 }
 
@@ -72,11 +143,11 @@
   border-radius: var(--r-full);
 }
 .badge__pill--sprint {
-  background: var(--warn, #f59e0b);
-  color: #1a1a1a;
+  background: #ffc933;
+  color: #241a00;
 }
 
-/* Position chip (P1, P2, …) */
+/* ── Position chips (P1, P2, …) ───────────────────────────────────── */
 .position-chip {
   display: inline-flex;
   align-items: center;
@@ -84,15 +155,26 @@
   min-width: 2.25rem;
   height: 2.25rem;
   padding: 0 var(--s-2);
+  font-family: var(--ff-mono);
   font-weight: var(--fw-bold);
   font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
   color: var(--fg-on-brand);
-  background: var(--team-color, var(--gray-700));
+  background: var(--team-color, light-dark(#49556a, #303a4b));
   border-radius: var(--r-full);
 }
-.position-chip--gold { background: #ffb300; color: #222; }
-.position-chip--silver { background: #b0b7be; color: #222; }
-.position-chip--bronze { background: #cd7f32; color: #fff; }
+.position-chip--gold {
+  background: linear-gradient(160deg, #ffcf66, #f5a300);
+  color: #201400;
+}
+.position-chip--silver {
+  background: linear-gradient(160deg, #dde3ea, #a9b2bd);
+  color: #14181f;
+}
+.position-chip--bronze {
+  background: linear-gradient(160deg, #e39a5c, #b26428);
+  color: #1f0f00;
+}
 
 .stripe-pattern {
   background-image: linear-gradient(

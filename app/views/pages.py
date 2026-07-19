@@ -67,6 +67,7 @@ def home(request: Request, conn: ConnDep, season: SeasonDep):
             "name": sd.drivers[code].name if code in sd.drivers else code,
             "team": sd.drivers[code].team if code in sd.drivers else "",
             "color": sd.drivers[code].color if code in sd.drivers else "#666",
+            "nationality": sd.drivers[code].nationality if code in sd.drivers else None,
             "wins": wins.get(code, 0),
             "points": driver_points.get(code, 0),
         }
@@ -121,6 +122,7 @@ def drivers_page(request: Request, conn: ConnDep, season: SeasonDep):
             "name": d.name,
             "team": d.team,
             "color": d.color,
+            "nationality": d.nationality,
             "points": int(live_points.get(code, 0)),
         }
         for code, d in sd.drivers.items()
@@ -268,16 +270,25 @@ def championship_page(request: Request, championship_id: int, conn: ConnDep):
 
 
 @router.get("/create-championship", include_in_schema=False)
-def create_championship_page(request: Request, season: SeasonDep):
+def create_championship_page(request: Request, conn: ConnDep, season: SeasonDep):
     sd = season_service.get_season_data(season)
+    # Only raced rounds exist in the championships table — future rounds are
+    # rendered locked so a selection can never 404 on search.
+    raced = set(championship_service.raced_rounds(conn, season))
     rounds = [
-        {"number": num, "name": name, "sprint": sd.is_sprint(num)}
+        {
+            "number": num,
+            "name": name,
+            "sprint": sd.is_sprint(num),
+            "raced": num in raced,
+        }
         for num, name in sorted(sd.round_names.items())
     ]
     context = {
         **_common(season),
         "crumbs": _breadcrumbs(("Home", "/"), ("Create", None)),
         "rounds": rounds,
+        "raced_count": len(raced),
         "page_data": {"season": season, "total_rounds": len(rounds)},
     }
     return render(request, "pages/create_championship.html", context)

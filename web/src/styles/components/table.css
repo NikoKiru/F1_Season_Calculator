@@ -1,12 +1,14 @@
-/* Tables and the narrow-viewport card fallback.
- * Use the card fallback when `table-wrapper` is given `data-responsive="true"`.
- */
+/* Tables as timing towers: mono position + points columns, team-color
+ * blades, podium-metal P1–P3, tinted row hover. Narrow viewports fall back
+ * to cards when `table-wrapper` has `data-responsive="true"`. */
 
 .table-wrapper {
   overflow-x: auto;
   border: 1px solid var(--border-default);
-  border-radius: var(--r-md);
+  border-radius: var(--r-lg);
   background: var(--bg-surface);
+  box-shadow: var(--shadow-1);
+  scrollbar-width: thin;
 }
 
 .table {
@@ -22,37 +24,69 @@
   border-bottom: 1px solid var(--border-default);
 }
 
-.table th {
-  font-weight: var(--fw-bold);
+.table thead th {
+  font-family: var(--ff-mono);
+  font-weight: var(--fw-semibold);
   background: var(--bg-sunken);
   color: var(--fg-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: var(--fs-xs);
+  letter-spacing: var(--track-label);
+  font-size: 0.6875rem;
   position: sticky;
   top: 0;
+  z-index: 1;
 }
 
-.table tbody tr:last-child td {
+.table tbody tr:last-child td,
+.table tbody tr:last-child th {
   border-bottom: 0;
 }
 
+.table tbody tr {
+  transition: background var(--dur-fast) var(--ease-standard);
+}
 .table tbody tr:hover {
-  background: var(--bg-sunken);
+  background: color-mix(in srgb, var(--team-color, var(--fg-default)) 7%, transparent);
+}
+
+.table td a {
+  text-decoration: none;
+  font-weight: var(--fw-medium);
+}
+.table td a:hover,
+.table td a:focus-visible {
+  color: var(--accent-text);
 }
 
 .table .num {
   text-align: right;
+  font-family: var(--ff-mono);
   font-variant-numeric: tabular-nums;
 }
 
+/* Position column reads like the timing tower: mono, heavy, podium metals. */
+.table td[data-label="Pos"] {
+  font-family: var(--ff-mono);
+  font-weight: var(--fw-bold);
+  color: var(--fg-muted);
+  width: 3.5rem;
+}
+.table--striped-rows tbody tr:nth-child(1) td[data-label="Pos"] { color: var(--metal-gold); }
+.table--striped-rows tbody tr:nth-child(2) td[data-label="Pos"] { color: var(--metal-silver); }
+.table--striped-rows tbody tr:nth-child(3) td[data-label="Pos"] { color: var(--metal-bronze); }
+
 .table--striped-rows tbody tr td:first-child,
 .table--striped-rows tbody tr th:first-child {
-  box-shadow: inset 4px 0 0 var(--team-color, transparent);
+  box-shadow: inset 3px 0 0 var(--team-color, transparent);
+}
+.table--striped-rows tbody tr:hover td:first-child,
+.table--striped-rows tbody tr:hover th:first-child {
+  box-shadow: inset 5px 0 0 var(--team-color, transparent);
 }
 
 /* Head-to-head table — slim rows, embedded win-% bar. */
 .h2h-table tbody th {
+  font-family: var(--ff-sans);
   font-weight: var(--fw-medium);
   background: transparent;
   color: var(--fg-default);
@@ -71,10 +105,11 @@
 }
 .h2h-table__pct .pct-bar {
   position: absolute;
-  inset: 0;
+  inset: 3px 0;
+  border-radius: 2px;
   background: linear-gradient(
     to right,
-    color-mix(in srgb, var(--accent) 22%, transparent) var(--pct, 0%),
+    color-mix(in srgb, var(--team-color, var(--accent)) 26%, transparent) var(--pct, 0%),
     transparent var(--pct, 0%)
   );
   pointer-events: none;
@@ -87,24 +122,39 @@
   .table-wrapper[data-responsive="true"] .table,
   .table-wrapper[data-responsive="true"] .table tbody,
   .table-wrapper[data-responsive="true"] .table tr,
-  .table-wrapper[data-responsive="true"] .table td {
+  .table-wrapper[data-responsive="true"] .table td,
+  .table-wrapper[data-responsive="true"] .table tbody th[scope="row"] {
     display: block;
     width: 100%;
+  }
+  .table-wrapper[data-responsive="true"] .table tbody th[scope="row"] {
+    padding: var(--s-1) 0;
+    border-bottom: 0;
   }
   .table-wrapper[data-responsive="true"] .table thead {
     display: none;
   }
   .table-wrapper[data-responsive="true"] .table tr {
-    padding: var(--s-3);
+    padding: var(--s-3) var(--s-4);
     border-bottom: 1px solid var(--border-default);
+  }
+  .table-wrapper[data-responsive="true"] .table tr:last-child {
+    border-bottom: 0;
   }
   .table-wrapper[data-responsive="true"] .table td {
     padding: var(--s-1) 0;
     border-bottom: 0;
   }
+  .table-wrapper[data-responsive="true"] .table td[data-label="Pos"] {
+    width: auto;
+  }
   .table-wrapper[data-responsive="true"] .table td::before {
     content: attr(data-label) ": ";
+    font-family: var(--ff-sans);
     font-weight: var(--fw-medium);
     color: var(--fg-muted);
+  }
+  .table-wrapper[data-responsive="true"] .table .num {
+    text-align: left;
   }
 }

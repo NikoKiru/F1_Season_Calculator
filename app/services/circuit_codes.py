@@ -48,9 +48,56 @@ _CIRCUIT_TO_CODE = {
 }
 
 
+# Round label → host-country ISO 3166-1 alpha-2, matching
+# app/static/flags/{iso}.svg. Street/round labels that aren't country codes
+# (MIA, EMI, BAR, SAP, …) still resolve to the country that hosts them.
+_LABEL_TO_ISO = {
+    "AUS": "au",
+    "CHN": "cn",
+    "JPN": "jp",
+    "BHR": "bh",
+    "SAU": "sa",
+    "MIA": "us",
+    "EMI": "it",
+    "MON": "mc",
+    "BAR": "es",
+    "ESP": "es",
+    "CAN": "ca",
+    "AUT": "at",
+    "GBR": "gb",
+    "BEL": "be",
+    "HUN": "hu",
+    "NED": "nl",
+    "ITA": "it",
+    "AZE": "az",
+    "SIN": "sg",
+    "USA": "us",
+    "MXC": "mx",
+    "SAP": "br",
+    "LVG": "us",
+    "QAT": "qa",
+    "ABU": "ae",
+    "POR": "pt",
+    "TUR": "tr",
+    "RUS": "ru",
+    "FRA": "fr",
+    "EIF": "de",
+    "TUS": "it",
+    "GER": "de",
+    "MAL": "my",
+}
+
+
 def lookup(circuit_id: str) -> str | None:
     """Return the curated label for a circuit id, or None if unknown."""
     return _CIRCUIT_TO_CODE.get(circuit_id)
+
+
+def country_for(label: str | None) -> str | None:
+    """ISO alpha-2 host country for a round label, or None if unknown."""
+    if not label:
+        return None
+    return _LABEL_TO_ISO.get(label.strip().upper())
 
 
 def fallback(circuit_id: str) -> str:

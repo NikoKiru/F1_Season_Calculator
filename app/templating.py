@@ -13,9 +13,10 @@ from pathlib import Path
 
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
-from markupsafe import Markup
+from markupsafe import Markup, escape
 
 from app.config import get_settings
+from app.services import circuit_codes, flags
 
 
 def _manifest_path() -> Path:
@@ -63,10 +64,43 @@ def _asset_style(path: str) -> Markup:
     return Markup(f'<link rel="stylesheet" href="/static/dist/{path}">')
 
 
+def _flag_img(iso: str, title: str | None = None) -> Markup:
+    """Decorative flag <img> — callers always place the name right beside it."""
+    tooltip = f' title="{escape(title)}"' if title else ""
+    return Markup(
+        f'<img class="flag" src="/static/flags/{iso}.svg" alt=""'
+        f'{tooltip} width="20" height="15" loading="lazy">'
+    )
+
+
+def _nat_flag(nationality) -> Markup | str:
+    """SVG flag for a driver nationality demonym. Unmapped demonyms fall back
+    to the emoji so scaffolded data stays visible; missing ones render
+    nothing at all."""
+    value = nationality if isinstance(nationality, str) else None
+    if not value:
+        return ""
+    iso = flags.iso_for(value)
+    if iso:
+        return _flag_img(iso, value)
+    return flags.flag_for(value)
+
+
+def _race_flag(label) -> Markup | str:
+    """SVG host-country flag for a 3-letter round label, or '' if unknown."""
+    value = label if isinstance(label, str) else None
+    iso = circuit_codes.country_for(value)
+    if iso:
+        return _flag_img(iso)
+    return ""
+
+
 templates = Jinja2Templates(directory=str(get_settings().templates_folder))
 templates.env.globals["vite_script"] = _asset_script
 templates.env.globals["vite_style"] = _asset_style
 templates.env.globals["vite_asset"] = _asset_url
+templates.env.globals["nat_flag"] = _nat_flag
+templates.env.globals["race_flag"] = _race_flag
 
 
 def render(request: Request, template: str, context: dict, *, status_code: int = 200):

@@ -1,6 +1,8 @@
-/* Cards: surface containers with consistent padding + hover treatment. */
+/* Cards — broadcast name-tag treatment: team-color top blade, a giant
+ * condensed code watermark (drivers), and a team-color glow on hover. */
 
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--s-3);
@@ -9,16 +11,25 @@
   border: 1px solid var(--border-default);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-1);
-  transition: box-shadow var(--dur-fast) var(--ease-standard),
-              transform var(--dur-fast) var(--ease-standard);
+  overflow: hidden;
+  transition: box-shadow var(--dur-med) var(--ease-standard),
+              border-color var(--dur-med) var(--ease-standard),
+              transform var(--dur-med) var(--ease-pop);
 }
 
 .card--interactive {
   cursor: pointer;
 }
-.card--interactive:hover {
-  box-shadow: var(--shadow-2);
-  transform: translateY(-1px);
+.card--interactive:hover,
+.card--interactive:focus-within {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--team-color, var(--accent)) 45%, var(--border-default));
+  box-shadow:
+    var(--shadow-2),
+    0 10px 28px -12px color-mix(in srgb, var(--team-color, var(--accent)) 55%, transparent);
+}
+.card--interactive:hover .card__accent {
+  height: 5px;
 }
 
 .card--row {
@@ -26,7 +37,6 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--s-4);
-  position: relative;
 }
 .card--row .card__accent {
   position: absolute;
@@ -39,7 +49,18 @@
 .card__title {
   font-size: var(--fs-lg);
   font-weight: var(--fw-bold);
-  line-height: var(--lh-tight);
+  line-height: var(--lh-snug);
+}
+.card__title a {
+  text-decoration: none;
+  color: inherit;
+}
+/* Stretched link: the anchor covers the card, so the JS onclick is a
+ * convenience, not the only path. */
+.card--interactive .card__title a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
 }
 
 .card__subtitle {
@@ -49,10 +70,33 @@
 
 .card__meta {
   display: flex;
-  gap: var(--s-4);
+  align-items: center;
+  gap: var(--s-3);
   flex-wrap: wrap;
   font-size: var(--fs-xs);
   color: var(--fg-muted);
+}
+
+/* Giant broadcast watermark (driver code / constructor tag). */
+.card__code {
+  position: absolute;
+  right: calc(var(--s-3) * -0.5);
+  bottom: -0.28em;
+  font-family: var(--ff-display);
+  font-size: 4.25rem;
+  font-weight: var(--fw-bold);
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  color: color-mix(in srgb, var(--team-color, var(--fg-subtle)) 20%, transparent);
+  pointer-events: none;
+  user-select: none;
+  transition: color var(--dur-med) var(--ease-standard),
+              transform var(--dur-med) var(--ease-standard);
+}
+.card--interactive:hover .card__code {
+  color: color-mix(in srgb, var(--team-color, var(--fg-subtle)) 32%, transparent);
+  transform: translateX(-4px);
 }
 
 .card__head {
@@ -82,30 +126,32 @@
 .card__stat-label {
   font-size: var(--fs-xs);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--track-label);
   color: var(--fg-muted);
   font-weight: var(--fw-medium);
 }
 .card__stat-value {
+  font-family: var(--ff-mono);
   font-size: var(--fs-xl);
-  font-weight: var(--fw-bold);
+  font-weight: var(--fw-semibold);
   font-variant-numeric: tabular-nums;
-  line-height: var(--lh-tight);
+  line-height: var(--lh-snug);
   color: var(--fg-default);
 }
 
 /* Podium tint the stat value to echo the chip color. */
-.card--p1 .card__stat-value { color: #ffb300; }
-.card--p2 .card__stat-value { color: #d4d8de; }
-.card--p3 .card__stat-value { color: #e2934a; }
+.card--p1 .card__stat-value { color: var(--metal-gold); }
+.card--p2 .card__stat-value { color: var(--metal-silver); }
+.card--p3 .card__stat-value { color: var(--metal-bronze); }
 
 .card__accent {
   height: 4px;
-  border-radius: var(--r-full);
-  background: var(--team-color, var(--accent));
+  flex-shrink: 0;
+  background: linear-gradient(90deg,
+    var(--team-color, var(--accent)),
+    color-mix(in srgb, var(--team-color, var(--accent)) 45%, transparent));
   margin: calc(var(--s-5) * -1) calc(var(--s-5) * -1) 0;
-  border-top-left-radius: var(--r-lg);
-  border-top-right-radius: var(--r-lg);
+  transition: height var(--dur-fast) var(--ease-standard);
 }
 
 .grid {

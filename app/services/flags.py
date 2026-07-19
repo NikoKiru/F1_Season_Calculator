@@ -43,7 +43,52 @@ _DEMONYM_TO_FLAG = {
 }
 
 
+# Same demonyms → ISO 3166-1 alpha-2, matching app/static/flags/{iso}.svg.
+_DEMONYM_TO_ISO = {
+    "American": "us",
+    "Argentine": "ar",
+    "Argentinian": "ar",
+    "Australian": "au",
+    "Austrian": "at",
+    "Belgian": "be",
+    "Brazilian": "br",
+    "British": "gb",
+    "Canadian": "ca",
+    "Chinese": "cn",
+    "Colombian": "co",
+    "Danish": "dk",
+    "Dutch": "nl",
+    "Finnish": "fi",
+    "French": "fr",
+    "German": "de",
+    "Indian": "in",
+    "Indonesian": "id",
+    "Irish": "ie",
+    "Italian": "it",
+    "Japanese": "jp",
+    "Mexican": "mx",
+    "Monegasque": "mc",
+    "Monégasque": "mc",
+    "New Zealander": "nz",
+    "Polish": "pl",
+    "Portuguese": "pt",
+    "Russian": "ru",
+    "Spanish": "es",
+    "Swedish": "se",
+    "Swiss": "ch",
+    "Thai": "th",
+    "Venezuelan": "ve",
+}
+
+
 def flag_for(nationality: str | None) -> str:
     if not nationality:
         return "🏁"
     return _DEMONYM_TO_FLAG.get(nationality.strip(), "🏁")
+
+
+def iso_for(nationality: str | None) -> str | None:
+    """ISO alpha-2 code for a demonym, or None when there is no SVG flag."""
+    if not nationality:
+        return None
+    return _DEMONYM_TO_ISO.get(nationality.strip())

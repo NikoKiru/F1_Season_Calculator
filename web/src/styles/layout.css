@@ -1,4 +1,6 @@
-/* Page-level layout primitives: container, hero, section spacing. */
+/* Page-level layout: container, hero, sections, chart surfaces, stat tiles,
+ * footer. The hero is the page's "lower third": condensed uppercase display
+ * over a team-color blade, with a broadcast-style `//` eyebrow. */
 
 .container {
   width: 100%;
@@ -8,39 +10,82 @@
 }
 
 main {
-  padding-top: var(--s-6);
+  padding-top: var(--s-5);
   padding-bottom: var(--s-8);
   min-height: calc(100vh - var(--header-height));
 }
 
+/* ── Hero ─────────────────────────────────────────────────────────── */
 .hero {
+  --_blade: var(--team-color, var(--accent));
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--s-2);
-  padding: var(--s-5) 0 var(--s-6);
+  padding: var(--s-6) 0 var(--s-6) var(--s-5);
+  margin-bottom: var(--s-5);
   border-bottom: 1px solid var(--border-default);
-  margin-bottom: var(--s-6);
 }
+.hero::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: var(--s-6);
+  bottom: var(--s-6);
+  width: 4px;
+  border-radius: var(--r-full);
+  background: linear-gradient(180deg, var(--_blade), color-mix(in srgb, var(--_blade) 35%, transparent));
+}
+
+/* Page-load cascade — pure CSS, gated by the motion tokens. */
+@keyframes hero-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+.hero > * {
+  animation: hero-rise var(--dur-slow) var(--ease-standard) backwards;
+}
+.hero > *:nth-child(2) { animation-delay: 60ms; }
+.hero > *:nth-child(3) { animation-delay: 120ms; }
+.hero > *:nth-child(4) { animation-delay: 180ms; }
+.hero > *:nth-child(5) { animation-delay: 240ms; }
+
 .hero__eyebrow {
+  font-family: var(--ff-mono);
   font-size: var(--fs-xs);
-  font-weight: var(--fw-medium);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--accent);
+  letter-spacing: var(--track-label);
+  color: var(--accent-text);
+}
+.hero__eyebrow::before {
+  content: "// ";
+  opacity: 0.7;
 }
 .hero__title {
-  font-size: var(--fs-3xl);
+  font-family: var(--ff-display);
+  font-size: var(--fs-display);
   font-weight: var(--fw-bold);
   line-height: var(--lh-tight);
+  text-transform: uppercase;
+  letter-spacing: var(--track-display);
 }
 .hero__lede {
   color: var(--fg-muted);
+  font-size: var(--fs-lg);
   max-width: 60ch;
+  text-wrap: pretty;
 }
+.hero__lede sup {
+  font-family: var(--ff-mono);
+  font-size: 0.65em;
+}
+
+/* Kept for templates that opt in; the blade is standard now. */
 .hero--accented {
-  border-left: 4px solid var(--team-color, var(--accent));
-  padding-left: var(--s-4);
+  border-left: 0;
 }
+
 .hero__rounds {
   margin-top: var(--s-2);
 }
@@ -61,11 +106,12 @@ main {
   display: inline-flex;
   align-items: baseline;
   gap: var(--s-2);
-  padding: var(--s-1, 0.25rem) var(--s-3);
+  padding: var(--s-1) var(--s-3);
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--r-sm);
   font-size: var(--fs-sm);
+  box-shadow: var(--shadow-1);
 }
 .hero__chip-label {
   font-size: var(--fs-xs);
@@ -74,7 +120,8 @@ main {
   color: var(--fg-muted);
 }
 .hero__chip-value {
-  font-weight: var(--fw-medium);
+  font-family: var(--ff-mono);
+  font-weight: var(--fw-semibold);
   font-variant-numeric: tabular-nums;
 }
 .hero__updated {
@@ -83,6 +130,26 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
+/* Error pages: checkered-flag wash behind the hero (the one place the
+ * checkers appear at page scale). */
+.hero--error {
+  overflow: hidden;
+}
+.hero--error::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 1px auto;
+  width: min(46%, 420px);
+  background:
+    repeating-conic-gradient(var(--fg-default) 0% 25%, transparent 0% 50%)
+    0 0 / 28px 28px;
+  opacity: 0.05;
+  -webkit-mask-image: linear-gradient(105deg, transparent 0%, #000 55%);
+  mask-image: linear-gradient(105deg, transparent 0%, #000 55%);
+  pointer-events: none;
+}
+
+/* ── Sections ─────────────────────────────────────────────────────── */
 .section {
   margin: var(--s-7) 0;
 }
@@ -92,33 +159,96 @@ main {
   justify-content: space-between;
   gap: var(--s-3);
   margin-bottom: var(--s-4);
+  padding-bottom: var(--s-2);
+  border-bottom: 1px solid var(--border-default);
 }
 .section__title {
-  font-size: var(--fs-xl);
-  font-weight: var(--fw-bold);
+  font-family: var(--ff-display);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-snug);
+  text-transform: uppercase;
+  letter-spacing: var(--track-display);
 }
+.section__lede,
 .section__aside {
   color: var(--fg-muted);
   font-size: var(--fs-sm);
 }
+a.section__aside {
+  text-decoration: none;
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+}
+a.section__aside:hover,
+a.section__aside:focus-visible {
+  color: var(--accent-text);
+}
 
+/* ── Chart surfaces ───────────────────────────────────────────────── */
 .chart-surface {
   position: relative;
   width: 100%;
-  height: 320px;
-  padding: var(--s-3);
+  height: 340px;
+  padding: var(--s-4);
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
 }
 .chart-surface--tall {
-  height: 420px;
+  height: 440px;
+}
+
+/* In-surface empty state (e.g. a driver with zero winning scenarios). */
+.chart-surface__empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-1);
+  text-align: center;
+  color: var(--fg-muted);
+}
+.chart-surface__empty p:first-child {
+  font-weight: var(--fw-semibold);
+  color: var(--fg-default);
+}
+.chart-surface__empty p + p {
+  font-size: var(--fs-sm);
+  color: var(--fg-subtle);
 }
 
 .stack {
   display: flex;
   flex-direction: column;
   gap: var(--s-3);
+}
+
+/* Ranked stacks (min-races ladders): a mono 01/02/03 marker per row. */
+.stack--ranked {
+  counter-reset: rank;
+}
+.stack--ranked > li {
+  counter-increment: rank;
+}
+.stack--ranked > li::before {
+  content: counter(rank, decimal-leading-zero);
+  flex-shrink: 0;
+  font-family: var(--ff-mono);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-subtle);
+}
+.stack--ranked > li:nth-child(1)::before { color: var(--metal-gold); }
+.stack--ranked > li:nth-child(2)::before { color: var(--metal-silver); }
+.stack--ranked > li:nth-child(3)::before { color: var(--metal-bronze); }
+/* The rank slots in as the first flex item; the info block then hugs it and
+ * the stat block keeps the right edge (accent div is absolute, not in flow). */
+.stack--ranked > .card--row > div:not(.card__accent):not(:last-child) {
+  margin-right: auto;
 }
 .row {
   display: flex;
@@ -127,7 +257,9 @@ main {
   align-items: center;
 }
 
+/* ── Stat tiles — timing-wall hero numbers ────────────────────────── */
 .stat-tile {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--s-1);
@@ -135,19 +267,88 @@ main {
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--r-md);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.stat-tile::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 28px;
+  height: 3px;
+  background: var(--team-color, var(--accent));
+  border-bottom-right-radius: var(--r-sm);
 }
 .stat-tile__label {
   font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--track-label);
   color: var(--fg-muted);
 }
 .stat-tile__value {
+  font-family: var(--ff-mono);
   font-size: var(--fs-2xl);
-  font-weight: var(--fw-bold);
+  font-weight: var(--fw-semibold);
   font-variant-numeric: tabular-nums;
+  line-height: var(--lh-snug);
+  letter-spacing: -0.01em;
 }
 .stat-tile__hint {
   font-size: var(--fs-xs);
   color: var(--fg-subtle);
+}
+.stat-tile__hint a {
+  color: var(--fg-muted);
+}
+.stat-tile__hint a:hover {
+  color: var(--accent-text);
+}
+
+/* ── Footer ───────────────────────────────────────────────────────── */
+.site-footer {
+  border-top: 1px solid var(--border-default);
+  background: var(--bg-surface);
+}
+.site-footer__inner {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--s-5) var(--s-4);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-5);
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: var(--fs-sm);
+  color: var(--fg-muted);
+}
+.site-footer__brand {
+  font-family: var(--ff-display);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--track-display);
+  color: var(--fg-default);
+}
+.site-footer__brand span {
+  color: var(--accent-text);
+}
+.site-footer a {
+  text-decoration: none;
+  color: var(--fg-muted);
+}
+.site-footer a:hover,
+.site-footer a:focus-visible {
+  color: var(--accent-text);
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding-left: var(--s-4);
+  }
+  .section__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-1);
+  }
 }

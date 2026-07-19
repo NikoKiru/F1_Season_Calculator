@@ -1,13 +1,13 @@
 <article class="card card--interactive" style="--team-color: {{ driver.color }}" onclick="window.location.assign('/driver/{{ driver.code }}')">
   <div class="card__accent" aria-hidden="true"></div>
+  <span class="card__code" aria-hidden="true">{{ driver.code }}</span>
   <div class="stack">
     <h3 class="card__title">
-      <a href="/driver/{{ driver.code }}" style="text-decoration: none; color: inherit;">
-        {{ driver.name }}
-      </a>
+      <a href="/driver/{{ driver.code }}">{{ driver.name }}</a>
     </h3>
     <p class="card__subtitle">{{ driver.team }}</p>
     <p class="card__meta">
+      {% if driver.nationality is defined and driver.nationality %}{{ nat_flag(driver.nationality) }}{% endif %}
       <span class="badge">{{ driver.code }}</span>
       {% if driver.points is defined %}<span>{{ driver.points }} pts</span>{% endif %}
       {% if driver.wins is defined %}<span>{{ driver.wins }} championships</span>{% endif %}

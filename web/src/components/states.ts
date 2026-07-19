@@ -11,7 +11,7 @@ export function showLoading(host: HTMLElement, label = "Loading…"): void {
   host.setAttribute("aria-busy", "true");
   host.innerHTML = `
     <div class="state-panel" role="status" aria-live="polite">
-      <div class="spinner" aria-hidden="true"></div>
+      <div class="start-lights" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
       <p class="state-panel__title">${escape(label)}</p>
     </div>
   `;

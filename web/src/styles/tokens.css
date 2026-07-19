@@ -1,14 +1,18 @@
 /*
  * Design tokens — the only place where raw values are allowed.
  *
- * Spacing follows a 4px base with a bounded 8-step scale. Type, color, radius,
- * shadow, and motion each expose a small vocabulary so components have a
- * limited set of choices, which keeps the UI visually consistent without a
- * framework.
+ * Theming runs on `light-dark()` + `color-scheme`: the default follows the
+ * system, and `[data-theme="light"|"dark"]` (set by the header toggle, booted
+ * pre-paint in base.html) forces one scheme. Every color token carries both
+ * values, so components never fork on theme.
+ *
+ * Direction: "Race Control" — carbon surfaces, F1-red brand, timing-screen
+ * purple/green/yellow as functional colors, condensed display type and
+ * monospace timing numerals. The header is always carbon, in both themes.
  */
 
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
 
   /* ── Spacing (4px base) ─────────────────────────────────────────── */
   --s-0: 0;
@@ -29,118 +33,113 @@
   --fs-xl: 1.375rem;  /* 22px */
   --fs-2xl: 1.75rem;  /* 28px */
   --fs-3xl: 2.25rem;  /* 36px */
+  --fs-display: clamp(2.5rem, 4.5vw + 1.25rem, 4rem);
 
   --fw-regular: 400;
   --fw-medium: 500;
+  --fw-semibold: 600;
   --fw-bold: 700;
 
-  --lh-tight: 1.2;
+  --lh-tight: 1.1;
+  --lh-snug: 1.25;
   --lh-normal: 1.5;
 
-  --ff-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --ff-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Consolas, monospace;
+  --ff-sans: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ff-display: "Barlow Condensed", "Arial Narrow", var(--ff-sans);
+  --ff-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
 
-  /* ── Color (light) ──────────────────────────────────────────────── */
-  --red-50: #fff1f2;
-  --red-100: #ffe4e6;
-  --red-400: #f43f5e;
-  --red-500: #e10600;   /* F1 brand */
-  --red-600: #c70500;
-  --red-700: #9e0400;
+  /* Display type is uppercase condensed; tracking tokens keep it consistent. */
+  --track-display: 0.015em;
+  --track-label: 0.09em;
 
-  --gray-50:  #f9fafb;
-  --gray-100: #f3f4f6;
-  --gray-200: #e5e7eb;
-  --gray-300: #d1d5db;
-  --gray-400: #9ca3af;
-  --gray-500: #6b7280;
-  --gray-600: #4b5563;
-  --gray-700: #374151;
-  --gray-800: #1f2937;
-  --gray-900: #111827;
+  /* ── Color ──────────────────────────────────────────────────────── */
+  /* Brand */
+  --red-brand: #e10600;                              /* F1 red — fills only */
+  --accent: var(--red-brand);
+  --accent-hover: light-dark(#c00500, #f51d12);
+  --accent-pressed: light-dark(#9e0400, #c00500);
+  /* Red that passes as TEXT on the theme's surfaces (fills stay brand red). */
+  --accent-text: light-dark(#c40500, #ff564d);
 
-  --success: #16a34a;
-  --warn: #d97706;
-  --danger: #dc2626;
-  --info: #2563eb;
+  /* Timing-screen functional colors (fastest / gain / caution / danger). */
+  --timing-purple: light-dark(#6d28d9, #c4a5ff);
+  --timing-purple-fill: #7c3aed;
+  --success: light-dark(#15803d, #4ade80);
+  --warn: light-dark(#a16207, #fbbf24);
+  --danger: light-dark(#c40500, #ff564d);
+  --info: light-dark(#1d4ed8, #7aa7ff);
 
-  --bg-app: var(--gray-50);
-  --bg-surface: #ffffff;
-  --bg-raised: #ffffff;
-  --bg-elevated: #ffffff;          /* popovers, dropdowns — sits above surface */
-  --bg-sunken: var(--gray-100);
-  --bg-overlay: rgba(17, 24, 39, 0.5);
-  --bg-hover: rgba(17, 24, 39, 0.06);
-  --bg-active: rgba(17, 24, 39, 0.10);
+  /* Podium metals — readable as text on both schemes' surfaces. */
+  --metal-gold: light-dark(#a16207, #ffb43a);
+  --metal-silver: light-dark(#5b6572, #c9d1dc);
+  --metal-bronze: light-dark(#92400e, #e8945a);
 
-  --fg-default: var(--gray-900);
-  --fg-muted: var(--gray-600);
-  --fg-subtle: var(--gray-500);
+  /* Surfaces */
+  --bg-app: light-dark(#f5f6f9, #0a0c11);
+  --bg-surface: light-dark(#ffffff, #10141b);
+  --bg-raised: light-dark(#ffffff, #151a23);
+  --bg-elevated: light-dark(#ffffff, #1b212c);
+  --bg-sunken: light-dark(#eef0f4, #0c0f14);
+  --bg-overlay: light-dark(rgba(15, 23, 42, 0.5), rgba(2, 4, 8, 0.65));
+  --bg-hover: light-dark(rgba(15, 23, 42, 0.05), rgba(255, 255, 255, 0.06));
+  --bg-active: light-dark(rgba(15, 23, 42, 0.09), rgba(255, 255, 255, 0.11));
+
+  /* Ink */
+  --fg-default: light-dark(#131822, #f2f5fa);
+  --fg-muted: light-dark(#49556a, #a8b2c3);
+  --fg-subtle: light-dark(#667082, #77828f);
   --fg-on-brand: #ffffff;
-  --fg-on-elevated: var(--gray-900);   /* always pair with --bg-elevated */
+  --fg-on-elevated: light-dark(#131822, #f2f5fa);
 
-  --border-default: var(--gray-200);
-  --border-strong: var(--gray-300);
-  --border-focus: var(--red-500);
+  /* Borders */
+  --border-default: light-dark(#e2e5eb, #222937);
+  --border-strong: light-dark(#c9cfd9, #303a4b);
+  --border-focus: var(--accent-text);
 
-  --accent: var(--red-500);
-  --accent-hover: var(--red-600);
-  --accent-pressed: var(--red-700);
+  /* ── Carbon header (identical in both themes) ───────────────────── */
+  --carbon: #0b0e14;
+  --carbon-glass: rgba(11, 14, 20, 0.82);
+  --carbon-menu: rgba(19, 24, 33, 0.96);
+  --fg-on-carbon: #f2f5fa;
+  --fg-on-carbon-muted: #9aa5b5;
+  --carbon-hover: rgba(255, 255, 255, 0.08);
+  --carbon-active: rgba(255, 255, 255, 0.14);
+  --carbon-border: rgba(255, 255, 255, 0.09);
 
   /* ── Radius ─────────────────────────────────────────────────────── */
-  --r-sm: 4px;
-  --r-md: 8px;
-  --r-lg: 12px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
   --r-full: 9999px;
 
   /* ── Shadow ─────────────────────────────────────────────────────── */
-  --shadow-1: 0 1px 2px rgba(17, 24, 39, 0.06), 0 1px 1px rgba(17, 24, 39, 0.04);
-  --shadow-2: 0 4px 12px rgba(17, 24, 39, 0.08), 0 2px 4px rgba(17, 24, 39, 0.05);
-  --shadow-3: 0 12px 32px rgba(17, 24, 39, 0.16), 0 4px 12px rgba(17, 24, 39, 0.08);
+  --shadow-c1: light-dark(rgba(15, 23, 42, 0.06), rgba(0, 0, 0, 0.45));
+  --shadow-c2: light-dark(rgba(15, 23, 42, 0.10), rgba(0, 0, 0, 0.5));
+  --shadow-c3: light-dark(rgba(15, 23, 42, 0.16), rgba(0, 0, 0, 0.6));
+  --shadow-1: 0 1px 2px var(--shadow-c1), 0 1px 1px var(--shadow-c1);
+  --shadow-2: 0 4px 14px var(--shadow-c2), 0 2px 4px var(--shadow-c1);
+  --shadow-3: 0 16px 40px var(--shadow-c3), 0 4px 12px var(--shadow-c2);
+  --glow-accent: 0 4px 18px light-dark(rgba(225, 6, 0, 0.28), rgba(225, 6, 0, 0.4));
 
   /* ── Motion ─────────────────────────────────────────────────────── */
-  --dur-fast: 120ms;
+  --dur-fast: 130ms;
   --dur-med: 240ms;
+  --dur-slow: 420ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-pop: cubic-bezier(0.34, 1.4, 0.64, 1);
 
   /* ── Layout ─────────────────────────────────────────────────────── */
   --container-max: 1200px;
   --header-height: 64px;
-  --focus-ring: 0 0 0 3px rgba(225, 6, 0, 0.35);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-
-    --bg-app: #0b0d10;
-    --bg-surface: #15181d;
-    --bg-raised: #1b1f26;
-    --bg-elevated: #232831;         /* lighter than surface so popovers pop */
-    --bg-sunken: #0f1216;
-    --bg-overlay: rgba(0, 0, 0, 0.6);
-    --bg-hover: rgba(255, 255, 255, 0.08);
-    --bg-active: rgba(255, 255, 255, 0.14);
-
-    --fg-default: #f3f4f6;
-    --fg-muted: #9ca3af;
-    --fg-subtle: #6b7280;
-    --fg-on-elevated: #f3f4f6;     /* WCAG AA on --bg-elevated */
-
-    --border-default: #262b33;
-    --border-strong: #353c46;
-
-    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.45);
-    --shadow-3: 0 12px 32px rgba(0, 0, 0, 0.55);
-
-    --focus-ring: 0 0 0 3px rgba(244, 63, 94, 0.45);
-  }
-}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
     --dur-fast: 0ms;
     --dur-med: 0ms;
+    --dur-slow: 0ms;
   }
 }

@@ -26,7 +26,8 @@ function selectedRounds(): number[] {
 function randomise(): void {
   // Sample from the actual checkboxes — round numbers can be non-contiguous
   // (e.g. a cancelled round mid-season), so guessing 1..total_rounds can miss.
-  const inputs = $$<HTMLInputElement>("input[name='round']");
+  // Disabled boxes are future rounds with no results; they never join the draw.
+  const inputs = $$<HTMLInputElement>("input[name='round']").filter((el) => !el.disabled);
   if (inputs.length === 0) return;
   const count = Math.floor(Math.random() * inputs.length) + 1;
   const pool = [...inputs];

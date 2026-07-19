@@ -56,12 +56,13 @@ function renderRows(payload: PagePayload, position: number, rows: PositionRow[])
         .map((r) => {
           const name = escapeHtml(payload.driver_names[r.driver] ?? r.driver);
           const color = payload.driver_colors[r.driver] ?? "#666";
+          const href = `/driver/${encodeURIComponent(r.driver)}`;
           return `
         <li class="card card--interactive"
             style="--team-color: ${color}"
-            onclick="window.location.assign('/driver/${r.driver}')">
+            onclick="window.location.assign('${href}')">
           <div class="card__accent" aria-hidden="true"></div>
-          <p class="card__title">${name}</p>
+          <p class="card__title"><a href="${href}">${name}</a></p>
           <p class="card__subtitle">${r.count.toLocaleString()} championships (${r.percentage.toFixed(1)}%)</p>
         </li>`;
         })

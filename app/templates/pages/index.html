@@ -5,7 +5,24 @@
 <section class="hero">
   <p class="hero__eyebrow">Season {{ current_season }}</p>
   <h1 class="hero__title">Every possible championship outcome.</h1>
-  <p class="hero__lede">Explore the 2<sup>N</sup>-1 combinations of race results that could decide this season.</p>
+  <p class="hero__lede">Explore the 2<sup>N</sup>−1 combinations of race results that could decide this season.</p>
+  {% set raced = page_data.rounds | length %}
+  {% if raced %}
+  <ul class="hero__chips" aria-label="Season so far">
+    <li class="hero__chip">
+      <span class="hero__chip-label">Rounds raced</span>
+      <span class="hero__chip-value">{{ raced }}</span>
+    </li>
+    <li class="hero__chip">
+      <span class="hero__chip-label">Scenarios</span>
+      <span class="hero__chip-value">{{ "{:,}".format(2 ** raced - 1) }}</span>
+    </li>
+    <li class="hero__chip">
+      <span class="hero__chip-label">Drivers</span>
+      <span class="hero__chip-value">{{ drivers | length }}</span>
+    </li>
+  </ul>
+  {% endif %}
 </section>
 
 <section class="section" aria-labelledby="standings-heading">
@@ -31,7 +48,7 @@
         {% for d in drivers[:10] %}
           <tr style="--team-color: {{ d.color }}">
             <td data-label="Pos">{{ loop.index }}</td>
-            <td data-label="Driver"><a href="/driver/{{ d.code }}">{{ d.name }}</a></td>
+            <td data-label="Driver"><a href="/driver/{{ d.code }}">{{ nat_flag(d.nationality) }} {{ d.name }}</a></td>
             <td data-label="Team">{{ d.team }}</td>
             <td class="num" data-label="Points">{{ d.points }}</td>
           </tr>

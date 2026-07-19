@@ -1,7 +1,6 @@
 /* Single button component — variants via modifier classes.
- * Every interactive state (default, hover, focus, active, disabled, loading)
- * is represented exactly once.
- */
+ * Every interactive state (default, hover, focus, active, disabled, loading,
+ * pressed-toggle) is represented exactly once. */
 
 .btn {
   --_bg: var(--bg-surface);
@@ -15,16 +14,19 @@
   min-height: 40px;
   padding: var(--s-2) var(--s-4);
   font-size: var(--fs-sm);
-  font-weight: var(--fw-medium);
+  font-weight: var(--fw-semibold);
   line-height: 1;
   color: var(--_fg);
   background: var(--_bg);
   border: 1px solid var(--_border);
   border-radius: var(--r-md);
+  box-shadow: var(--shadow-1);
   transition:
     background var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard),
     border-color var(--dur-fast) var(--ease-standard),
-    transform var(--dur-fast) var(--ease-standard);
+    box-shadow var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-pop);
   user-select: none;
   white-space: nowrap;
 }
@@ -32,16 +34,29 @@
 .btn:hover:not(:disabled) {
   --_bg: var(--bg-raised);
   --_border: var(--border-focus);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-2);
 }
 
 .btn:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: translateY(0) scale(0.98);
+  box-shadow: var(--shadow-1);
 }
 
 .btn:disabled,
 .btn[aria-disabled="true"] {
-  opacity: 0.5;
+  --_fg: var(--fg-subtle);
+  --_border: var(--border-default);
   cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Toggle buttons (position pickers): pressed = inverted ink. */
+.btn[aria-pressed="true"] {
+  --_bg: var(--fg-default);
+  --_fg: var(--bg-surface);
+  --_border: var(--fg-default);
 }
 
 .btn[data-loading="true"] {
@@ -67,25 +82,35 @@
 }
 
 .btn--primary {
-  --_bg: var(--accent);
+  --_bg: linear-gradient(180deg, #f51d12, var(--red-brand) 55%);
   --_fg: var(--fg-on-brand);
-  --_border: var(--accent);
+  --_border: var(--red-brand);
 }
 .btn--primary:hover:not(:disabled) {
-  --_bg: var(--accent-hover);
+  --_bg: linear-gradient(180deg, #ff2f24, #f10d06 55%);
   --_border: var(--accent-hover);
+  box-shadow: var(--glow-accent);
 }
 .btn--primary:active:not(:disabled) {
   --_bg: var(--accent-pressed);
+}
+.btn--primary:disabled,
+.btn--primary[aria-disabled="true"] {
+  --_bg: color-mix(in srgb, var(--red-brand) 55%, var(--bg-surface));
+  --_fg: rgba(255, 255, 255, 0.85);
+  --_border: transparent;
 }
 
 .btn--ghost {
   --_bg: transparent;
   --_border: transparent;
+  box-shadow: none;
 }
 .btn--ghost:hover:not(:disabled) {
-  --_bg: var(--bg-sunken);
+  --_bg: var(--bg-hover);
+  --_fg: var(--accent-text);
   --_border: transparent;
+  box-shadow: none;
 }
 
 .btn--sm {

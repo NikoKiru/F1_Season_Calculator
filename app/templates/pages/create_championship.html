@@ -6,7 +6,10 @@
 <section class="hero">
   <p class="hero__eyebrow">Season {{ current_season }}</p>
   <h1 class="hero__title">Build your own season</h1>
-  <p class="hero__lede">Pick any subset of rounds and see the resulting championship.</p>
+  <p class="hero__lede">
+    Pick any subset of the {{ raced_count }} rounds raced so far and see the
+    resulting championship. Rounds still to come unlock after they run.
+  </p>
 </section>
 
 <div class="row" style="justify-content: flex-end">
@@ -18,11 +21,15 @@
 <section class="section">
   <div class="round-grid" role="group" aria-label="Rounds">
     {% for r in rounds %}
-      <label class="round-toggle{% if r.sprint %} round-toggle--sprint{% endif %}">
-        <input type="checkbox" name="round" value="{{ r.number }}" />
+      <label class="round-toggle{% if r.sprint %} round-toggle--sprint{% endif %}"
+             {% if not r.raced %}title="Not raced yet"{% endif %}>
+        <input type="checkbox" name="round" value="{{ r.number }}"
+               {% if not r.raced %}disabled aria-label="Round {{ r.number }} — not raced yet"{% endif %} />
         <span class="round-toggle__num">{{ r.number }}</span>
-        <span class="round-toggle__name">{{ r.name }}</span>
-        {% if r.sprint %}
+        <span class="round-toggle__name">{{ race_flag(r.name) }} {{ r.name }}</span>
+        {% if not r.raced %}
+          <span class="round-toggle__lock">Soon</span>
+        {% elif r.sprint %}
           <span class="badge__pill badge__pill--sprint" title="Sprint weekend">S</span>
         {% endif %}
       </label>

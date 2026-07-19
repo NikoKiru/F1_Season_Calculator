@@ -15,6 +15,7 @@
     <span class="hero__rounds-label">Included rounds:</span>
     {% for round_name in championship.round_names %}
       <span class="badge">
+        {{ race_flag(round_name) }}
         {{ round_name }}
         {% if championship.sprint_flags and championship.sprint_flags[loop.index0] %}
           <span class="badge__pill badge__pill--sprint" title="Sprint weekend">S</span>
