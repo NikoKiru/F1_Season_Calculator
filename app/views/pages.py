@@ -27,9 +27,20 @@ router = APIRouter()
 
 
 def _common(season: int) -> dict:
+    sd = season_service.get_season_data(season)
+    # Header search roster: lets the global search box resolve driver names,
+    # driver codes, and team names — not just numeric scenario ids.
+    nav_search = [
+        {"label": d.name, "code": code, "url": f"/driver/{code}"}
+        for code, d in sd.drivers.items()
+    ] + [
+        {"label": name, "code": "", "url": f"/constructor/{season_service.team_slug(name)}"}
+        for name in sd.teams
+    ]
     return {
         "current_season": season,
         "seasons": list(season_service.available_seasons()),
+        "nav_search": nav_search,
     }
 
 

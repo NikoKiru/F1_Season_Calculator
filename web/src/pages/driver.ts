@@ -63,7 +63,20 @@ async function hydrateCharts(payload: PagePayload): Promise<void> {
 
   const positions = Object.keys(stats.position_distribution).sort((a, b) => Number(a) - Number(b));
   const positionCounts = positions.map((p) => stats.position_distribution[p] ?? 0);
-  await barChart(barCanvas, positions.map((p) => `P${p}`), positionCounts, payload.color, "Count");
+  const positionChart = await barChart(
+    barCanvas, positions.map((p) => `P${p}`), positionCounts, payload.color, "Count",
+  );
+  // Each bar links to the paginated list of scenarios behind it.
+  barCanvas.style.cursor = "pointer";
+  barCanvas.addEventListener("click", (evt) => {
+    const hits = positionChart.getElementsAtEventForMode(evt, "nearest", { intersect: true }, false);
+    const pos = hits[0] ? positions[hits[0].index] : undefined;
+    if (pos) {
+      window.location.assign(
+        `/driver/${encodeURIComponent(payload.driver_code)}/position/${encodeURIComponent(pos)}`,
+      );
+    }
+  });
 
   const lengths = Object.keys(stats.win_probability_by_length).sort((a, b) => Number(a) - Number(b));
   const winRates = lengths.map((l) => stats.win_probability_by_length[l] ?? 0);

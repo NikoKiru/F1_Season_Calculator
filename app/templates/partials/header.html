@@ -63,12 +63,19 @@
       </div>
     </nav>
     <div class="site-header__controls">
-      <form class="global-search" data-global-search role="search" aria-label="Find championship by ID">
-        <label class="visually-hidden" for="global-search-input">Championship ID</label>
-        <input id="global-search-input" class="global-search__input" name="championship_id"
-               type="search" inputmode="numeric" placeholder="Scenario #" autocomplete="off" />
-        <button class="global-search__submit" type="submit" aria-label="Go to championship">Go</button>
+      <form class="global-search" data-global-search role="search" aria-label="Find a driver, team, or scenario">
+        <label class="visually-hidden" for="global-search-input">Driver, team, or scenario number</label>
+        <input id="global-search-input" class="global-search__input" name="q"
+               type="search" placeholder="Name or #id" autocomplete="off"
+               list="global-search-options" />
+        <datalist id="global-search-options">
+          {% for item in nav_search or [] %}
+            <option value="{{ item.label }}"></option>
+          {% endfor %}
+        </datalist>
+        <button class="global-search__submit" type="submit" aria-label="Search">Go</button>
       </form>
+      <script type="application/json" id="nav-search-data">{{ (nav_search or []) | tojson }}</script>
       <button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch theme">
         <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false">

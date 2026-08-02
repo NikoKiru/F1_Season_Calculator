@@ -24,7 +24,7 @@
         <tr style="--team-color: {{ row.color }}">
           <td><strong><a href="/constructor/{{ row.slug }}">{{ row.constructor }}</a></strong></td>
           {% for pct in row.percentages %}
-            <td class="num">{{ "%.2f"|format(pct) }}%</td>
+            <td class="num heat-cell" style="--heat: {{ pct }}">{{ "%.2f"|format(pct) }}%</td>
           {% endfor %}
           <td class="num"><strong>{{ "{:,}".format(row.total_titles) }}</strong></td>
         </tr>

@@ -42,15 +42,18 @@
           <th scope="col">Driver</th>
           <th scope="col">Team</th>
           <th scope="col" class="num">Points</th>
+          <th scope="col" class="num">Gap</th>
         </tr>
       </thead>
       <tbody>
+        {% set leader_points = drivers[0].points if drivers else 0 %}
         {% for d in drivers[:10] %}
           <tr style="--team-color: {{ d.color }}">
             <td data-label="Pos">{{ loop.index }}</td>
             <td data-label="Driver"><a href="/driver/{{ d.code }}">{{ nat_flag(d.nationality) }} {{ d.name }}</a></td>
             <td data-label="Team">{{ d.team }}</td>
             <td class="num" data-label="Points">{{ d.points }}</td>
+            <td class="num" data-label="Gap">{% if loop.first %}—{% else %}−{{ leader_points - d.points }}{% endif %}</td>
           </tr>
         {% endfor %}
       </tbody>

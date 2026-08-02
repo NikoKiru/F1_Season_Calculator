@@ -4,7 +4,7 @@
  * entries run their own main() after.
  */
 
-import { $, $$ } from "./lib/dom";
+import { $, $$, readJsonScript } from "./lib/dom";
 import "./styles/main.css";
 
 const THEME_KEY = "f1sc-theme";
@@ -20,14 +20,45 @@ function bindHamburger(): void {
   });
 }
 
+interface NavSearchItem {
+  label: string;
+  code: string;
+  url: string;
+}
+
+/** Resolve a header-search query to a destination URL, or null if nothing matches. */
+function resolveSearch(raw: string, roster: NavSearchItem[]): string | null {
+  const q = raw.trim();
+  if (!q) return null;
+  const id = q.replace(/^#/, "");
+  if (/^\d+$/.test(id)) return `/championship/${encodeURIComponent(id)}`;
+
+  const lower = q.toLowerCase();
+  const exact = roster.find(
+    (r) => r.label.toLowerCase() === lower || (r.code && r.code.toLowerCase() === lower),
+  );
+  if (exact) return exact.url;
+  const partial = roster.find((r) => r.label.toLowerCase().includes(lower));
+  return partial ? partial.url : null;
+}
+
 function bindGlobalSearch(): void {
   const form = $<HTMLFormElement>("[data-global-search]");
   if (!form) return;
+  const input = form.querySelector<HTMLInputElement>('input[type="search"]');
+  if (!input) return;
+  const roster = readJsonScript<NavSearchItem[]>("nav-search-data") ?? [];
+
+  input.addEventListener("input", () => input.setCustomValidity(""));
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    const input = form.querySelector<HTMLInputElement>('input[name="championship_id"]');
-    const id = input?.value.trim();
-    if (id) window.location.assign(`/championship/${encodeURIComponent(id)}`);
+    const url = resolveSearch(input.value, roster);
+    if (url) {
+      window.location.assign(url);
+    } else if (input.value.trim()) {
+      input.setCustomValidity("No driver, team, or scenario matches");
+      input.reportValidity();
+    }
   });
 }
 

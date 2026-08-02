@@ -57,6 +57,7 @@ function renderRows(payload: PagePayload, position: number, rows: PositionRow[])
           const name = escapeHtml(payload.driver_names[r.driver] ?? r.driver);
           const color = payload.driver_colors[r.driver] ?? "#666";
           const href = `/driver/${encodeURIComponent(r.driver)}`;
+          const scenariosHref = `/driver/${encodeURIComponent(r.driver)}/position/${position}`;
           return `
         <li class="card card--interactive"
             style="--team-color: ${color}"
@@ -64,19 +65,34 @@ function renderRows(payload: PagePayload, position: number, rows: PositionRow[])
           <div class="card__accent" aria-hidden="true"></div>
           <p class="card__title"><a href="${href}">${name}</a></p>
           <p class="card__subtitle">${r.count.toLocaleString()} championships (${r.percentage.toFixed(1)}%)</p>
+          <p class="card__meta">
+            <a href="${scenariosHref}" onclick="event.stopPropagation()">View scenarios →</a>
+          </p>
         </li>`;
         })
         .join("")}
     </ul>`;
 }
 
+function activate(payload: PagePayload, btn: HTMLButtonElement): void {
+  for (const other of $$<HTMLButtonElement>("[data-position]")) other.setAttribute("aria-pressed", "false");
+  btn.setAttribute("aria-pressed", "true");
+  void fetchPosition(payload, Number(btn.dataset.position));
+}
+
 const payload = readJsonScript<PagePayload>("page-data");
 if (payload) {
   for (const btn of $$<HTMLButtonElement>("[data-position]")) {
     btn.addEventListener("click", () => {
-      for (const other of $$<HTMLButtonElement>("[data-position]")) other.setAttribute("aria-pressed", "false");
-      btn.setAttribute("aria-pressed", "true");
-      void fetchPosition(payload, Number(btn.dataset.position));
+      // Keep the chosen position in the URL so results are shareable links.
+      window.history.replaceState(null, "", `?p=${btn.dataset.position}`);
+      activate(payload, btn);
     });
+  }
+  // Deep link: /driver-positions?p=7 selects P7 on load.
+  const requested = new URLSearchParams(window.location.search).get("p");
+  if (requested) {
+    const btn = $<HTMLButtonElement>(`[data-position='${CSS.escape(requested)}']`);
+    if (btn) activate(payload, btn);
   }
 }

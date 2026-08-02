@@ -35,8 +35,13 @@ function chartWrapper(): HTMLElement {
   return require$<HTMLElement>("[data-chart-wrapper]");
 }
 
+function summaryHost(): HTMLElement {
+  return require$<HTMLElement>("[data-h2h-summary]");
+}
+
 function showState(html: string): void {
   chartWrapper().hidden = true;
+  summaryHost().hidden = true;
   stateHost().innerHTML = html;
 }
 
@@ -45,9 +50,46 @@ function showChartSurface(): void {
   chartWrapper().hidden = false;
 }
 
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+}
+
+/** Keep ?a=&b= in sync with the pickers so comparisons are shareable links. */
+function syncUrl(a: string, b: string): void {
+  const params = new URLSearchParams(window.location.search);
+  if (a) params.set("a", a);
+  else params.delete("a");
+  if (b) params.set("b", b);
+  else params.delete("b");
+  const query = params.toString();
+  const url = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+  window.history.replaceState(null, "", url);
+}
+
+function renderSummary(
+  a: { name: string; color: string; wins: number },
+  b: { name: string; color: string; wins: number },
+): void {
+  const total = a.wins + b.wins;
+  const tile = (d: { name: string; color: string; wins: number }) => {
+    const pct = total > 0 ? ((d.wins / total) * 100).toFixed(1) : "0.0";
+    return `
+      <div class="stat-tile" style="--team-color: ${d.color}">
+        <p class="stat-tile__label">${escapeHtml(d.name)}</p>
+        <p class="stat-tile__value">${d.wins.toLocaleString()}</p>
+        <p class="stat-tile__hint">ahead in ${pct}% of scenarios</p>
+      </div>`;
+  };
+  const host = summaryHost();
+  host.innerHTML = tile(a) + tile(b);
+  host.hidden = false;
+}
+
 async function refresh(payload: PagePayload): Promise<void> {
   const a = getSlot("a").value;
   const b = getSlot("b").value;
+  syncUrl(a, b);
 
   if (!a || !b) {
     showState(`<div class="state-panel"><p class="state-panel__title">Pick two drivers</p></div>`);
@@ -59,6 +101,7 @@ async function refresh(payload: PagePayload): Promise<void> {
   }
 
   chartWrapper().hidden = true;
+  summaryHost().hidden = true;
   showLoading(stateHost(), "Comparing…");
 
   try {
@@ -89,8 +132,13 @@ async function refresh(payload: PagePayload): Promise<void> {
       [res[a] ?? 0, res[b] ?? 0],
       [colorA, colorB],
     );
+    renderSummary(
+      { name: driverA?.name ?? a, color: colorA, wins: res[a] ?? 0 },
+      { name: driverB?.name ?? b, color: colorB, wins: res[b] ?? 0 },
+    );
   } catch (err) {
     chartWrapper().hidden = true;
+    summaryHost().hidden = true;
     showError(stateHost(), err, () => refresh(payload));
   }
 }

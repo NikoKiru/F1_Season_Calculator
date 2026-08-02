@@ -12,7 +12,10 @@
   </p>
 </section>
 
-<div class="row" style="justify-content: flex-end">
+<div class="row" style="justify-content: flex-end; align-items: center">
+  <span class="badge" data-selected-count aria-live="polite">0 of {{ raced_count }} rounds selected</span>
+  <button type="button" class="btn" data-select-all>All</button>
+  <button type="button" class="btn" data-clear>Clear</button>
   <button type="button" class="btn" data-random>Random</button>
   <button type="button" class="btn btn--primary" data-submit>Show championship →</button>
 </div>

@@ -205,7 +205,7 @@
   background: transparent;
   border: 0;
   color: var(--fg-on-carbon);
-  width: 130px;
+  width: 150px;
   padding: var(--s-2) var(--s-2) var(--s-2) var(--s-4);
   font-family: var(--ff-mono);
   font-size: var(--fs-sm);

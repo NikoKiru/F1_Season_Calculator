@@ -23,11 +23,25 @@ function selectedRounds(): number[] {
     .sort((a, b) => a - b);
 }
 
+function racedInputs(): HTMLInputElement[] {
+  return $$<HTMLInputElement>("input[name='round']").filter((el) => !el.disabled);
+}
+
+function setAll(checked: boolean): void {
+  for (const input of racedInputs()) input.checked = checked;
+}
+
+function updateCount(): void {
+  const el = $<HTMLElement>("[data-selected-count]");
+  if (!el) return;
+  el.textContent = `${selectedRounds().length} of ${racedInputs().length} rounds selected`;
+}
+
 function randomise(): void {
   // Sample from the actual checkboxes — round numbers can be non-contiguous
   // (e.g. a cancelled round mid-season), so guessing 1..total_rounds can miss.
   // Disabled boxes are future rounds with no results; they never join the draw.
-  const inputs = $$<HTMLInputElement>("input[name='round']").filter((el) => !el.disabled);
+  const inputs = racedInputs();
   if (inputs.length === 0) return;
   const count = Math.floor(Math.random() * inputs.length) + 1;
   const pool = [...inputs];
@@ -75,7 +89,20 @@ const payload = readJsonScript<PagePayload>("page-data");
 if (payload) {
   const submitBtn = require$<HTMLButtonElement>("[data-submit]");
   const feedback = require$<HTMLElement>("[data-feedback]");
-  $<HTMLButtonElement>("[data-random]")?.addEventListener("click", () => randomise());
+  $<HTMLButtonElement>("[data-random]")?.addEventListener("click", () => {
+    randomise();
+    updateCount();
+  });
+  $<HTMLButtonElement>("[data-select-all]")?.addEventListener("click", () => {
+    setAll(true);
+    updateCount();
+  });
+  $<HTMLButtonElement>("[data-clear]")?.addEventListener("click", () => {
+    setAll(false);
+    updateCount();
+  });
+  // Checkbox change events bubble — one listener covers the whole grid.
+  $<HTMLElement>(".round-grid")?.addEventListener("change", () => updateCount());
   submitBtn.addEventListener("click", () => submit(payload, feedback, submitBtn));
   // Browsers snapshot the DOM into the back-forward cache at navigation
   // time. Without this, returning to the page (e.g. clicking back from
@@ -84,5 +111,7 @@ if (payload) {
   // restore so the form is usable again.
   window.addEventListener("pageshow", (event) => {
     if (event.persisted) resetForm(feedback, submitBtn);
+    updateCount();
   });
+  updateCount();
 }
