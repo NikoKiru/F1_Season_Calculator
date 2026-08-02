@@ -73,6 +73,10 @@ function bindNavGroups(): void {
   const groups = $$<HTMLElement>("[data-nav-group]");
   if (groups.length === 0) return;
 
+  // Hover-to-open is desktop-only: touch devices keep the click toggle,
+  // and the mobile hamburger layout renders groups flat anyway.
+  const hoverFine = window.matchMedia("(hover: hover) and (pointer: fine)");
+
   const closeAll = (except?: HTMLElement) => {
     for (const g of groups) {
       if (g === except) continue;
@@ -124,6 +128,21 @@ function bindNavGroups(): void {
         e.preventDefault();
         close(group, true);
       }
+    });
+
+    // The menu floats 8px below the trigger, so the pointer leaves the
+    // group while crossing the gap — the delay keeps the menu open for
+    // that hop and forgives brief overshoots.
+    let hoverCloseTimer = 0;
+    group.addEventListener("mouseenter", () => {
+      if (!hoverFine.matches) return;
+      window.clearTimeout(hoverCloseTimer);
+      open(group);
+    });
+    group.addEventListener("mouseleave", () => {
+      if (!hoverFine.matches) return;
+      window.clearTimeout(hoverCloseTimer);
+      hoverCloseTimer = window.setTimeout(() => close(group), 200);
     });
   }
 
