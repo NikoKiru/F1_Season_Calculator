@@ -29,8 +29,8 @@
 ## 🚀 Quick start
 
 **Prerequisites:** [Python 3.10+](https://www.python.org/downloads/) (tested
-on 3.10 – 3.13) and [Node.js 18+](https://nodejs.org/) for the Vite frontend
-(`pnpm`/`yarn` also work with the `package.json` scripts).
+on 3.10 – 3.13) and [Node.js 20.19+ or 22.12+](https://nodejs.org/) for the
+Vite frontend (`pnpm`/`yarn` also work with the `package.json` scripts).
 
 ```bash
 # 1. Clone and install (editable)
@@ -86,6 +86,10 @@ flowchart LR
 See [`data/README.md`](data/README.md) for the exact CSV format, including
 the **sprint columns** (`{N}s`) and the 2026 calendar.
 
+Points ties are split on **countback**: most wins, then most second places,
+and so on down to P10, counting race finishes only. The CSV holds points
+rather than positions, so entries still level after P10 keep their CSV order.
+
 ## 🔄 Keeping a live season current
 
 ```bash
@@ -120,10 +124,11 @@ sequenceDiagram
 | `--season YYYY`  | Target a specific season                                    |
 
 The scheduled [`data-sync.yml`](.github/workflows/data-sync.yml) workflow
-runs `f1 sync --no-reprocess` twice a week and commits any new data, so a
-deployment machine only needs `git pull` plus the manager's **Build** (or a
-local `f1 sync`). The Tkinter manager (`tools/manage_ui.py`) also has a
-one-click **Sync** button.
+runs `f1 sync --no-reprocess` twice a week and commits the CSV and JSON, so a
+deployment machine only needs `git pull` plus a local `f1 sync`, which rebuilds
+whenever the database is behind the CSV. The same goes for a run that was
+interrupted: just run it again. The Tkinter manager (`tools/manage_ui.py`) also
+has a one-click **Sync** button.
 
 The older manual paths still work:
 
@@ -150,11 +155,11 @@ anything that still needs hand-curation.
 
 ### 2026 calendar notes
 
-- Bahrain and Saudi Arabia were canceled; Jolpica renumbered the calendar to
-  22 sequential rounds and this repo follows that numbering (round 4 =
-  Miami, round 5 = Canada, …).
+- Saudi Arabia was canceled and the Bahrain GP moved to Malaysia as round 16
+  (`MAL`). Jolpica renumbered the calendar to 23 sequential rounds and this
+  repo follows that numbering (round 4 = Miami, round 5 = Canada, …).
 - **Sprint weekends:** rounds 2 (China), 4 (Miami), 5 (Canada),
-  9 (Silverstone), 12 (Zandvoort), 16 (Singapore) — `f1 sync` keeps
+  9 (Silverstone), 12 (Zandvoort), 17 (Singapore) — `f1 sync` keeps
   `sprint_rounds` aligned with the API automatically.
 
 ## 🧰 CLI
