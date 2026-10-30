@@ -9,7 +9,7 @@ from typer.testing import CliRunner
 
 from app.cli import app as cli_app
 from app.config import Settings
-from app.pipeline import rebuild
+from app.pipeline import rebuild, writer
 from app.services import jolpica_service, season_service
 
 runner = CliRunner()
@@ -86,6 +86,9 @@ def sync_env(tmp_path: Path, monkeypatch):
         if hasattr(mod, "get_settings"):
             monkeypatch.setattr(mod, "get_settings", lambda s=settings: s)
     season_service.clear_cache()
+
+    # The seed CSV starts out built, so only what a test does can make it stale.
+    rebuild.rebuild_season(settings, SEASON, echo=lambda _: None)
 
     # Network defaults: schedule with one fetchable round; no bio data.
     monkeypatch.setattr(
@@ -177,8 +180,8 @@ def test_sync_dry_run_writes_nothing(sync_env):
     assert "round 2" in result.output.lower()
 
 
-def test_sync_noop_when_up_to_date(sync_env):
-    # Calendar already matches, no missing rounds, nothing to do.
+def _nothing_to_fetch(sync_env) -> None:
+    """The API calendar is exactly the round the seed CSV already holds."""
     sync_env.monkeypatch.setattr(
         jolpica_service,
         "fetch_schedule",
@@ -187,7 +190,10 @@ def test_sync_noop_when_up_to_date(sync_env):
              "country": "Australia", "date": "2020-03-08", "has_sprint": False},
         ],
     )
-    # Make the CSV's round the only one.
+
+
+def test_sync_noop_when_up_to_date(sync_env):
+    _nothing_to_fetch(sync_env)
     before_csv = sync_env.csv_path.read_bytes()
     before_json = sync_env.json_path.read_bytes()
 
@@ -197,6 +203,94 @@ def test_sync_noop_when_up_to_date(sync_env):
     assert sync_env.csv_path.read_bytes() == before_csv
     assert sync_env.json_path.read_bytes() == before_json
     assert sync_env.rebuild_calls == []
+
+
+def test_sync_rebuilds_when_csv_changed_without_a_fetch(sync_env):
+    # What `git pull` does: the CSV moves on, the API has nothing new to offer.
+    _nothing_to_fetch(sync_env)
+    sync_env.csv_path.write_text("Driver,1\nVER,18\nNOR,25\n", encoding="utf-8")
+
+    result = runner.invoke(cli_app, ["sync", "--season", str(SEASON), "--no-bio"])
+
+    assert result.exit_code == 0, result.output
+    assert sync_env.rebuild_calls == [SEASON]
+    assert "up to date" not in result.output.lower()
+
+
+def test_sync_finishes_a_rebuild_that_never_completed(sync_env):
+    _nothing_to_fetch(sync_env)
+    writer.clear_season(sync_env.settings.database_path, SEASON)
+
+    result = runner.invoke(cli_app, ["sync", "--season", str(SEASON), "--no-bio"])
+
+    assert result.exit_code == 0, result.output
+    assert sync_env.rebuild_calls == [SEASON]
+
+
+def test_sync_no_reprocess_leaves_a_stale_database_alone(sync_env):
+    _nothing_to_fetch(sync_env)
+    sync_env.csv_path.write_text("Driver,1\nVER,18\nNOR,25\n", encoding="utf-8")
+
+    result = runner.invoke(
+        cli_app, ["sync", "--season", str(SEASON), "--no-bio", "--no-reprocess"]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert sync_env.rebuild_calls == []
+
+
+def test_sync_dry_run_reports_a_stale_database_without_rebuilding(sync_env):
+    _nothing_to_fetch(sync_env)
+    sync_env.csv_path.write_text("Driver,1\nVER,18\nNOR,25\n", encoding="utf-8")
+
+    result = runner.invoke(cli_app, ["sync", "--season", str(SEASON), "--dry-run"])
+
+    assert result.exit_code == 0, result.output
+    assert sync_env.rebuild_calls == []
+    assert "would rebuild" in result.output.lower()
+    assert "up to date" not in result.output.lower()
+
+
+def test_sync_before_the_first_race_has_nothing_to_rebuild(sync_env):
+    # A new season: schedule published, no CSV yet.
+    sync_env.csv_path.unlink()
+    sync_env.monkeypatch.setattr(
+        jolpica_service,
+        "fetch_schedule",
+        lambda season, *, client=None: _schedule(future_only=True),
+    )
+
+    result = runner.invoke(cli_app, ["sync", "--season", str(SEASON), "--no-bio"])
+
+    assert result.exit_code == 0, result.output
+    assert sync_env.rebuild_calls == []
+
+
+def test_sync_interrupted_by_bio_refresh_is_redone_in_full_next_run(sync_env):
+    def lost_connection(jid, *, client):
+        raise RuntimeError("connection lost")
+
+    sync_env.monkeypatch.setattr(jolpica_service, "fetch_driver_career", lost_connection)
+
+    interrupted = runner.invoke(cli_app, ["sync", "--season", str(SEASON)])
+
+    assert interrupted.exit_code != 0
+    assert sync_env.csv_path.read_text(encoding="utf-8") == SEED_CSV
+    assert sync_env.rebuild_calls == []
+
+    career_calls: list[str] = []
+    sync_env.monkeypatch.setattr(
+        jolpica_service,
+        "fetch_driver_career",
+        lambda jid, *, client: career_calls.append(jid),
+    )
+
+    resumed = runner.invoke(cli_app, ["sync", "--season", str(SEASON)])
+
+    assert resumed.exit_code == 0, resumed.output
+    assert career_calls  # bios weren't lost with the first attempt
+    assert sync_env.csv_path.read_text(encoding="utf-8").splitlines()[0] == "Driver,1,2,2s"
+    assert sync_env.rebuild_calls == [SEASON]
 
 
 def test_sync_adds_stub_for_unknown_driver(sync_env):

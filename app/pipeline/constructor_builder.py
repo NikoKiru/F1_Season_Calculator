@@ -26,6 +26,7 @@ class LoadedConstructorSeason:
     constructors: np.ndarray  # shape (T,), team names
     round_numbers: np.ndarray  # shape (W,), same weekend axis as LoadedSeason
     combined: np.ndarray  # shape (T, W), race + sprint summed per weekend
+    countback: np.ndarray  # shape (T, W), drivers' tie-break weights summed per weekend
 
 
 def build(loaded: LoadedSeason, season: int) -> LoadedConstructorSeason:
@@ -57,13 +58,17 @@ def build(loaded: LoadedSeason, season: int) -> LoadedConstructorSeason:
             constructors=np.empty(0, dtype=object),
             round_numbers=loaded.round_numbers.copy(),
             combined=np.zeros((0, weeks), dtype=int),
+            countback=np.zeros((0, weeks), dtype=int),
         )
 
-    stacked = np.vstack(
-        [combined_driver[indices_by_team[team], :].sum(axis=0) for team in teams_in_order]
-    )
+    def sum_by_team(per_driver: np.ndarray) -> np.ndarray:
+        return np.vstack(
+            [per_driver[indices_by_team[team], :].sum(axis=0) for team in teams_in_order]
+        )
+
     return LoadedConstructorSeason(
         constructors=np.asarray(teams_in_order, dtype=object),
         round_numbers=loaded.round_numbers.copy(),
-        combined=stacked.astype(int),
+        combined=sum_by_team(combined_driver).astype(int),
+        countback=sum_by_team(loaded.countback),
     )

@@ -32,6 +32,7 @@ def test_process_season_inserts_2_pow_n_minus_1_championships(tmp_path):
                 [5, 5, 5],     # TeamC
             ]
         ),
+        countback=np.zeros((3, 3), dtype=int),
     )
 
     inserted = constructor_writer.process_season(db, built, season=9999, batch_size=2)
@@ -72,6 +73,7 @@ def test_clear_season_removes_constructor_rows(tmp_path):
         constructors=np.array(["X", "Y"], dtype=object),
         round_numbers=np.array([1, 2]),
         combined=np.array([[10, 10], [5, 5]]),
+        countback=np.zeros((2, 2), dtype=int),
     )
     constructor_writer.process_season(db, built, season=9999)
 
