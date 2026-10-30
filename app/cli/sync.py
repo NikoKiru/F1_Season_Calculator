@@ -11,8 +11,12 @@ One idempotent command that replaces the manual fetch-race/refresh-bio dance:
    stub scaffolded from the API (substitutes, mid-season rookies).
 4. Bios: career/palmarès counts refresh automatically when new rounds land
    (`--bio` forces, `--no-bio` skips). Timestamps only move on real changes.
-5. Rebuild: championships + stats are regenerated once when new results
-   arrived, unless --no-reprocess (used by CI, which only syncs data files).
+5. Rebuild: championships + stats are regenerated once whenever the database
+   is behind the CSV — new results, a `git pull`, an unfinished rebuild —
+   unless --no-reprocess (used by CI, which only syncs data files).
+
+Data files are written after every fetch has succeeded, so an interrupted run
+leaves its rounds missing and the next run simply does them over.
 
 A run with nothing to do makes one API call and touches no files, so it is
 safe on a timer, in CI, or behind a UI button.
@@ -22,12 +26,13 @@ from __future__ import annotations
 import json
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 import httpx
 import typer
 
 from app.cli import refresh_bio
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.pipeline import race_csv, rebuild
 from app.services import flags, jolpica_service, season_service, sync_service
 
@@ -104,6 +109,10 @@ def _add_driver_stubs(
     return changed
 
 
+def _database_is_behind(settings: Settings, season: int, csv_path: Path) -> bool:
+    return csv_path.exists() and not rebuild.is_current(settings, season)
+
+
 def run(
     season: int = typer.Option(
         None, "--season", "-s", help="Defaults to the newest data/seasons/*.json."
@@ -111,7 +120,7 @@ def run(
     reprocess: bool = typer.Option(
         True,
         "--reprocess/--no-reprocess",
-        help="Rebuild championships + stats when new results land.",
+        help="Rebuild championships + stats when the database is behind the CSV.",
     ),
     bio: bool = typer.Option(
         None,
@@ -164,7 +173,10 @@ def run(
                 typer.echo(f"  calendar: {line}")
             for rnd in missing:
                 typer.echo(f"  results: would fetch round {rnd}")
-            if not changes and not missing:
+            behind = reprocess and _database_is_behind(settings, season, csv_path)
+            if behind:
+                typer.echo("  database: would rebuild (behind the CSV)")
+            if not changes and not missing and not behind:
                 typer.echo("Season is up to date.")
             typer.echo("(dry run — nothing written)")
             return
@@ -191,8 +203,6 @@ def run(
                 + (f", {len(sprint)} sprint results" if sprint else "")
             )
         if fetched:
-            race_csv.save(csv_path, drivers, race_data, sprint_data)
-            typer.echo(f"[OK] wrote {csv_path.name} (rounds {fetched})")
             raced_rounds |= set(fetched)
             raced_sprints |= {
                 r for per_driver in sprint_data.values() for r in per_driver
@@ -224,10 +234,15 @@ def run(
         refresh_bio.save_season_json(json_path, raw)
         typer.echo(f"[OK] wrote {json_path.name}")
 
-    if fetched and reprocess:
+    if fetched:
+        race_csv.save(csv_path, drivers, race_data, sprint_data)
+        typer.echo(f"[OK] wrote {csv_path.name} (rounds {fetched})")
+
+    rebuilt = reprocess and _database_is_behind(settings, season, csv_path)
+    if rebuilt:
         rebuild.rebuild_season(settings, season, echo=typer.echo)
     elif fetched:
         typer.echo("Skipping reprocess (--no-reprocess). Run the build before serving.")
 
-    if not (fetched or cal_changes or roster_changed or bio_changed):
+    if not (fetched or cal_changes or roster_changed or bio_changed or rebuilt):
         typer.echo(f"Season {season} is up to date — nothing to do.")

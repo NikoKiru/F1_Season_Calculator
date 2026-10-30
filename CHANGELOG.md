@@ -25,6 +25,21 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Points ties are now split on countback (wins, then P2s, down to P10, race
+  finishes only) for drivers and constructors. They used to fall back to CSV
+  order, which crowned the wrong champion in some scenarios, including the
+  Nail-Biter while claiming "decided on countback". Rebuild to apply.
+- `f1 sync` survives interruption: data files are written last, and it now
+  rebuilds whenever the database is behind the CSV. It used to report "up to
+  date" over an empty database if it stopped after writing the CSV.
+- Season CSVs are tracked in git, so `data-sync.yml` actually commits race
+  results and a `git pull` delivers them. They used to be gitignored, leaving
+  CI to refetch the whole season on every run and commit only the JSON.
+- `web/` declares its real Node requirement (20.19+ or 22.12+) and `npm`
+  refuses older versions up front, instead of silently skipping Rolldown's
+  native binding and failing at build time. The README said Node 18+.
+- `README.md`/`data/README.md` calendar notes updated to 23 rounds, with the
+  Bahrain GP in Malaysia as round 16 and the Singapore sprint at round 17.
 - `f1 refresh-bio` no longer rewrites `seasons/{YYYY}.json` when nothing
   changed upstream — `updated_at` timestamps only move on real changes,
   killing the noisy no-op git diffs.
