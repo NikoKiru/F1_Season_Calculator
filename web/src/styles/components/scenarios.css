@@ -1,0 +1,42 @@
+/* Ways into a scenario list: position links on detail pages, and the pager
+ * at the bottom of the list itself. */
+
+.position-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: var(--s-2);
+  padding: 0;
+  list-style: none;
+}
+
+.position-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-1);
+  color: var(--fg-default);
+  text-decoration: none;
+  transition: border-color var(--dur-fast) var(--ease-standard),
+              transform var(--dur-fast) var(--ease-standard);
+}
+.position-link:hover,
+.position-link:focus-visible {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.position-link__count {
+  font-family: var(--ff-mono);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.scenario-pager {
+  justify-content: center;
+  margin-top: var(--s-5);
+}

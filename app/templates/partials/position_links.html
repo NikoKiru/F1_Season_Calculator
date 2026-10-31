@@ -1,0 +1,21 @@
+{#
+  One link per reachable finish, each opening every scenario behind it. The bar
+  chart above opens the same pages, but a canvas can't be reached by keyboard.
+  Expects: positions (pairs of position and count), position_base.
+#}
+<section class="section" aria-labelledby="position-links-heading">
+  <div class="section__head">
+    <h2 id="position-links-heading" class="section__title">Scenarios by finish</h2>
+    <p class="section__lede">Open a position to list every scenario behind it.</p>
+  </div>
+  <ul class="position-links">
+    {% for position, count in positions if count %}
+      <li>
+        <a class="position-link" href="{{ position_base }}/position/{{ position }}">
+          <span class="position-chip {% if position == 1 %}position-chip--gold{% elif position == 2 %}position-chip--silver{% elif position == 3 %}position-chip--bronze{% endif %}">P{{ position }}</span>
+          <span class="position-link__count">{{ "{:,}".format(count) }}</span>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+</section>

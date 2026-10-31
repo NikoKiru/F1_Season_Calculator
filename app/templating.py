@@ -16,7 +16,7 @@ from fastapi.templating import Jinja2Templates
 from markupsafe import Markup, escape
 
 from app.config import get_settings
-from app.services import circuit_codes, flags
+from app.services import circuit_codes, display, flags
 
 
 def _manifest_path() -> Path:
@@ -101,6 +101,7 @@ templates.env.globals["vite_style"] = _asset_style
 templates.env.globals["vite_asset"] = _asset_url
 templates.env.globals["nat_flag"] = _nat_flag
 templates.env.globals["race_flag"] = _race_flag
+templates.env.filters["round_ranges"] = display.round_ranges
 
 
 def render(request: Request, template: str, context: dict, *, status_code: int = 200):

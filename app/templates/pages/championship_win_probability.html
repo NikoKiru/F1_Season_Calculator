@@ -3,40 +3,13 @@
 {% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
 
 {% block content %}
-<section class="hero">
+<section class="hero hero--compact">
   <h1 class="hero__title">Championship win probability</h1>
-  <p class="hero__lede">For every driver × season length, the fraction of scenarios in which they win.</p>
+  <p class="hero__lede">
+    Percentage of scenarios each driver wins, by how many races count. Darker means more often; open a number to list its scenarios.
+    {% if matrix.lock %}<strong>{{ matrix.lock.name }} wins every scenario of {{ matrix.lock.from_races }} races or more.</strong>{% endif %}
+  </p>
 </section>
 
-<div class="table-wrapper">
-  <table class="table table--striped-rows">
-    <thead>
-      <tr>
-        <th>Driver</th>
-        {% for length in data.season_lengths %}
-          <th class="num">{{ length }} race{{ "s" if length > 1 else "" }}</th>
-        {% endfor %}
-        <th class="num">Total</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in data.drivers_data %}
-        <tr style="--team-color: {{ row.color }}">
-          <td><strong><a href="/driver/{{ row.driver }}">{{ row.name }}</a></strong></td>
-          {% for pct in row.percentages %}
-            <td class="num">{{ "%.2f"|format(pct) }}%</td>
-          {% endfor %}
-          <td class="num"><strong>{{ "{:,}".format(row.total_titles) }}</strong></td>
-        </tr>
-      {% endfor %}
-      <tr>
-        <td><em>Possible seasons</em></td>
-        {% for total in data.possible_seasons %}
-          <td class="num"><em>{{ "{:,}".format(total) }}</em></td>
-        {% endfor %}
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+{% include "partials/win_matrix.html" %}
 {% endblock %}

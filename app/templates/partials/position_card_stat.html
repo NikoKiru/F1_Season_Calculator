@@ -1,0 +1,20 @@
+{#
+  Stat row on a highest-position card. The card itself opens the full scenario
+  list, so this link is the way to the single best scenario. Expects: r.
+#}
+<div class="card__stat-row">
+  {% if r.best_margin is not none %}
+    <span class="card__stat-label">Best margin</span>
+    {% set stat = "+" ~ r.best_margin ~ " pts" %}
+  {% elif r.max_races %}
+    <span class="card__stat-label">Longest at P{{ r.position }}</span>
+    {% set stat = r.max_races ~ " race" ~ ("s" if r.max_races != 1 else "") %}
+  {% endif %}
+  {% if stat %}
+    {% if r.scenario_id %}
+      <a class="card__stat-link" href="/championship/{{ r.scenario_id }}" title="Open this scenario"><span class="card__stat-value">{{ stat }}</span></a>
+    {% else %}
+      <span class="card__stat-value">{{ stat }}</span>
+    {% endif %}
+  {% endif %}
+</div>

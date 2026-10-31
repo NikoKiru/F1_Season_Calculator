@@ -17,6 +17,7 @@ from app.services import (
     driver_service,
     season_service,
     statistics_service,
+    win_matrix,
 )
 from app.templating import render
 
@@ -187,12 +188,14 @@ def driver_position_detail(
     season: SeasonDep,
     page: Annotated[int, Query(ge=1)] = 1,
     per_page: Annotated[int, Query(ge=1, le=500)] = 50,
+    races: Annotated[int | None, Query(ge=1)] = None,
 ):
-    if position < 1 or position > 20:
-        raise HTTPException(status_code=400, detail="Position must be 1–20")
+    max_position = driver_service.max_position(season)
+    if position < 1 or position > max_position:
+        raise HTTPException(status_code=400, detail=f"Position must be 1–{max_position}")
     driver_code = validated_driver(code, season)
     data = driver_service.championships_at_position(
-        conn, driver_code, position, season, page, per_page
+        conn, driver_code, position, season, page, per_page, races
     )
     context = {
         **_common(season),
@@ -298,21 +301,27 @@ def create_championship_page(request: Request, conn: ConnDep, season: SeasonDep)
 def win_probability_page(request: Request, conn: ConnDep, season: SeasonDep):
     sd = season_service.get_season_data(season)
     data = statistics_service.win_probability(conn, season)
-    # Copy rows before decorating — the rows live in the TTL cache and the
-    # bare /api/statistics/win-probability response must keep its shape.
-    data = dict(data)
-    data["drivers_data"] = [
+    rows = {row["driver"]: row for row in data["drivers_data"]}
+    # Rows keep their rank order. The live fallback in win_probability only
+    # returns winners, so the rest of the roster is added from the season JSON.
+    entries = [
         {
-            **row,
-            "name": sd.driver_names.get(row["driver"], row["driver"]),
-            "color": sd.drivers[row["driver"]].color if row["driver"] in sd.drivers else "#666",
+            "name": sd.driver_names.get(code, code),
+            "short": code,
+            "color": sd.drivers[code].color if code in sd.drivers else "#666",
+            "href": f"/driver/{code}",
+            "scenarios_href": f"/driver/{code}/position/1",
+            "titles": rows[code]["total_titles"] if code in rows else 0,
+            "wins": rows[code]["wins_per_length"] if code in rows else [],
         }
-        for row in data["drivers_data"]
+        for code in [*rows, *(c for c in sd.drivers if c not in rows)]
     ]
     context = {
         **_common(season),
         "crumbs": _breadcrumbs(("Home", "/"), ("Win probability", None)),
-        "data": data,
+        "matrix": win_matrix.build(
+            entries, data["season_lengths"], data["possible_seasons"]
+        ),
     }
     return render(request, "pages/championship_win_probability.html", context)
 
@@ -373,7 +382,7 @@ def driver_positions_page(request: Request, season: SeasonDep):
     context = {
         **_common(season),
         "crumbs": _breadcrumbs(("Home", "/"), ("Positions", None)),
-        "positions": list(range(1, 21)),
+        "positions": list(range(1, driver_service.max_position(season) + 1)),
         "page_data": {
             "season": season,
             "driver_names": sd.driver_names,
@@ -495,20 +504,27 @@ def constructor_win_probability_page(
 ):
     sd = season_service.get_season_data(season)
     data = constructor_service.win_probability(conn, season)
-    # Same cache-isolation copy as the driver win-probability page.
-    data = dict(data)
-    data["constructors_data"] = [
+    rows = {row["constructor"]: row for row in data["constructors_data"]}
+    entries = [
         {
-            **row,
-            "slug": season_service.team_slug(row["constructor"]),
-            "color": sd.teams.get(row["constructor"], "#666"),
+            "name": name,
+            "short": name,
+            "color": sd.teams.get(name, "#666"),
+            "href": f"/constructor/{season_service.team_slug(name)}",
+            "scenarios_href": (
+                f"/constructor/{season_service.team_slug(name)}/position/1"
+            ),
+            "titles": rows[name]["total_titles"] if name in rows else 0,
+            "wins": rows[name]["wins_per_length"] if name in rows else [],
         }
-        for row in data["constructors_data"]
+        for name in [*rows, *(n for n in sd.teams if n not in rows)]
     ]
     context = {
         **_common(season),
         "crumbs": _breadcrumbs(("Home", "/"), ("Constructor win probability", None)),
-        "data": data,
+        "matrix": win_matrix.build(
+            entries, data["season_lengths"], data["possible_seasons"]
+        ),
     }
     return render(request, "pages/constructor_win_probability.html", context)
 
@@ -608,6 +624,7 @@ def constructor_position_detail(
     season: SeasonDep,
     page: Annotated[int, Query(ge=1)] = 1,
     per_page: Annotated[int, Query(ge=1, le=500)] = 50,
+    races: Annotated[int | None, Query(ge=1)] = None,
 ):
     if position < 1:
         raise HTTPException(status_code=400, detail="Position must be ≥ 1")
@@ -616,7 +633,7 @@ def constructor_position_detail(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     data = constructor_service.championships_at_position(
-        conn, name, position, season, page, per_page
+        conn, name, position, season, page, per_page, races
     )
     data["constructor_name"] = name
     context = {

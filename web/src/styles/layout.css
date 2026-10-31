@@ -81,6 +81,27 @@ main {
   font-size: 0.65em;
 }
 
+/* For pages whose content has to fit one screen below the heading. */
+.hero--compact {
+  padding-block: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+.hero--compact::before {
+  top: var(--s-3);
+  bottom: var(--s-3);
+}
+.hero--compact .hero__title {
+  font-size: var(--fs-3xl);
+}
+.hero--compact .hero__lede {
+  max-width: 90ch;
+  font-size: var(--fs-md);
+}
+.hero__lede strong {
+  color: var(--fg-default);
+  font-weight: var(--fw-semibold);
+}
+
 /* Kept for templates that opt in; the blade is standard now. */
 .hero--accented {
   border-left: 0;

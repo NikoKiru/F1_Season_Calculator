@@ -1,0 +1,58 @@
+{#
+  Every scenario behind one finishing position, for a driver or a constructor.
+  Expects: data, position, subject (full name), subject_label (name in the
+  heading), list_href, points_key, points_label.
+#}
+{% set gap_label = "Lead" if position == 1 else "Gap to P" ~ (position - 1) %}
+{% set races_query = "&races=" ~ data.num_races if data.num_races else "" %}
+<section class="hero hero--compact">
+  <p class="hero__eyebrow">{{ subject }}</p>
+  <h1 class="hero__title">Scenarios where {{ subject_label }} finishes P{{ position }}</h1>
+  <p class="hero__lede">
+    {{ "{:,}".format(data.total_count) }} scenario{{ "s" if data.total_count != 1 }}{% if data.num_races %} with {{ data.num_races }} race{{ "s" if data.num_races != 1 }}{% endif %}{% if data.total_pages > 1 %}, page {{ "{:,}".format(data.page) }} of {{ "{:,}".format(data.total_pages) }}{% endif %}{% if data.num_races %} · <a href="{{ list_href }}">Show all</a>{% endif %}
+  </p>
+</section>
+
+{% if data.championships %}
+<div class="table-wrapper" data-responsive="true">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Scenario</th>
+        <th scope="col">Rounds</th>
+        <th scope="col" class="num">Races</th>
+        <th scope="col">Top 3</th>
+        <th scope="col" class="num">{{ points_label }}</th>
+        <th scope="col" class="num">{{ gap_label }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in data.championships %}
+        <tr>
+          <td data-label="Scenario"><a href="/championship/{{ c.championship_id }}">#{{ c.championship_id }}</a></td>
+          <td data-label="Rounds">{{ c.rounds|round_ranges }}</td>
+          <td data-label="Races" class="num">{{ c.num_races }}</td>
+          <td data-label="Top 3">{{ c.standings[:3]|join(", ") }}</td>
+          <td data-label="{{ points_label }}" class="num">{{ c[points_key] }}</td>
+          <td data-label="{{ gap_label }}" class="num">{{ c.margin if c.margin is not none else "—" }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<nav class="row scenario-pager" aria-label="Scenario pages">
+  {% if data.page > 1 %}
+    <a class="btn btn--ghost" href="?page=1&amp;per_page={{ data.per_page }}{{ races_query }}">First</a>
+    <a class="btn" href="?page={{ data.page - 1 }}&amp;per_page={{ data.per_page }}{{ races_query }}">← Previous</a>
+  {% endif %}
+  {% if data.page < data.total_pages %}
+    <a class="btn btn--primary" href="?page={{ data.page + 1 }}&amp;per_page={{ data.per_page }}{{ races_query }}">Next →</a>
+    <a class="btn btn--ghost" href="?page={{ data.total_pages }}&amp;per_page={{ data.per_page }}{{ races_query }}">Last</a>
+  {% endif %}
+</nav>
+{% else %}
+<div class="state-panel">
+  <p class="state-panel__title">No scenarios found.</p>
+</div>
+{% endif %}

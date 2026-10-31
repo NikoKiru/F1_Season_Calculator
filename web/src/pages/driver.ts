@@ -63,7 +63,18 @@ async function hydrateCharts(payload: PagePayload): Promise<void> {
 
   const positions = Object.keys(stats.position_distribution).sort((a, b) => Number(a) - Number(b));
   const positionCounts = positions.map((p) => stats.position_distribution[p] ?? 0);
-  await barChart(barCanvas, positions.map((p) => `P${p}`), positionCounts, payload.color, "Count");
+  await barChart(
+    barCanvas,
+    positions.map((p) => `P${p}`),
+    positionCounts,
+    payload.color,
+    "Count",
+    (index) => {
+      window.location.assign(
+        `/driver/${encodeURIComponent(payload.driver_code)}/position/${positions[index]}`,
+      );
+    },
+  );
 
   const lengths = Object.keys(stats.win_probability_by_length).sort((a, b) => Number(a) - Number(b));
   const winRates = lengths.map((l) => stats.win_probability_by_length[l] ?? 0);

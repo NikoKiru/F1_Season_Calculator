@@ -65,7 +65,7 @@ function renderRows(payload: PagePayload, position: number, rows: PositionRow[])
           const name = escapeHtml(r.constructor);
           const slug = slugFor(r.constructor, payload);
           const color = payload.constructor_colors[slug] ?? "#666";
-          const href = `/constructor/${encodeURIComponent(slug)}`;
+          const href = `/constructor/${encodeURIComponent(slug)}/position/${position}`;
           return `
         <li class="card card--interactive"
             style="--team-color: ${color}"

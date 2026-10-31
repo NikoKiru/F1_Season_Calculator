@@ -1,0 +1,153 @@
+/* Win matrix: every season length on one screen. Tiles use timing-screen
+ * purple, the "fastest" color, rather than brand red, which would read as a
+ * Ferrari row beside the team blades. Ink stays the text color at every shade,
+ * so --shade tops out low enough to keep it readable in both themes. */
+
+.win-matrix-frame--tall {
+  display: none;
+}
+
+.win-matrix {
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-family: var(--ff-mono);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.win-matrix th,
+.win-matrix td {
+  padding: var(--s-2) 2px;
+  text-align: center;
+  border-bottom: 0;
+}
+
+.win-matrix thead th {
+  position: static;
+  padding: var(--s-2) 2px;
+  background: transparent;
+  font-size: var(--fs-xs);
+  letter-spacing: 0;
+}
+
+.win-matrix tbody th,
+.win-matrix tfoot th {
+  font-weight: var(--fw-medium);
+}
+
+.win-matrix tfoot th,
+.win-matrix tfoot td {
+  color: var(--fg-muted);
+  font-size: 0.6875rem;
+}
+
+.win-matrix .win-matrix__name {
+  padding-inline: var(--s-3) var(--s-2);
+  text-align: left;
+  font-family: var(--ff-sans);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+}
+.win-matrix__name a {
+  text-decoration: none;
+}
+.win-matrix__name a:hover,
+.win-matrix__name a:focus-visible {
+  color: var(--accent-text);
+}
+
+.win-matrix__titles {
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.win-matrix tfoot .win-matrix__titles {
+  font-weight: var(--fw-regular);
+}
+
+.win-matrix__empty {
+  color: var(--fg-subtle);
+}
+
+.win-matrix .win-matrix__tile {
+  padding: 0;
+  border-radius: 4px;
+  background: color-mix(
+    in srgb,
+    var(--timing-purple-fill) calc(10% + var(--shade, 0) * 0.5%),
+    var(--bg-surface)
+  );
+}
+
+.table .win-matrix__tile a {
+  display: block;
+  padding: var(--s-2) 0;
+  border-radius: inherit;
+  color: var(--fg-default);
+  font-weight: var(--fw-medium);
+}
+.table .win-matrix__tile a:hover,
+.table .win-matrix__tile a:focus-visible {
+  color: var(--fg-default);
+  box-shadow: inset 0 0 0 2px var(--timing-purple);
+}
+
+/* ── Wide: drivers down, season lengths across ────────────────────── */
+.win-matrix--wide th:first-child {
+  width: 10.5rem;
+  padding-inline: var(--s-3) var(--s-2);
+  text-align: left;
+}
+.win-matrix--wide th:last-child,
+.win-matrix--wide td:last-child {
+  width: 5rem;
+}
+
+/* A full 24-round season: same grid, narrower numerals. */
+.win-matrix--dense {
+  font-size: 0.6875rem;
+  letter-spacing: -0.02em;
+}
+
+/* ── Tall: season lengths down, drivers across ────────────────────── */
+.win-matrix--tall th,
+.win-matrix--tall td,
+.win-matrix--tall .win-matrix__tile a {
+  padding-block: var(--s-1);
+}
+.win-matrix--tall th:first-child {
+  width: 3rem;
+}
+.win-matrix--tall th:last-child,
+.win-matrix--tall td:last-child {
+  width: 3.5rem;
+  color: var(--fg-muted);
+}
+.win-matrix--tall tbody th {
+  color: var(--fg-muted);
+}
+.win-matrix__head {
+  box-shadow: inset 0 3px 0 var(--team-color, transparent);
+}
+
+@media (max-width: 1199.98px) {
+  .win-matrix-frame--wide {
+    display: none;
+  }
+  .win-matrix-frame--tall {
+    display: block;
+  }
+}
+
+.win-matrix__rest {
+  margin-top: var(--s-3);
+  color: var(--fg-muted);
+  font-size: var(--fs-sm);
+}
+.win-matrix__rest a {
+  color: inherit;
+}
+.win-matrix__rest a:hover,
+.win-matrix__rest a:focus-visible {
+  color: var(--accent-text);
+}

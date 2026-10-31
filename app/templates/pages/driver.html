@@ -87,6 +87,10 @@
   </div>
 </section>
 
+{% set positions = stats.position_distribution|dictsort %}
+{% set position_base = "/driver/" ~ driver.code %}
+{% include "partials/position_links.html" %}
+
 <section class="section" aria-labelledby="h2h-heading">
   <div class="section__head">
     <h2 id="h2h-heading" class="section__title">Head-to-head</h2>

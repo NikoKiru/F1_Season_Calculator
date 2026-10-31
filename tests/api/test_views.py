@@ -214,6 +214,51 @@ def test_driver_position_detail_out_of_range(client):
     assert r.status_code == 400
 
 
+def test_driver_position_detail_limit_follows_the_roster(client):
+    """Regression: the limit was a fixed 20, so with 23 drivers on the 2026
+    roster every P21–P23 link on the site would have answered 400."""
+    assert client.get(f"/driver/LEC/position/3?season={SEASON}").status_code == 200
+    assert client.get(f"/driver/LEC/position/4?season={SEASON}").status_code == 400
+
+
+def test_driver_position_detail_reads_as_a_scenario_list(client):
+    html = client.get(f"/driver/NOR/position/2?season={SEASON}").text
+    assert "Gap to P1" in html
+    # Round ranges tell the scenarios apart; the full-season row is 1–4.
+    assert re.search(r'data-label="Rounds"[^>]*>\s*1–4\s*<', html)
+    assert 'data-label="Top 3"' in html
+
+
+def test_driver_position_detail_calls_the_winning_margin_a_lead(client):
+    html = client.get(f"/driver/VER/position/1?season={SEASON}").text
+    assert ">Lead<" in html
+
+
+def test_driver_position_detail_narrows_wins_to_one_length(client):
+    html = client.get(f"/driver/VER/position/1?races=1&season={SEASON}").text
+    assert len(re.findall(r'data-label="Races"[^>]*>\s*1\s*<', html)) == 2
+    assert not re.search(r'data-label="Races"[^>]*>\s*[2-4]\s*<', html)
+    assert "2 scenarios with 1 race" in html
+    assert 'href="/driver/VER/position/1">Show all' in html
+
+
+def test_driver_position_detail_pagination_keeps_the_length(client):
+    html = client.get(f"/driver/VER/position/1?races=1&per_page=1&season={SEASON}").text
+    assert 'href="?page=2&amp;per_page=1&amp;races=1"' in html
+
+
+def test_driver_position_detail_can_jump_to_the_ends(client):
+    html = client.get(f"/driver/VER/position/1?per_page=1&page=3&season={SEASON}").text
+    assert 'href="?page=1&amp;per_page=1"' in html
+    assert re.search(r'href="\?page=\d+&amp;per_page=1">Last', html)
+
+
+def test_driver_detail_links_every_position_to_its_scenarios(client):
+    html = client.get(f"/driver/NOR?season={SEASON}").text
+    for position in (1, 2):
+        assert f'href="/driver/NOR/position/{position}"' in html
+
+
 # --- championship detail --------------------------------------------------
 
 
@@ -293,6 +338,35 @@ def test_win_probability_renders(client):
     assert "Max Verstappen" in r.text
 
 
+def test_win_probability_cells_open_their_scenarios(client):
+    html = client.get(f"/championship-win-probability?season={SEASON}").text
+    assert 'href="/driver/VER/position/1?races=1"' in html
+    assert "Max Verstappen wins 2 of 4 scenarios with 1 race" in html
+
+
+def test_win_probability_folds_drivers_who_never_win(client):
+    """LEC trails every round of the fixture, so a row of his would only be
+    zeros. He gets a mention below the matrix instead of a row."""
+    html = client.get(f"/championship-win-probability?season={SEASON}").text
+    assert 'href="/driver/LEC/position/1' not in html
+    rest = re.search(r'class="win-matrix__rest".*?</p>', html, flags=re.DOTALL)
+    assert rest, "non-winners line missing"
+    assert 'href="/driver/LEC"' in rest.group(0)
+    assert "VER" not in rest.group(0)
+
+
+def test_win_probability_keeps_the_scenario_counts(client):
+    html = client.get(f"/championship-win-probability?season={SEASON}").text
+    assert "Scenarios" in html
+    assert 'title="15 scenarios in total"' in html
+
+
+def test_win_probability_lays_out_for_wide_and_narrow_screens(client):
+    html = client.get(f"/championship-win-probability?season={SEASON}").text
+    assert "win-matrix--wide" in html
+    assert "win-matrix--tall" in html
+
+
 # --- all wins + highest position + min races ------------------------------
 
 
@@ -303,6 +377,11 @@ def test_all_championship_wins_renders(client):
     assert "Max Verstappen" in r.text
     # Cards must be whole-card clickable (canonical card contract).
     assert "card--interactive" in r.text
+
+
+def test_all_championship_wins_cards_open_the_winning_scenarios(client):
+    html = client.get(f"/all-championship-wins?season={SEASON}").text
+    assert 'href="/driver/VER/position/1"' in html
 
 
 def test_min_races_to_win_cards_are_canonical(client):
@@ -344,6 +423,17 @@ def test_highest_position_renders(client):
     assert r.status_code == 200
     assert "Highest position" in r.text
     assert "P1" in r.text
+
+
+def test_highest_position_cards_open_the_scenario_list(client):
+    html = client.get(f"/highest-position?season={SEASON}").text
+    assert 'href="/driver/VER/position/1"' in html
+    assert "window.location" not in html
+
+
+def test_highest_position_cards_still_reach_their_best_scenario(client):
+    html = client.get(f"/highest-position?season={SEASON}").text
+    assert re.search(r'class="card__stat-link" href="/championship/\d+"', html)
 
 
 def test_min_races_to_win_renders(client):
@@ -390,9 +480,10 @@ def test_notable_scenarios_kingmaker_names_the_flip(client):
 def test_driver_positions_renders(client):
     r = client.get("/driver-positions")
     assert r.status_code == 200
-    # Position buttons 1–20 render.
-    for p in (1, 2, 3, 4, 20):
+    # One button per place on the roster: three drivers in the fixture.
+    for p in (1, 2, 3):
         assert f'data-position="{p}"' in r.text
+    assert 'data-position="4"' not in r.text
 
 
 def test_driver_positions_page_data(client):

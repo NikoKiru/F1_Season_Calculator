@@ -56,7 +56,7 @@ function renderRows(payload: PagePayload, position: number, rows: PositionRow[])
         .map((r) => {
           const name = escapeHtml(payload.driver_names[r.driver] ?? r.driver);
           const color = payload.driver_colors[r.driver] ?? "#666";
-          const href = `/driver/${encodeURIComponent(r.driver)}`;
+          const href = `/driver/${encodeURIComponent(r.driver)}/position/${position}`;
           return `
         <li class="card card--interactive"
             style="--team-color: ${color}"
