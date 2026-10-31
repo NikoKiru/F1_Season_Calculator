@@ -109,10 +109,21 @@ def position_driver_counts_from_distribution(
 def position_championships_paginated(
     conn: Connection, driver_code: str, position: int, season: int, limit: int, offset: int
 ) -> tuple[int, list[dict]]:
+    """Longest scenarios first, read straight from the index.
+
+    The writer inserts rows in championship_id order and ids follow
+    race_combinations, shortest first, so rowid DESC needs no sort. Joining
+    first and sorting on num_races took over a second for a busy position at
+    18 rounds, and that cost grows 64-fold by round 24.
+    """
     total = conn.execute(
         text(
-            "SELECT COUNT(*) AS c FROM position_results "
-            "WHERE driver_code = :d AND position = :p AND season = :s"
+            "SELECT COALESCE("
+            "  (SELECT count FROM driver_position_distribution "
+            "   WHERE season = :s AND driver_code = :d AND position = :p), "
+            "  (SELECT COUNT(*) FROM position_results "
+            "   WHERE driver_code = :d AND position = :p AND season = :s)"
+            ") AS c"
         ),
         {"d": driver_code, "p": position, "s": season},
     ).one().c
@@ -120,11 +131,11 @@ def position_championships_paginated(
         text(
             "SELECT cr.championship_id, cr.num_races, cr.rounds, cr.standings, cr.points, "
             "       pr.points AS driver_points "
-            "FROM position_results pr "
-            "JOIN championship_results cr ON pr.championship_id = cr.championship_id "
-            "WHERE pr.driver_code = :d AND pr.position = :p AND pr.season = :s "
-            "ORDER BY cr.num_races DESC, cr.championship_id DESC "
-            "LIMIT :lim OFFSET :off"
+            "FROM (SELECT championship_id, points FROM position_results "
+            "      WHERE season = :s AND driver_code = :d AND position = :p "
+            "      ORDER BY rowid DESC LIMIT :lim OFFSET :off) pr "
+            "JOIN championship_results cr ON cr.championship_id = pr.championship_id "
+            "ORDER BY cr.championship_id DESC"
         ),
         {"d": driver_code, "p": position, "s": season, "lim": limit, "off": offset},
     ).mappings().all()

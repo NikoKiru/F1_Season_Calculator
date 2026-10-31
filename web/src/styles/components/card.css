@@ -139,6 +139,19 @@
   color: var(--fg-default);
 }
 
+/* A second target inside a stretched-link card, lifted above the overlay. */
+.card__stat-link {
+  position: relative;
+  z-index: 1;
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+}
+.card__stat-link:hover,
+.card__stat-link:focus-visible {
+  text-decoration-color: currentcolor;
+}
+
 /* Podium tint the stat value to echo the chip color. */
 .card--p1 .card__stat-value { color: var(--metal-gold); }
 .card--p2 .card__stat-value { color: var(--metal-silver); }

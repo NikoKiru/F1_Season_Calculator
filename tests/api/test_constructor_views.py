@@ -61,6 +61,51 @@ def test_constructor_detail_h2h_uses_full_names(client):
     assert "Ferrari" in r.text
 
 
+def test_constructor_detail_links_every_position_to_its_scenarios(client):
+    html = client.get(f"/constructor/red-bull?season={SEASON}").text
+    assert 'href="/constructor/red-bull/position/1"' in html
+    assert 'href="/constructor/red-bull/position/2"' in html
+
+
+def test_constructor_position_detail_reads_as_a_scenario_list(client):
+    html = client.get(f"/constructor/mclaren/position/2?season={SEASON}").text
+    assert "Gap to P1" in html
+    assert re.search(r'data-label="Rounds"[^>]*>\s*1–4\s*<', html)
+    assert 'data-label="Top 3"' in html
+
+
+def test_constructor_position_detail_narrows_wins_to_one_length(client):
+    html = client.get(f"/constructor/red-bull/position/1?races=1&season={SEASON}").text
+    assert len(re.findall(r'data-label="Races"[^>]*>\s*1\s*<', html)) == 2
+    assert not re.search(r'data-label="Races"[^>]*>\s*[2-4]\s*<', html)
+    assert 'href="/constructor/red-bull/position/1">Show all' in html
+
+
+def test_constructor_win_probability_cells_open_their_scenarios(client):
+    html = client.get(f"/constructor-win-probability?season={SEASON}").text
+    assert 'href="/constructor/red-bull/position/1?races=1"' in html
+    assert "win-matrix--wide" in html
+
+
+def test_constructor_win_probability_folds_teams_who_never_win(client):
+    html = client.get(f"/constructor-win-probability?season={SEASON}").text
+    rest = re.search(r'class="win-matrix__rest".*?</p>', html, flags=re.DOTALL)
+    assert rest, "non-winners line missing"
+    assert 'href="/constructor/ferrari"' in rest.group(0)
+
+
+def test_all_constructor_wins_cards_open_the_winning_scenarios(client):
+    html = client.get(f"/all-constructor-wins?season={SEASON}").text
+    assert 'href="/constructor/red-bull/position/1"' in html
+
+
+def test_constructor_highest_position_cards_open_the_scenario_list(client):
+    html = client.get(f"/constructor-highest-position?season={SEASON}").text
+    assert 'href="/constructor/red-bull/position/1"' in html
+    assert re.search(r'class="card__stat-link" href="/championship/\d+"', html)
+    assert "window.location" not in html
+
+
 # --- JSON endpoints --------------------------------------------------------
 
 

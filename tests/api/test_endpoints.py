@@ -101,6 +101,13 @@ def test_driver_position_invalid_position(client):
     assert r.status_code in (400, 422)
 
 
+def test_driver_position_limit_follows_the_roster(client):
+    last_place = client.get("/api/drivers/LEC/position/3", params={"season": 9999})
+    past_the_end = client.get("/api/drivers/LEC/position/4", params={"season": 9999})
+    assert last_place.status_code == 200
+    assert past_the_end.status_code == 400
+
+
 def test_highest_position_endpoint(client):
     r = client.get("/api/drivers/highest-position", params={"season": 9999})
     assert r.status_code == 200

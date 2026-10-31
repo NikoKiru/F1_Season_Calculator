@@ -22,8 +22,27 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   so the repo stays current with zero manual work.
 - **Sync** button in the Tkinter manager (`tools/manage_ui.py`) — one
   click replaces the fetch-round-then-build dance.
+- Every position leads to its scenarios again. Driver and constructor pages
+  list each reachable finish, and the bars in the position chart open the same
+  lists. So do the cards on Driver Positions, Highest Position and All Wins.
+  Highest Position cards keep a link to their single best scenario.
+- Scenario lists show which rounds count, the top three and a lead or gap
+  label, and can jump to the first and last page.
+
+### Changed
+
+- Win Probability fits on one screen, for drivers and constructors. Only those
+  who can win get a row, shaded by how often they win, and each number opens
+  exactly those scenarios. Everyone else is one line below the table. On
+  narrower screens the table swaps axes instead of scrolling sideways, and the
+  page names who wins every scenario from a given length up.
 
 ### Fixed
+
+- Positions past P20 work. With 23 drivers on the 2026 roster, P21–P23 answered
+  400 on the scenario list and API, and Driver Positions had no button for them.
+- Scenario lists no longer sort the whole position on every request: a busy
+  driver's first page went from about 570 ms to under 1 ms.
 
 - Points ties are now split on countback (wins, then P2s, down to P10, race
   finishes only) for drivers and constructors. They used to fall back to CSV

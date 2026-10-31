@@ -119,6 +119,11 @@ def position_summary(conn: Connection, position: int, season: int) -> list[dict]
     return cache.get_or_compute(cache.key_driver_positions(position, season), compute)
 
 
+def max_position(season: int) -> int:
+    """Lowest possible finish: every rostered driver is ranked in every scenario."""
+    return len(season_service.get_season_data(season).drivers)
+
+
 def championships_at_position(
     conn: Connection,
     driver_code: str,
@@ -126,14 +131,24 @@ def championships_at_position(
     season: int,
     page: int,
     per_page: int,
+    num_races: int | None = None,
 ) -> dict:
+    """One page of scenarios where a driver finishes at `position`.
+
+    `num_races` narrows wins only. Wins have an index and a cached count per
+    season length; other positions have neither, and counting them per request
+    is the aggregation over position_results that doesn't survive 24 rounds.
+    """
     sd = season_service.get_season_data(season)
     offset = (page - 1) * per_page
 
     if position == 1:
-        total, rows = q_c.driver_wins_paginated(conn, season, driver_code, per_page, offset)
+        total, rows = q_c.driver_wins_paginated(
+            conn, season, driver_code, per_page, offset, num_races
+        )
         championships = [_format_winner_row(r) for r in rows]
     else:
+        num_races = None
         total, rows = q_d.position_championships_paginated(
             conn, driver_code, position, season, per_page, offset
         )
@@ -144,6 +159,7 @@ def championships_at_position(
         "driver_code": driver_code,
         "driver_name": sd.driver_names.get(driver_code, driver_code),
         "position": position,
+        "num_races": num_races,
         "total_count": total,
         "page": page,
         "per_page": per_page,
@@ -151,6 +167,10 @@ def championships_at_position(
         "championships": championships,
         "season": season,
     }
+
+
+def _rounds(csv: str) -> list[int]:
+    return [int(number) for number in csv.split(",")]
 
 
 def _format_winner_row(row: dict) -> dict:
@@ -161,6 +181,7 @@ def _format_winner_row(row: dict) -> dict:
     return {
         "championship_id": int(row["championship_id"]),
         "num_races": int(row["num_races"]),
+        "rounds": _rounds(row["rounds"]),
         "standings": standings,
         "driver_points": driver_points,
         "margin": margin,
@@ -179,6 +200,7 @@ def _format_position_row(row: dict, position: int) -> dict:
     return {
         "championship_id": int(row["championship_id"]),
         "num_races": int(row["num_races"]),
+        "rounds": _rounds(row["rounds"]),
         "standings": standings,
         "driver_points": driver_points,
         "margin": margin,
