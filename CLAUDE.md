@@ -48,6 +48,8 @@ Row counts double with every round. At 18 rounds: 262,143 championships per tabl
 
 - Treat a full rebuild as expensive and don't run one casually.
 - Don't aggregate over `position_results` per request. Add a precomputed cache table in `stats_compute` instead, as `driver_head_to_head` and `driver_position_distribution` do.
+- Position lists depend on insert order. The writers add rows in `championship_id` order and ids run shortest scenario first, so `ORDER BY rowid DESC` returns the longest scenarios from the index with no sort. Keep the writers sequential, or those lists lose their order.
+- Lists can filter by season length only at P1, where `winner` is indexed and `win_probability_cache` has the count. Other positions would need a new per-length cache table and a rebuild.
 
 ### Ranking
 
