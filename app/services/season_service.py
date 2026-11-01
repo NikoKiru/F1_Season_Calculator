@@ -1,13 +1,14 @@
 """Season metadata — replaces championship/models.py with a cleaner API.
 
-Loads data/seasons/{year}.json exactly once per year and hands out immutable
-SeasonData objects. No module-level globals — get_season_data(year) is the
-only entry point.
+Parses data/seasons/{year}.json once per change to the file and hands out
+immutable SeasonData objects, so an edit or a sync needs no server restart.
+No module-level globals — get_season_data(year) is the only entry point.
 """
 import contextlib
 import json
 import re
 from functools import lru_cache
+from pathlib import Path
 
 from app.config import get_settings
 from app.domain.constructor import ConstructorInfo
@@ -15,11 +16,15 @@ from app.domain.driver import DriverInfo
 from app.domain.season import SeasonData
 
 
-@lru_cache(maxsize=16)
 def available_seasons() -> tuple[int, ...]:
     folder = get_settings().seasons_folder
     if not folder.exists():
         return ()
+    return _scan_seasons(folder, folder.stat().st_mtime_ns)
+
+
+@lru_cache(maxsize=16)
+def _scan_seasons(folder: Path, _modified_ns: int) -> tuple[int, ...]:
     years: list[int] = []
     for f in folder.iterdir():
         if f.suffix == ".json":
@@ -36,10 +41,14 @@ def default_season() -> int:
     return seasons[0] if seasons else 2026
 
 
-@lru_cache(maxsize=16)
 def get_season_data(season: int | None = None) -> SeasonData:
     year = season if season is not None else default_season()
     path = get_settings().seasons_folder / f"{year}.json"
+    return _load_season(year, path, path.stat().st_mtime_ns)
+
+
+@lru_cache(maxsize=16)
+def _load_season(year: int, path: Path, _modified_ns: int) -> SeasonData:
     with path.open("r", encoding="utf-8") as f:
         raw = json.load(f)
 
@@ -86,9 +95,8 @@ def get_season_data(season: int | None = None) -> SeasonData:
 
 
 def clear_cache() -> None:
-    get_season_data.cache_clear()
-    available_seasons.cache_clear()
-    resolve_team_slug.cache_clear()
+    _load_season.cache_clear()
+    _scan_seasons.cache_clear()
 
 
 def resolve_driver_code(raw: str, season: int) -> str:
@@ -114,7 +122,6 @@ def team_slug(name: str) -> str:
     return _SLUG_NON_ALNUM.sub("-", lowered).strip("-")
 
 
-@lru_cache(maxsize=128)
 def resolve_team_slug(slug: str, season: int) -> str:
     """Reverse `team_slug` against the season's roster.
 

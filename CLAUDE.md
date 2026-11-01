@@ -25,10 +25,11 @@ pytest tests/unit/test_rebuild.py::test_changed_csv_makes_the_season_stale   # o
 # What CI enforces
 ruff check app tests
 pytest tests/unit tests/api --cov=app --cov-fail-under=70
-cd web && npm run typecheck && npm run build
+(cd web && npm run typecheck && npm run build)
+pytest tests/e2e
 ```
 
-- E2e tests skip silently unless the browser is installed: `playwright install chromium`.
+- E2e tests skip unless the browser is installed: `playwright install chromium`. In CI a missing browser fails instead. They run against `app/static/dist/`, so build the frontend first.
 - `mypy app` is configured as strict but is not in CI and has about 180 existing errors. Don't add new ones.
 - `web/` needs Node 20.19+ or 22.12+. `web/.npmrc` makes npm refuse anything older.
 
@@ -67,15 +68,15 @@ The WDC and WCC sides are parallel implementations: `writer` / `constructor_writ
 
 ### In-process caches
 
-Three caches live in the server process and nothing invalidates them when data changes:
+Three caches live in the server process. Builds and syncs run in other processes, so each cache watches the files behind it and none of them needs a restart:
 
-| Cache | Where | Refresh |
+| Cache | Where | Refreshes when |
 |---|---|---|
-| Service results (1 hour TTL) | `app/cache/service.py` | Restart, or `POST /api/admin/clear-cache` |
-| Season JSON | `season_service` `lru_cache` | Restart |
-| Vite manifest | `app/templating.py` `lru_cache` | Restart |
+| Service results (1 hour TTL) | `app/cache/service.py` | The database, its WAL or a season JSON changes, or on `POST /api/admin/clear-cache` |
+| Season JSON | `season_service` `lru_cache`, keyed on modified time | The file or the seasons folder changes |
+| Vite manifest | `app/templating.py` `lru_cache`, keyed on modified time | `manifest.json` changes |
 
-Restart the server after a rebuild, a season JSON edit or a frontend build, otherwise it serves stale data or asset URLs that no longer exist.
+Keep the WAL in the service cache's check: a rebuild's last commits stay there for as long as the server's pool holds connections open. Services write only through `cache.get_or_compute`, which refuses to keep a result if the data changed while it was being computed. Python changes still need a restart, or `--reload`.
 
 ### Frontend
 
@@ -97,8 +98,8 @@ Tests never call Jolpica; `jolpica_service` is patched. The real API allows 4 re
 
 - Commit messages follow `type(scope): subject` with types such as `feat`, `fix`, `perf`, `docs`.
 - User-visible changes go in `CHANGELOG.md` under `[Unreleased]`.
-- `data-sync.yml` pushes `data:` commits straight to `main` on Mondays and Thursdays at 06:00 UTC, so pull before branching.
+- `data-sync.yml` pushes `data:` commits straight to `main` on Mondays and Thursdays at 06:00 UTC, so pull before branching and before `f1 sync`. Sync rewrites the same files: it refuses to run during an unfinished merge or rebase, and warns when the checkout is behind its upstream.
 
 ## Stale material
 
-`CONTRIBUTING.md`, `docs/architecture/`, `docs/setup/`, `.pre-commit-config.yaml` and the docstring in `app/main.py` still describe the removed Flask stack (`flask` commands, black, flake8). Go by `README.md`, `pyproject.toml` and `.github/workflows/ci.yml` instead. The root `championship/` and `graphql_api/` folders are untracked leftovers holding only bytecode.
+The root `championship/` and `graphql_api/` folders are untracked leftovers holding only bytecode.

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Championship #{{ championship.championship_id }}{% endblock %}
+{% block description %}{{ championship.driver_names.get(championship.winner, championship.winner) }} wins this {{ championship.num_races }}-race {{ current_season }} F1 championship{% if championship.margin and championship.margin > 0 %} by {{ championship.margin }} point{{ "s" if championship.margin != 1 }} over {{ championship.runner_up_name }}{% elif championship.runner_up_name %} on a tiebreak over {{ championship.runner_up_name }}{% endif %}.{% endblock %}
 {% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
 
 {% block content %}

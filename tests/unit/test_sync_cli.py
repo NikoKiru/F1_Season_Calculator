@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -406,3 +407,82 @@ def test_sync_errors_when_season_json_missing(sync_env):
     result = runner.invoke(cli_app, ["sync", "--season", "1234"])
     assert result.exit_code == 1
     assert "new-season" in result.output  # points at the scaffolding command
+
+
+# --- Git state --------------------------------------------------------------
+
+
+def _git(repo: Path, *args: str, check: bool = True) -> None:
+    subprocess.run(
+        ["git", "-C", str(repo), "-c", "user.name=Test", "-c", "user.email=test@example.com", *args],
+        check=check,
+        capture_output=True,
+    )
+
+
+def _commit_all(repo: Path, message: str) -> None:
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-m", message)
+
+
+def _start_conflicted_merge(repo: Path) -> None:
+    notes = repo / "notes.txt"
+    _git(repo, "init", "-b", "main")
+    notes.write_text("base\n", encoding="utf-8")
+    _commit_all(repo, "base")
+    _git(repo, "checkout", "-b", "other")
+    notes.write_text("theirs\n", encoding="utf-8")
+    _commit_all(repo, "theirs")
+    _git(repo, "checkout", "main")
+    notes.write_text("ours\n", encoding="utf-8")
+    _commit_all(repo, "ours")
+    _git(repo, "merge", "other", check=False)
+
+
+def _fail_if_called(*_args, **_kwargs):
+    raise AssertionError("sync must not reach the API")
+
+
+def test_sync_refuses_to_run_during_an_unfinished_merge(sync_env):
+    _start_conflicted_merge(sync_env.settings.data_folder)
+    sync_env.monkeypatch.setattr(jolpica_service, "fetch_schedule", _fail_if_called)
+    before = sync_env.csv_path.read_bytes()
+
+    result = runner.invoke(cli_app, ["sync", "--season", str(SEASON), "--no-bio"])
+
+    assert result.exit_code == 1
+    assert "unfinished git merge" in result.output
+    assert sync_env.csv_path.read_bytes() == before
+
+
+def test_dry_run_only_warns_about_an_unfinished_merge(sync_env):
+    _start_conflicted_merge(sync_env.settings.data_folder)
+
+    result = runner.invoke(cli_app, ["sync", "--season", str(SEASON), "--dry-run"])
+
+    assert result.exit_code == 0, result.output
+    assert "[warn]" in result.output
+    assert "unfinished git merge" in result.output
+
+
+def test_sync_warns_when_the_checkout_is_behind_upstream(sync_env, tmp_path: Path):
+    data = sync_env.settings.data_folder
+    origin = tmp_path / "origin.git"
+    origin.mkdir()
+    _git(origin, "init", "--bare", "-b", "main")
+    _git(data, "init", "-b", "main")
+    _commit_all(data, "base")
+    _git(data, "remote", "add", "origin", str(origin))
+    _git(data, "push", "-u", "origin", "main")
+
+    other = tmp_path / "other"
+    subprocess.run(["git", "clone", str(origin), str(other)], check=True, capture_output=True)
+    (other / "bot.txt").write_text("from the bot\n", encoding="utf-8")
+    _commit_all(other, "data: auto-sync")
+    _git(other, "push")
+
+    result = runner.invoke(cli_app, ["sync", "--season", str(SEASON), "--no-bio"])
+
+    assert result.exit_code == 0, result.output
+    assert "1 commit behind" in result.output
+    assert "git pull" in result.output

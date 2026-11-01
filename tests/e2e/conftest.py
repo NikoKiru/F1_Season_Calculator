@@ -1,14 +1,22 @@
 """Playwright e2e — starts a live FastAPI server bound to the seeded test DB.
 
-Run with: `pytest tests/e2e -m e2e` (skipped by default; requires `playwright install`).
+Run with `pytest tests/e2e` after `playwright install chromium`. Without a browser
+these tests skip, except in CI, where a skip would hide a broken job.
 """
 from __future__ import annotations
 
+import os
 import socket
 import threading
 import time
 
 import pytest
+
+
+def _browser_unavailable(reason: str) -> None:
+    if os.environ.get("CI"):
+        pytest.fail(reason)
+    pytest.skip(reason)
 
 
 def _free_port() -> int:
@@ -45,13 +53,13 @@ def browser():
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
-        pytest.skip("playwright not installed")
+        _browser_unavailable("playwright not installed")
 
     with sync_playwright() as p:
         try:
             browser = p.chromium.launch()
         except Exception as e:
-            pytest.skip(f"playwright browser unavailable: {e}")
+            _browser_unavailable(f"playwright browser unavailable: {e}")
         yield browser
         browser.close()
 

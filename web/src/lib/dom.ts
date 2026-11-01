@@ -14,6 +14,11 @@ export function require$<T extends HTMLElement = HTMLElement>(selector: string, 
   return el;
 }
 
+export function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+}
+
 export function readJsonScript<T>(id: string): T | null {
   const el = document.getElementById(id);
   if (!el || el.tagName !== "SCRIPT") return null;
