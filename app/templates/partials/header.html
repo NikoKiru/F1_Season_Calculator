@@ -76,6 +76,23 @@
         <button class="global-search__submit" type="submit" aria-label="Search">Go</button>
       </form>
       <script type="application/json" id="nav-search-data">{{ (nav_search or []) | tojson }}</script>
+      <button type="button" class="copy-link" data-copy-link
+              aria-label="Copy link to this page" title="Copy link to this page">
+        <svg class="copy-link__idle" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/>
+          <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>
+        </svg>
+        <svg class="copy-link__copied" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="m5 12.5 4.5 4.5L19 7.5"/>
+        </svg>
+        <svg class="copy-link__failed" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false">
+          <path d="m6 6 12 12M18 6 6 18"/>
+        </svg>
+      </button>
+      <span class="visually-hidden" role="status" data-copy-link-status></span>
       <button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch theme">
         <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false">

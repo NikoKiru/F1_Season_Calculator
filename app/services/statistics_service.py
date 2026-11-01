@@ -5,6 +5,7 @@ back to live aggregation only if the cache is missing (should only happen
 before compute-stats has run for a new season).
 """
 import json
+from typing import Any
 
 from sqlalchemy import Connection
 
@@ -15,11 +16,12 @@ from app.services import championship_service, season_service
 
 
 def win_probability(conn: Connection, season: int) -> dict:
-    key = cache.key_win_probability(season)
-    cached = cache.get(key)
-    if cached is not None:
-        return cached
+    return cache.get_or_compute(
+        cache.key_win_probability(season), lambda: _compute_win_probability(conn, season)
+    )
 
+
+def _compute_win_probability(conn: Connection, season: int) -> dict[str, Any]:
     sd = season_service.get_season_data(season)
     cache_rows = q_s.win_probability_cache(conn, season)
 
@@ -85,7 +87,6 @@ def win_probability(conn: Connection, season: int) -> dict:
         "drivers_data": drivers_data,
         "driver_names": sd.driver_names,
     }
-    cache.set(key, result)
     return result
 
 
@@ -141,11 +142,12 @@ def notable_scenarios(conn: Connection, season: int) -> dict:
     with the linked championship (winner/runner-up names, margin, rounds) plus
     a small per-category `extra` block for rendering.
     """
-    key = cache.key_notable_scenarios(season)
-    cached = cache.get(key)
-    if cached is not None:
-        return cached
+    return cache.get_or_compute(
+        cache.key_notable_scenarios(season), lambda: _compute_notable_scenarios(conn, season)
+    )
 
+
+def _compute_notable_scenarios(conn: Connection, season: int) -> dict[str, Any]:
     sd = season_service.get_season_data(season)
     raw = {r["category"]: r for r in q_s.notable_scenarios(conn, season)}
 
@@ -190,5 +192,4 @@ def notable_scenarios(conn: Connection, season: int) -> dict:
         })
 
     result = {"season": season, "scenarios": scenarios}
-    cache.set(key, result)
     return result

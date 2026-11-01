@@ -108,18 +108,9 @@ All data is cached locally in SQLite for fast access.
 
 Full programmatic access to all calculations.
 
-**Endpoints**:
-- `/api/data` - Championship data
-- `/api/highest-position` - Best finishes
-- `/api/head-to-head` - Driver comparisons
-- `/api/driver-positions` - Position distributions
-- `/api/driver-stats` - Comprehensive statistics
-
-See [[API Reference]] for complete documentation.
-
 ### Swagger UI
 
-Interactive API explorer available at `/apidocs/`.
+Interactive API explorer, with every endpoint, available at `/api/docs` on a running server.
 
 **Features**:
 - Try endpoints directly in browser
@@ -166,4 +157,4 @@ Clean separation of concerns allows easy extension.
 - Create custom visualizations
 - Integrate additional data sources
 
-See [[Architecture]] for technical details.
+See `CLAUDE.md` for technical details.

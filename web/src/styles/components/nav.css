@@ -239,7 +239,8 @@
 }
 
 /* ── Theme toggle ─────────────────────────────────────────────────── */
-.theme-toggle {
+.theme-toggle,
+.copy-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -252,25 +253,37 @@
   transition: background var(--dur-fast) var(--ease-standard),
               transform var(--dur-fast) var(--ease-pop);
 }
-.theme-toggle:hover {
+.theme-toggle:hover,
+.copy-link:hover {
   background: var(--carbon-hover);
 }
-.theme-toggle:active {
+.theme-toggle:active,
+.copy-link:active {
   transform: scale(0.92);
 }
-.theme-toggle svg {
+.theme-toggle svg,
+.copy-link svg {
   width: 17px;
   height: 17px;
 }
 /* Boot script stamps the effective theme pre-paint; icons swap off it.
- * Without JS the toggle is useless, so it stays hidden. */
-.theme-toggle { display: none; }
-html[data-theme-effective] .theme-toggle { display: inline-flex; }
+ * Without JS these controls are useless, so they stay hidden. */
+.theme-toggle,
+.copy-link { display: none; }
+html[data-theme-effective] .theme-toggle,
+html[data-theme-effective] .copy-link { display: inline-flex; }
 html[data-theme-effective="dark"] .theme-toggle__moon { display: none; }
 html[data-theme-effective="light"] .theme-toggle__sun { display: none; }
 
+.copy-link__copied,
+.copy-link__failed { display: none; }
+.copy-link[data-state] .copy-link__idle { display: none; }
+.copy-link[data-state="copied"] .copy-link__copied,
+.copy-link[data-state="failed"] .copy-link__failed { display: block; }
+
 .hamburger {
   display: none;
+  flex-shrink: 0;
   width: 40px;
   height: 40px;
   align-items: center;
@@ -355,6 +368,19 @@ html[data-theme-effective="light"] .theme-toggle__sun { display: none; }
   }
   .brand-text {
     font-size: var(--fs-lg);
+  }
+}
+
+/* A smaller wordmark still fits beside the hamburger and both controls down to
+ * 347px. Below that it goes, and the link keeps its label. */
+@media (max-width: 380px) {
+  .brand-text {
+    font-size: var(--fs-md);
+  }
+}
+@media (max-width: 346px) {
+  .brand-text {
+    display: none;
   }
 }
 

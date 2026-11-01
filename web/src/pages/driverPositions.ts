@@ -1,8 +1,7 @@
 /** Driver-positions page: position picker buttons → driver list for that slot. */
 
-import { showError, showLoading } from "../components/states";
-import { apiGet } from "../lib/api";
-import { $, $$, readJsonScript, require$ } from "../lib/dom";
+import { readJsonScript } from "../lib/dom";
+import { initPositionsPage, type PositionRow } from "../lib/positionsPage";
 
 interface PagePayload {
   season: number;
@@ -10,85 +9,21 @@ interface PagePayload {
   driver_colors: Record<string, string>;
 }
 
-interface PositionRow {
+interface DriverRow extends PositionRow {
   driver: string;
-  count: number;
-  percentage: number;
-}
-
-let activeController: AbortController | null = null;
-
-async function fetchPosition(payload: PagePayload, position: number): Promise<void> {
-  const host = require$<HTMLElement>("[data-position-results]");
-
-  activeController?.abort();
-  const controller = new AbortController();
-  activeController = controller;
-
-  showLoading(host, `Loading P${position}…`);
-
-  try {
-    const rows = await apiGet<PositionRow[]>("/api/drivers/positions", {
-      params: { position, season: payload.season },
-      signal: controller.signal,
-    });
-    if (controller.signal.aborted) return;
-    host.innerHTML = renderRows(payload, position, rows);
-  } catch (err) {
-    if (controller.signal.aborted) return;
-    showError(host, err, () => fetchPosition(payload, position));
-  }
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
-}
-
-function renderRows(payload: PagePayload, position: number, rows: PositionRow[]): string {
-  if (rows.length === 0) {
-    return `<div class="state-panel"><p class="state-panel__title">Nobody has finished P${position} yet.</p></div>`;
-  }
-  return `
-    <h3 class="section__title">P${position} finishers</h3>
-    <ul class="grid grid--drivers">
-      ${rows
-        .map((r) => {
-          const name = escapeHtml(payload.driver_names[r.driver] ?? r.driver);
-          const color = payload.driver_colors[r.driver] ?? "#666";
-          const href = `/driver/${encodeURIComponent(r.driver)}/position/${position}`;
-          return `
-        <li class="card card--interactive"
-            style="--team-color: ${color}"
-            onclick="window.location.assign('${href}')">
-          <div class="card__accent" aria-hidden="true"></div>
-          <p class="card__title"><a href="${href}">${name}</a></p>
-          <p class="card__subtitle">${r.count.toLocaleString()} championships (${r.percentage.toFixed(1)}%)</p>
-        </li>`;
-        })
-        .join("")}
-    </ul>`;
-}
-
-function activate(payload: PagePayload, btn: HTMLButtonElement): void {
-  for (const other of $$<HTMLButtonElement>("[data-position]")) other.setAttribute("aria-pressed", "false");
-  btn.setAttribute("aria-pressed", "true");
-  void fetchPosition(payload, Number(btn.dataset.position));
 }
 
 const payload = readJsonScript<PagePayload>("page-data");
 if (payload) {
-  for (const btn of $$<HTMLButtonElement>("[data-position]")) {
-    btn.addEventListener("click", () => {
-      // Keep the chosen position in the URL so results are shareable links.
-      window.history.replaceState(null, "", `?p=${btn.dataset.position}`);
-      activate(payload, btn);
-    });
-  }
-  // Deep link: /driver-positions?p=7 selects P7 on load.
-  const requested = new URLSearchParams(window.location.search).get("p");
-  if (requested) {
-    const btn = $<HTMLButtonElement>(`[data-position='${CSS.escape(requested)}']`);
-    if (btn) activate(payload, btn);
-  }
+  initPositionsPage<DriverRow>({
+    endpoint: "/api/drivers/positions",
+    season: payload.season,
+    emptyMessage: (position) => `Nobody has finished P${position} yet.`,
+    card: (row) => ({
+      name: payload.driver_names[row.driver] ?? row.driver,
+      color: payload.driver_colors[row.driver] ?? "#666",
+      profileHref: `/driver/${encodeURIComponent(row.driver)}`,
+      profileLabel: "Driver page",
+    }),
+  });
 }

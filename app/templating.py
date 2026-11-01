@@ -1,15 +1,16 @@
 """Jinja2 environment + Vite manifest asset resolver.
 
-At build time Vite emits `app/static/dist/manifest.json`; we read it once at
-startup and expose `vite_asset(name)` as a Jinja global so templates can ask
-for asset URLs by their input path (e.g. `web/src/pages/driver.ts`) without
-any runtime filesystem lookups on render.
+At build time Vite emits `app/static/dist/manifest.json`. `vite_asset(name)` is a
+Jinja global so templates can ask for asset URLs by their input path (e.g.
+`web/src/pages/driver.ts`). The manifest is parsed once per build: renders only
+check its modified time, so a new build needs no server restart.
 """
 from __future__ import annotations
 
 import json
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
@@ -24,11 +25,16 @@ def _manifest_path() -> Path:
 
 
 @lru_cache(maxsize=1)
-def _manifest() -> dict[str, dict]:
-    path = _manifest_path()
-    if not path.exists():
-        return {}
+def _read_manifest(path: Path, _modified_ns: int) -> dict[str, dict[str, Any]]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _manifest() -> dict[str, dict[str, Any]]:
+    path = _manifest_path()
+    try:
+        return _read_manifest(path, path.stat().st_mtime_ns)
+    except (FileNotFoundError, json.JSONDecodeError):  # no build yet, or Vite is mid-write
+        return {}
 
 
 def _asset_url(path: str) -> str:
