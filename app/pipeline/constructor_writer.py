@@ -49,6 +49,7 @@ def process_season(
 ) -> int:
     constructors = built.constructors
     scores = built.combined
+    countback = built.countback
     round_numbers = built.round_numbers.tolist()
     num_weekends = scores.shape[1]
     total = total_combinations(num_weekends)
@@ -71,7 +72,7 @@ def process_season(
         inserted = 0
 
         for subset in race_combinations(num_weekends):
-            ordered, ordered_scores = rank_standings(constructors, scores, subset)
+            ordered, ordered_scores = rank_standings(constructors, scores, subset, countback)
             rounds_str = ",".join(str(round_numbers[i]) for i in subset)
             standings_str = ",".join(ordered.tolist())
             points_str = ",".join(str(int(p)) for p in ordered_scores)
@@ -129,6 +130,7 @@ def clear_season(db_path: Path, season: int) -> None:
     conn = sqlite3.connect(db_path)
     try:
         conn.execute("BEGIN IMMEDIATE")
+        conn.execute("DELETE FROM season_builds WHERE season = ?", (season,))
         conn.execute(
             "DELETE FROM constructor_position_results WHERE season = ?", (season,)
         )

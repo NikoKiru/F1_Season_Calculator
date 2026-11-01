@@ -7,9 +7,10 @@ championships.db
 # Ignore instance folder contents except .gitkeep
 instance/*
 !instance/.gitkeep
-# Ignore data folder CSV files except sample and README
+# Ignore data folder CSV files except season results, sample and README
 data/championships.csv
 data/*.csv
+!data/championships_[0-9][0-9][0-9][0-9].csv
 !data/championships_sample.csv
 !data/README.md
 .webassets-cache

@@ -12,8 +12,8 @@ lexicographic):
     {1,2}=5 {1,3}=6 {1,4}=7 {2,3}=8 {2,4}=9 {3,4}=10
     {1,2,3}=11 {1,2,4}=12 {1,3,4}=13 {2,3,4}=14 {1,2,3,4}=15
 
-Ranking ties keep array order (VER > NOR > LEC) via the writer's stable
-argsort, so VER wins every tie on countback.
+VER and NOR hold the same P1 and P2 counts in every tied subset, so countback
+can't split them and the writer's stable sort keeps array order (VER > NOR).
 """
 from __future__ import annotations
 

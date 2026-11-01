@@ -253,8 +253,23 @@ export async function barChart(
   values: number[],
   colors: string | string[],
   yLabel = "",
+  onBarClick?: (index: number) => void,
 ) {
   const t = chartTheme();
+  // The whole column is the target: a bar for one scenario in 262,143 is too
+  // short to land a click on.
+  const clickable: Partial<ChartConfiguration<"bar">["options"]> = onBarClick
+    ? {
+        interaction: { mode: "index", intersect: false },
+        onClick: (_event, elements) => {
+          const bar = elements[0];
+          if (bar) onBarClick(bar.index);
+        },
+        onHover: (_event, elements) => {
+          canvas.style.cursor = elements.length > 0 ? "pointer" : "";
+        },
+      }
+    : {};
   const config: ChartConfiguration<"bar"> = {
     type: "bar",
     data: {
@@ -269,7 +284,7 @@ export async function barChart(
         },
       ],
     },
-    options: { ...sharedOptions(t, false), scales: axes(t, "", yLabel) },
+    options: { ...sharedOptions(t, false), scales: axes(t, "", yLabel), ...clickable },
   };
   return register(await makeChart(canvas, config));
 }

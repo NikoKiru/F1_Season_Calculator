@@ -74,10 +74,14 @@ def driver_position_championships(
     page: int = Query(1, ge=1),
     per_page: int = Query(100, ge=1, le=500),
 ) -> dict:
-    if position < 1 or position > 20:
+    max_position = driver_service.max_position(season)
+    if position < 1 or position > max_position:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "INVALID_POSITION", "message": "Position must be 1–20"},
+            detail={
+                "code": "INVALID_POSITION",
+                "message": f"Position must be 1–{max_position}",
+            },
         )
     driver = validated_driver(code, season)
     return driver_service.championships_at_position(

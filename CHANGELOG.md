@@ -22,9 +22,43 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   so the repo stays current with zero manual work.
 - **Sync** button in the Tkinter manager (`tools/manage_ui.py`) — one
   click replaces the fetch-round-then-build dance.
+- Every position leads to its scenarios again. Driver and constructor pages
+  list each reachable finish, and the bars in the position chart open the same
+  lists. So do the cards on Driver Positions, Highest Position and All Wins.
+  Highest Position cards keep a link to their single best scenario.
+- Scenario lists show which rounds count, the top three and a lead or gap
+  label, and can jump to the first and last page.
+
+### Changed
+
+- Win Probability fits on one screen, for drivers and constructors. Only those
+  who can win get a row, shaded by how often they win, and each number opens
+  exactly those scenarios. Everyone else is one line below the table. On
+  narrower screens the table swaps axes instead of scrolling sideways, and the
+  page names who wins every scenario from a given length up.
 
 ### Fixed
 
+- Positions past P20 work. With 23 drivers on the 2026 roster, P21–P23 answered
+  400 on the scenario list and API, and Driver Positions had no button for them.
+- Scenario lists no longer sort the whole position on every request: a busy
+  driver's first page went from about 570 ms to under 1 ms.
+
+- Points ties are now split on countback (wins, then P2s, down to P10, race
+  finishes only) for drivers and constructors. They used to fall back to CSV
+  order, which crowned the wrong champion in some scenarios, including the
+  Nail-Biter while claiming "decided on countback". Rebuild to apply.
+- `f1 sync` survives interruption: data files are written last, and it now
+  rebuilds whenever the database is behind the CSV. It used to report "up to
+  date" over an empty database if it stopped after writing the CSV.
+- Season CSVs are tracked in git, so `data-sync.yml` actually commits race
+  results and a `git pull` delivers them. They used to be gitignored, leaving
+  CI to refetch the whole season on every run and commit only the JSON.
+- `web/` declares its real Node requirement (20.19+ or 22.12+) and `npm`
+  refuses older versions up front, instead of silently skipping Rolldown's
+  native binding and failing at build time. The README said Node 18+.
+- `README.md`/`data/README.md` calendar notes updated to 23 rounds, with the
+  Bahrain GP in Malaysia as round 16 and the Singapore sprint at round 17.
 - `f1 refresh-bio` no longer rewrites `seasons/{YYYY}.json` when nothing
   changed upstream — `updated_at` timestamps only move on real changes,
   killing the noisy no-op git diffs.

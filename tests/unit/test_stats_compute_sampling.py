@@ -93,6 +93,7 @@ def test_constructor_highest_position_is_exact_beyond_sample_window(tmp_path):
         constructors=np.array(["TeamA", "TeamB", "TeamC"], dtype=object),
         round_numbers=np.arange(1, N_ROUNDS + 1),
         combined=_scores(),
+        countback=np.zeros_like(_scores()),
     )
     constructor_writer.process_season(db, built, season=SEASON)
     constructor_stats_compute.compute(db, SEASON)

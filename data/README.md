@@ -45,12 +45,12 @@ Constraints:
 
 ### Canceled rounds (2026)
 
-Bahrain and Saudi Arabia were canceled for 2026. Jolpica renumbered the
-remaining calendar to 22 sequential rounds and this repo follows that
-numbering (round 4 = Miami, round 5 = Canada, …). If a future round is
-canceled mid-season, `f1 sync` re-aligns the not-yet-raced rounds with
-the API automatically; rounds that already have results are never
-renamed or removed.
+Saudi Arabia was canceled for 2026 and the Bahrain GP moved to Malaysia as
+round 16 (`MAL`). Jolpica renumbered the calendar to 23 sequential rounds and
+this repo follows that numbering (round 4 = Miami, round 5 = Canada, …).
+If a future round is canceled mid-season, `f1 sync` re-aligns the
+not-yet-raced rounds with the API automatically; rounds that already have
+results are never renamed or removed.
 
 ## Season configuration
 
@@ -79,7 +79,7 @@ renamed or removed.
   for sprint *points* is the CSV's `Ns` columns.
 
 2026 sprint weekends (renumbered calendar): **2 (China), 4 (Miami),
-5 (Canada), 9 (Silverstone), 12 (Zandvoort), 16 (Singapore)**.
+5 (Canada), 9 (Silverstone), 12 (Zandvoort), 17 (Singapore)**.
 
 Both `rounds` and `sprint_rounds` are maintained automatically by
 `f1 sync`; hand-edit only when you want a custom label for a round that
@@ -94,7 +94,8 @@ f1 sync --season 2026
 Fetches the calendar and every completed-but-missing round from the
 Jolpica-F1 API, updates this folder, and rebuilds the database. A
 scheduled GitHub Action does the same twice a week (data files only),
-so after `git pull` the CSV/JSON here are usually already current.
+so after `git pull` the CSV/JSON here are usually already current — run
+`f1 sync` once to rebuild the database from them.
 
 **Manually from a scoreboard:**
 ```bash

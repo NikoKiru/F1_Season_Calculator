@@ -25,6 +25,7 @@ class ChampionshipSummary(BaseModel):
     """Thin row for per-position tables (driver_position_detail page)."""
     championship_id: int
     num_races: int
+    rounds: list[int]
     standings: list[str]
     driver_points: int
     margin: int | None

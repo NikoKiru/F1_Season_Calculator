@@ -6,7 +6,7 @@ import pytest
 
 from app.domain.driver import DriverInfo
 from app.domain.season import SeasonData
-from app.pipeline import constructor_builder
+from app.pipeline import combinator, constructor_builder
 from app.pipeline.csv_loader import LoadedSeason
 
 
@@ -66,6 +66,29 @@ def test_build_sums_drivers_by_team(monkeypatch):
         [10, 18, 20],
     ]
     assert built.round_numbers.tolist() == [1, 2, 3]
+
+
+def test_points_tie_goes_to_the_team_with_a_win_from_either_car(monkeypatch):
+    # TeamX 15+10 (P3, P5) = TeamY 0+25 (P1) = 25. The win is on TeamY's second car.
+    race = np.array([[15], [10], [0], [25]])
+    loaded = LoadedSeason(
+        drivers=np.array(["AAA", "BBB", "CCC", "DDD"], dtype=object),
+        round_numbers=np.array([1]),
+        race_scores=race,
+        sprint_scores=np.zeros_like(race),
+    )
+    fake = _fake_season({"TeamX": ["AAA", "BBB"], "TeamY": ["CCC", "DDD"]})
+    monkeypatch.setattr(
+        constructor_builder.season_service, "get_season_data", lambda _s: fake
+    )
+
+    built = constructor_builder.build(loaded, 9999)
+    ordered, points = combinator.rank_standings(
+        built.constructors, built.combined, (0,), built.countback
+    )
+
+    assert ordered.tolist() == ["TeamY", "TeamX"]
+    assert points.tolist() == [25, 25]
 
 
 def test_build_skips_driver_missing_from_season_metadata(monkeypatch, caplog):

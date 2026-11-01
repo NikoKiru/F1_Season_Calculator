@@ -153,6 +153,105 @@ def test_championships_at_position_pagination(conn):
         assert "standings" in c
 
 
+@pytest.mark.parametrize(("code", "position"), [("VER", 1), ("NOR", 2), ("LEC", 3)])
+def test_position_list_runs_longest_scenarios_first(conn, code, position):
+    rows = driver_service.championships_at_position(
+        conn, code, position, 9999, page=1, per_page=500
+    )["championships"]
+    assert rows
+    keys = [(r["num_races"], r["championship_id"]) for r in rows]
+    assert keys == sorted(keys, reverse=True)
+
+
+def test_position_list_pages_cover_every_scenario_once(conn):
+    first = driver_service.championships_at_position(conn, "NOR", 2, 9999, 1, 2)
+    ids = []
+    for page in range(1, first["total_pages"] + 1):
+        result = driver_service.championships_at_position(conn, "NOR", 2, 9999, page, 2)
+        ids += [r["championship_id"] for r in result["championships"]]
+    assert len(ids) == first["total_count"]
+    assert len(set(ids)) == len(ids)
+
+
+@pytest.mark.parametrize("position", [1, 2])
+def test_position_rows_list_their_rounds(conn, position):
+    rows = driver_service.championships_at_position(
+        conn, "NOR", position, 9999, page=1, per_page=500
+    )["championships"]
+    assert rows
+    for row in rows:
+        assert len(row["rounds"]) == row["num_races"]
+        assert row["rounds"] == sorted(row["rounds"])
+        assert all(isinstance(number, int) for number in row["rounds"])
+
+
+def test_position_total_reads_precomputed_distribution(conn):
+    """A live COUNT over position_results costs real time on a 24-round
+    season, so skew the cache table and expect the skew back."""
+    from sqlalchemy import text
+
+    conn.execute(
+        text(
+            "UPDATE driver_position_distribution SET count = 77 "
+            "WHERE season = 9999 AND driver_code = 'NOR' AND position = 2"
+        )
+    )
+    result = driver_service.championships_at_position(conn, "NOR", 2, 9999, 1, 1)
+    assert result["total_count"] == 77
+
+
+def test_position_total_falls_back_when_distribution_is_empty(conn):
+    from sqlalchemy import text
+
+    baseline = driver_service.championships_at_position(conn, "NOR", 2, 9999, 1, 1)
+    conn.execute(text("DELETE FROM driver_position_distribution WHERE season = 9999"))
+    live = driver_service.championships_at_position(conn, "NOR", 2, 9999, 1, 1)
+    assert baseline["total_count"] > 0
+    assert live["total_count"] == baseline["total_count"]
+
+
+def test_win_total_reads_precomputed_cache(conn):
+    from sqlalchemy import text
+
+    conn.execute(
+        text(
+            "UPDATE win_probability_cache SET win_count = 40 "
+            "WHERE season = 9999 AND driver_code = 'VER' AND num_races = 1"
+        )
+    )
+    result = driver_service.championships_at_position(
+        conn, "VER", 1, 9999, 1, 1, num_races=1
+    )
+    assert result["total_count"] == 40
+
+
+def test_win_total_falls_back_when_cache_is_empty(conn):
+    from sqlalchemy import text
+
+    baseline = driver_service.championships_at_position(conn, "VER", 1, 9999, 1, 1)
+    conn.execute(text("DELETE FROM win_probability_cache WHERE season = 9999"))
+    live = driver_service.championships_at_position(conn, "VER", 1, 9999, 1, 1)
+    assert baseline["total_count"] > 0
+    assert live["total_count"] == baseline["total_count"]
+
+
+def test_wins_can_be_narrowed_to_one_season_length(conn):
+    everything = driver_service.championships_at_position(conn, "VER", 1, 9999, 1, 500)
+    expected = [c for c in everything["championships"] if c["num_races"] == 1]
+    assert 0 < len(expected) < len(everything["championships"])
+
+    narrowed = driver_service.championships_at_position(
+        conn, "VER", 1, 9999, 1, 500, num_races=1
+    )
+    assert narrowed["championships"] == expected
+    assert narrowed["total_count"] == len(expected)
+    assert narrowed["num_races"] == 1
+
+
+def test_max_position_follows_the_roster(conn):
+    assert driver_service.max_position(9999) == 3
+
+
 def test_highest_position_all_has_entry_per_driver(conn):
     rows = driver_service.highest_position_all(conn, 9999)
     codes = {r["driver"] for r in rows}

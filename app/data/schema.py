@@ -170,6 +170,12 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
         PRIMARY KEY (season, constructor_name, position)
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS season_builds (
+        season INTEGER PRIMARY KEY,
+        csv_sha256 TEXT NOT NULL
+    )
+    """,
 )
 
 

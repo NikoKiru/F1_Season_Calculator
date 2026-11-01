@@ -65,8 +65,7 @@ function renderRows(payload: PagePayload, position: number, rows: PositionRow[])
           const name = escapeHtml(r.constructor);
           const slug = slugFor(r.constructor, payload);
           const color = payload.constructor_colors[slug] ?? "#666";
-          const href = `/constructor/${encodeURIComponent(slug)}`;
-          const scenariosHref = `/constructor/${encodeURIComponent(slug)}/position/${position}`;
+          const href = `/constructor/${encodeURIComponent(slug)}/position/${position}`;
           return `
         <li class="card card--interactive"
             style="--team-color: ${color}"
@@ -74,9 +73,6 @@ function renderRows(payload: PagePayload, position: number, rows: PositionRow[])
           <div class="card__accent" aria-hidden="true"></div>
           <p class="card__title"><a href="${href}">${name}</a></p>
           <p class="card__subtitle">${r.count.toLocaleString()} championships (${r.percentage.toFixed(1)}%)</p>
-          <p class="card__meta">
-            <a href="${scenariosHref}" onclick="event.stopPropagation()">View scenarios →</a>
-          </p>
         </li>`;
         })
         .join("")}

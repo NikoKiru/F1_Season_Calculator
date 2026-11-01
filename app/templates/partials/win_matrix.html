@@ -1,0 +1,92 @@
+{#
+  One grid, two layouts, picked in CSS. Wide screens read drivers across and
+  season lengths down the columns. Below 1200px there is no room for a column
+  per race, so the same cells swap axes: lengths become rows, which a phone
+  can show without scrolling sideways.
+#}
+{% macro tile(row, cell) -%}
+  {%- set tip = row.name ~ " wins " ~ "{:,}".format(cell.wins) ~ " of " ~ "{:,}".format(cell.total) ~ " scenarios with " ~ cell.races ~ " race" ~ ("s" if cell.races != 1 else "") -%}
+  {%- if cell.wins -%}
+    <td class="win-matrix__tile" style="--shade: {{ cell.shade }}" title="{{ tip }}"><a href="{{ row.scenarios_href }}?races={{ cell.races }}" aria-label="{{ tip }}">{{ cell.label }}</a></td>
+  {%- else -%}
+    <td class="win-matrix__empty" title="{{ tip }}">{{ cell.label }}</td>
+  {%- endif -%}
+{%- endmacro %}
+
+{% if matrix.contenders %}
+<div class="table-wrapper win-matrix-frame win-matrix-frame--wide">
+  <table class="table table--striped-rows win-matrix win-matrix--wide{% if matrix.scenarios|length > 20 %} win-matrix--dense{% endif %}">
+    <caption class="visually-hidden">Percentage of scenarios won, by number of races counted</caption>
+    <thead>
+      <tr>
+        <th scope="col">Races counted</th>
+        {% for s in matrix.scenarios %}<th scope="col">{{ s.races }}</th>{% endfor %}
+        <th scope="col">Titles</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in matrix.contenders %}
+        <tr style="--team-color: {{ row.color }}">
+          <th scope="row" class="win-matrix__name"><a href="{{ row.href }}">{{ row.name }}</a></th>
+          {% for cell in row.cells %}{{ tile(row, cell) }}{% endfor %}
+          <td class="win-matrix__titles"><a href="{{ row.scenarios_href }}" title="{{ row.name }}: every title-winning scenario">{{ "{:,}".format(row.titles) }}</a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th scope="row" class="win-matrix__name">Scenarios</th>
+        {% for s in matrix.scenarios %}<td title="{{ "{:,}".format(s.total) }} scenarios with {{ s.races }} race{{ "s" if s.races != 1 }}">{{ s.label }}</td>{% endfor %}
+        <td class="win-matrix__titles" title="{{ "{:,}".format(matrix.total_scenarios) }} scenarios in total">{{ "{:,}".format(matrix.total_scenarios) }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+<div class="table-wrapper win-matrix-frame win-matrix-frame--tall">
+  <table class="table win-matrix win-matrix--tall">
+    <caption class="visually-hidden">Percentage of scenarios won, by number of races counted</caption>
+    <thead>
+      <tr>
+        <th scope="col">Races</th>
+        {% for row in matrix.contenders %}
+          <th scope="col" class="win-matrix__head" style="--team-color: {{ row.color }}"><a href="{{ row.href }}" title="{{ row.name }}">{{ row.short }}</a></th>
+        {% endfor %}
+        <th scope="col" title="Scenarios">Scen.</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in matrix.scenarios %}
+        {% set index = loop.index0 %}
+        <tr>
+          <th scope="row">{{ s.races }}</th>
+          {% for row in matrix.contenders %}{{ tile(row, row.cells[index]) }}{% endfor %}
+          <td title="{{ "{:,}".format(s.total) }} scenarios with {{ s.races }} race{{ "s" if s.races != 1 }}">{{ s.label }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th scope="row">Titles</th>
+        {% for row in matrix.contenders %}
+          <td class="win-matrix__titles"><a href="{{ row.scenarios_href }}" title="{{ "{:,}".format(row.titles) }} titles">{{ row.titles_label }}</a></td>
+        {% endfor %}
+        <td title="{{ "{:,}".format(matrix.total_scenarios) }} scenarios in total">{{ matrix.total_label }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% else %}
+<div class="state-panel">
+  <p class="state-panel__title">No scenarios yet.</p>
+</div>
+{% endif %}
+
+{% if matrix.others %}
+<p class="win-matrix__rest">
+  No title at any season length:
+  {% for other in matrix.others -%}
+    <a href="{{ other.href }}" title="{{ other.name }}">{{ other.short }}</a>{{ ", " if not loop.last }}
+  {%- endfor %}
+</p>
+{% endif %}

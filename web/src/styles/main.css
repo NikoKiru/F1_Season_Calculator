@@ -9,3 +9,5 @@
 @import "./components/nav.css";
 @import "./components/forms.css";
 @import "./components/states.css";
+@import "./components/win-matrix.css";
+@import "./components/scenarios.css";

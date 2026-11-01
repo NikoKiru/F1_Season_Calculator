@@ -158,11 +158,3 @@
     text-align: left;
   }
 }
-
-/* ── Win-probability heat map ─────────────────────────────────────── */
-/* Cells tint with their own percentage (--heat: 0–100). The tint is
- * capped at 45% accent so --fg-default keeps ≥4.5:1 contrast on the
- * strongest cell in both themes. */
-.heat-cell {
-  background: color-mix(in srgb, var(--accent) calc(var(--heat, 0) * 0.45 * 1%), transparent);
-}

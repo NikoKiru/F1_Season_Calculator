@@ -265,15 +265,19 @@ def championships_at_position(
     season: int,
     page: int,
     per_page: int,
+    num_races: int | None = None,
 ) -> dict:
+    """One page of scenarios at `position`. `num_races` narrows wins only, for
+    the reason given on the driver version."""
     offset = (page - 1) * per_page
 
     if position == 1:
         total, rows = q.winner_paginated(
-            conn, season, constructor_name, per_page, offset
+            conn, season, constructor_name, per_page, offset, num_races
         )
         championships = [_format_winner_row(r) for r in rows]
     else:
+        num_races = None
         total, rows = q.position_championships_paginated(
             conn, constructor_name, position, season, per_page, offset
         )
@@ -284,6 +288,7 @@ def championships_at_position(
         "constructor_name": constructor_name,
         "slug": season_service.team_slug(constructor_name),
         "position": position,
+        "num_races": num_races,
         "total_count": total,
         "page": page,
         "per_page": per_page,
@@ -291,6 +296,10 @@ def championships_at_position(
         "championships": championships,
         "season": season,
     }
+
+
+def _rounds(csv: str) -> list[int]:
+    return [int(number) for number in csv.split(",")]
 
 
 def _format_winner_row(row: dict) -> dict:
@@ -301,6 +310,7 @@ def _format_winner_row(row: dict) -> dict:
     return {
         "championship_id": int(row["championship_id"]),
         "num_races": int(row["num_races"]),
+        "rounds": _rounds(row["rounds"]),
         "standings": standings,
         "constructor_points": pts,
         "margin": margin,
@@ -319,6 +329,7 @@ def _format_position_row(row: dict, position: int) -> dict:
     return {
         "championship_id": int(row["championship_id"]),
         "num_races": int(row["num_races"]),
+        "rounds": _rounds(row["rounds"]),
         "standings": standings,
         "constructor_points": pts,
         "margin": margin,

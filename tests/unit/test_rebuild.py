@@ -6,7 +6,7 @@ import sqlite3
 import pytest
 
 from app.config import Settings
-from app.pipeline import rebuild
+from app.pipeline import constructor_writer, rebuild, writer
 from app.services import season_service
 
 CSV = "Driver,1,2,2s\nVER,25,18,8\nNOR,18,25,7\n"
@@ -77,3 +77,61 @@ def test_rebuild_season_is_rerunnable(settings):
     rebuild.rebuild_season(settings, SEASON, echo=lambda _: None)
     wdc, wcc = rebuild.rebuild_season(settings, SEASON, echo=lambda _: None)
     assert (wdc, wcc) == (3, 3)
+
+
+def _build(settings: Settings) -> None:
+    rebuild.rebuild_season(settings, SEASON, echo=lambda _: None)
+
+
+def test_season_is_current_after_a_finished_build(settings):
+    _build(settings)
+    assert rebuild.is_current(settings, SEASON)
+
+
+def test_checking_a_missing_database_says_stale_without_creating_it(settings):
+    assert not rebuild.is_current(settings, SEASON)
+    assert not settings.database_path.exists()
+
+
+def test_changed_csv_makes_the_season_stale(settings):
+    _build(settings)
+    csv_path = settings.data_folder / f"championships_{SEASON}.csv"
+    csv_path.write_text("Driver,1,2,2s\nVER,18,18,8\nNOR,25,25,7\n", encoding="utf-8")
+    assert not rebuild.is_current(settings, SEASON)
+
+
+def test_interrupted_rebuild_leaves_the_season_stale(settings, monkeypatch):
+    _build(settings)
+
+    def lost_power(*args, **kwargs):
+        raise RuntimeError("power cut")
+
+    monkeypatch.setattr(rebuild.constructor_stats_compute, "compute", lost_power)
+    with pytest.raises(RuntimeError):
+        _build(settings)
+
+    assert not rebuild.is_current(settings, SEASON)
+
+
+@pytest.mark.parametrize("module", [writer, constructor_writer])
+def test_clearing_a_season_makes_it_stale(settings, module):
+    _build(settings)
+    module.clear_season(settings.database_path, SEASON)
+    assert not rebuild.is_current(settings, SEASON)
+
+
+def test_database_from_before_build_tracking_counts_as_stale(settings):
+    settings.database_path.parent.mkdir(parents=True)
+    con = sqlite3.connect(settings.database_path)
+    con.execute("CREATE TABLE championship_results (championship_id INTEGER)")
+    con.commit()
+    con.close()
+
+    assert not rebuild.is_current(settings, SEASON)
+
+
+def test_build_of_one_season_says_nothing_about_another(settings):
+    other = SEASON - 1
+    (settings.data_folder / f"championships_{other}.csv").write_text(CSV, encoding="utf-8")
+    _build(settings)
+    assert not rebuild.is_current(settings, other)

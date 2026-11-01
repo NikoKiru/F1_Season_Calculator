@@ -84,23 +84,36 @@ def seasons_per_length(conn: Connection, season: int) -> dict[int, int]:
 
 
 def winner_paginated(
-    conn: Connection, season: int, constructor_name: str, limit: int, offset: int
+    conn: Connection,
+    season: int,
+    constructor_name: str,
+    limit: int,
+    offset: int,
+    num_races: int | None = None,
 ) -> tuple[int, list[dict]]:
+    length = "" if num_races is None else "AND num_races = :n "
+    params = {"c": constructor_name, "s": season}
+    if num_races is not None:
+        params["n"] = num_races
     total = conn.execute(
         text(
-            "SELECT COUNT(*) AS c FROM constructor_championship_results "
-            "WHERE winner = :c AND season = :s"
+            "SELECT COALESCE("
+            "  (SELECT SUM(win_count) FROM constructor_win_probability_cache "
+            f"  WHERE constructor_name = :c AND season = :s {length}), "
+            "  (SELECT COUNT(*) FROM constructor_championship_results "
+            f"  WHERE winner = :c AND season = :s {length})"
+            ") AS c"
         ),
-        {"c": constructor_name, "s": season},
+        params,
     ).one().c
     rows = conn.execute(
         text(
             "SELECT championship_id, num_races, rounds, standings, points "
             "FROM constructor_championship_results "
-            "WHERE winner = :c AND season = :s "
+            f"WHERE winner = :c AND season = :s {length}"
             "ORDER BY num_races DESC, championship_id DESC LIMIT :lim OFFSET :off"
         ),
-        {"c": constructor_name, "s": season, "lim": limit, "off": offset},
+        {**params, "lim": limit, "off": offset},
     ).mappings().all()
     return int(total), [dict(r) for r in rows]
 
@@ -236,10 +249,16 @@ def position_championships_paginated(
     limit: int,
     offset: int,
 ) -> tuple[int, list[dict]]:
+    """Longest scenarios first, read straight from the index. See the driver
+    version in drivers.py for why rowid DESC gives that order without a sort."""
     total = conn.execute(
         text(
-            "SELECT COUNT(*) AS c FROM constructor_position_results "
-            "WHERE constructor_name = :c AND position = :p AND season = :s"
+            "SELECT COALESCE("
+            "  (SELECT count FROM constructor_position_distribution "
+            "   WHERE season = :s AND constructor_name = :c AND position = :p), "
+            "  (SELECT COUNT(*) FROM constructor_position_results "
+            "   WHERE constructor_name = :c AND position = :p AND season = :s)"
+            ") AS c"
         ),
         {"c": constructor_name, "p": position, "s": season},
     ).one().c
@@ -247,12 +266,12 @@ def position_championships_paginated(
         text(
             "SELECT cr.championship_id, cr.num_races, cr.rounds, cr.standings, "
             "       cr.points, pr.points AS constructor_points "
-            "FROM constructor_position_results pr "
+            "FROM (SELECT championship_id, points FROM constructor_position_results "
+            "      WHERE season = :s AND constructor_name = :c AND position = :p "
+            "      ORDER BY rowid DESC LIMIT :lim OFFSET :off) pr "
             "JOIN constructor_championship_results cr "
-            "  ON pr.championship_id = cr.championship_id "
-            "WHERE pr.constructor_name = :c AND pr.position = :p AND pr.season = :s "
-            "ORDER BY cr.num_races DESC, cr.championship_id DESC "
-            "LIMIT :lim OFFSET :off"
+            "  ON cr.championship_id = pr.championship_id "
+            "ORDER BY cr.championship_id DESC"
         ),
         {
             "c": constructor_name, "p": position, "s": season,

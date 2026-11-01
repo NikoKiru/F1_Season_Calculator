@@ -56,8 +56,7 @@ function renderRows(payload: PagePayload, position: number, rows: PositionRow[])
         .map((r) => {
           const name = escapeHtml(payload.driver_names[r.driver] ?? r.driver);
           const color = payload.driver_colors[r.driver] ?? "#666";
-          const href = `/driver/${encodeURIComponent(r.driver)}`;
-          const scenariosHref = `/driver/${encodeURIComponent(r.driver)}/position/${position}`;
+          const href = `/driver/${encodeURIComponent(r.driver)}/position/${position}`;
           return `
         <li class="card card--interactive"
             style="--team-color: ${color}"
@@ -65,9 +64,6 @@ function renderRows(payload: PagePayload, position: number, rows: PositionRow[])
           <div class="card__accent" aria-hidden="true"></div>
           <p class="card__title"><a href="${href}">${name}</a></p>
           <p class="card__subtitle">${r.count.toLocaleString()} championships (${r.percentage.toFixed(1)}%)</p>
-          <p class="card__meta">
-            <a href="${scenariosHref}" onclick="event.stopPropagation()">View scenarios →</a>
-          </p>
         </li>`;
         })
         .join("")}

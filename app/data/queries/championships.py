@@ -79,22 +79,35 @@ def seasons_per_length(conn: Connection, season: int) -> dict[int, int]:
 
 
 def driver_wins_paginated(
-    conn: Connection, season: int, driver_code: str, limit: int, offset: int
+    conn: Connection,
+    season: int,
+    driver_code: str,
+    limit: int,
+    offset: int,
+    num_races: int | None = None,
 ) -> tuple[int, list[dict]]:
     """Position 1 case — uses the indexed `winner` column."""
+    length = "" if num_races is None else "AND num_races = :n "
+    params = {"d": driver_code, "s": season}
+    if num_races is not None:
+        params["n"] = num_races
     total = conn.execute(
         text(
-            "SELECT COUNT(*) AS c FROM championship_results "
-            "WHERE winner = :d AND season = :s"
+            "SELECT COALESCE("
+            "  (SELECT SUM(win_count) FROM win_probability_cache "
+            f"  WHERE driver_code = :d AND season = :s {length}), "
+            "  (SELECT COUNT(*) FROM championship_results "
+            f"  WHERE winner = :d AND season = :s {length})"
+            ") AS c"
         ),
-        {"d": driver_code, "s": season},
+        params,
     ).one().c
     rows = conn.execute(
         text(
             "SELECT championship_id, num_races, rounds, standings, points "
-            "FROM championship_results WHERE winner = :d AND season = :s "
+            f"FROM championship_results WHERE winner = :d AND season = :s {length}"
             "ORDER BY num_races DESC, championship_id DESC LIMIT :lim OFFSET :off"
         ),
-        {"d": driver_code, "s": season, "lim": limit, "off": offset},
+        {**params, "lim": limit, "off": offset},
     ).mappings().all()
     return int(total), [dict(r) for r in rows]

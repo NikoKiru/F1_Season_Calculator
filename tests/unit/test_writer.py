@@ -41,6 +41,7 @@ def _built_constructor_season() -> LoadedConstructorSeason:
         constructors=np.array(["TeamA", "TeamB"], dtype=object),
         round_numbers=np.array([1, 2, 3]),
         combined=np.array([[30, 10, 20], [20, 25, 10]]),
+        countback=np.zeros((2, 3), dtype=int),
     )
 
 
@@ -138,3 +139,49 @@ def test_multi_season_rebuild_does_not_collide_with_other_seasons(tmp_path):
         )
     finally:
         conn.close()
+
+
+def test_stored_standings_break_points_ties_on_countback(tmp_path):
+    db = tmp_path / "tie.db"
+    _init_db(db)
+    race = np.array([[18, 18, 8], [25, 15, 4]])  # 44 each; only NOR has a win
+    loaded = LoadedSeason(
+        drivers=np.array(["VER", "NOR"], dtype=object),
+        round_numbers=np.array([1, 2, 3]),
+        race_scores=race,
+        sprint_scores=np.zeros_like(race),
+    )
+
+    writer.process_season(db, loaded, season=9999)
+
+    conn = sqlite3.connect(db)
+    try:
+        row = conn.execute(
+            "SELECT winner, standings, points FROM championship_results WHERE num_races = 3"
+        ).fetchone()
+    finally:
+        conn.close()
+    assert row == ("NOR", "NOR,VER", "44,44")
+
+
+def test_stored_constructor_standings_break_points_ties_on_countback(tmp_path):
+    db = tmp_path / "tie.db"
+    _init_db(db)
+    built = LoadedConstructorSeason(
+        constructors=np.array(["TeamA", "TeamB"], dtype=object),
+        round_numbers=np.array([1, 2]),
+        combined=np.array([[20, 20], [20, 20]]),
+        countback=np.array([[1, 0], [0, 5]]),
+    )
+
+    constructor_writer.process_season(db, built, season=9999)
+
+    conn = sqlite3.connect(db)
+    try:
+        row = conn.execute(
+            "SELECT winner, standings FROM constructor_championship_results "
+            "WHERE num_races = 2"
+        ).fetchone()
+    finally:
+        conn.close()
+    assert row == ("TeamB", "TeamB,TeamA")

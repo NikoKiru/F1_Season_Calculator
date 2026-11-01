@@ -22,6 +22,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from app.pipeline.combinator import countback_weights
+
 
 class CSVLoadError(Exception):
     pass
@@ -38,6 +40,11 @@ class LoadedSeason:
     def combined(self) -> np.ndarray:
         """Race + sprint per weekend — what the combinator consumes."""
         return self.race_scores + self.sprint_scores
+
+    @property
+    def countback(self) -> np.ndarray:
+        """Tie-break weights per weekend, from race results only."""
+        return countback_weights(self.race_scores)
 
 
 def _parse_header(header: list[str]) -> list[tuple[int, str]]:
