@@ -20,6 +20,10 @@ leaves its rounds missing and the next run simply does them over.
 
 A run with nothing to do makes one API call and touches no files, so it is
 safe on a timer, in CI, or behind a UI button.
+
+It refuses to write during an unfinished merge or rebase, and warns when the
+checkout is behind its upstream, because these are the files data-sync.yml
+commits to main.
 """
 from __future__ import annotations
 
@@ -34,7 +38,7 @@ import typer
 from app.cli import refresh_bio
 from app.config import Settings, get_settings
 from app.pipeline import race_csv, rebuild
-from app.services import flags, jolpica_service, season_service, sync_service
+from app.services import flags, git_guard, jolpica_service, season_service, sync_service
 
 
 def _load_raced(csv_path) -> tuple[list[str], dict, dict, set[int], set[int]]:
@@ -113,6 +117,28 @@ def _database_is_behind(settings: Settings, season: int, csv_path: Path) -> bool
     return csv_path.exists() and not rebuild.is_current(settings, season)
 
 
+def _check_git_state(settings: Settings, *, dry_run: bool) -> None:
+    repo = settings.data_folder
+    operation = git_guard.unfinished_operation(repo)
+    if operation:
+        message = (
+            f"unfinished git {operation} in this checkout. Finish or abort it first, "
+            "because sync rewrites the data files it is working on."
+        )
+        if not dry_run:
+            typer.echo(f"[ERR] {message}", err=True)
+            raise typer.Exit(code=1)
+        typer.echo(f"[warn] {message}")
+
+    behind = git_guard.commits_behind(repo)
+    if behind:
+        commits = "commit" if behind == 1 else "commits"
+        typer.echo(
+            f"[warn] {behind} {commits} behind upstream. Run `git pull` first, or the "
+            "data this sync writes can conflict with what's already there."
+        )
+
+
 def run(
     season: int = typer.Option(
         None, "--season", "-s", help="Defaults to the newest data/seasons/*.json."
@@ -132,6 +158,7 @@ def run(
     ),
 ) -> None:
     settings = get_settings()
+    _check_git_state(settings, dry_run=dry_run)
     if season is None:
         season = season_service.default_season()
 

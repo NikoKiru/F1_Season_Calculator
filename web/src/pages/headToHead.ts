@@ -12,7 +12,7 @@ import { pieChart } from "../components/charts/factories";
 import { showError, showLoading } from "../components/states";
 import { apiGet } from "../lib/api";
 import { darkenHex } from "../lib/color";
-import { $, readJsonScript, require$ } from "../lib/dom";
+import { $, escapeHtml, readJsonScript, require$ } from "../lib/dom";
 
 interface PagePayload {
   season: number;
@@ -48,11 +48,6 @@ function showState(html: string): void {
 function showChartSurface(): void {
   stateHost().innerHTML = "";
   chartWrapper().hidden = false;
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 }
 
 /** Keep ?a=&b= in sync with the pickers so comparisons are shareable links. */

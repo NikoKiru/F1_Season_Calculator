@@ -6,6 +6,8 @@ caches the assembled result. Still fewer trips per request than the old code
 (5 queries, all indexed, vs 7 + unindexed COUNT) and every piece is testable
 in isolation.
 """
+from typing import Any
+
 from sqlalchemy import Connection
 
 from app.cache import service as cache
@@ -20,11 +22,13 @@ def _sum_total_championships(seasons_per_length: dict[int, int]) -> int:
 
 
 def get_stats(conn: Connection, driver_code: str, season: int) -> dict:
-    key = cache.key_driver_stats(driver_code, season)
-    cached = cache.get(key)
-    if cached is not None:
-        return cached
+    return cache.get_or_compute(
+        cache.key_driver_stats(driver_code, season),
+        lambda: _compute_stats(conn, driver_code, season),
+    )
 
+
+def _compute_stats(conn: Connection, driver_code: str, season: int) -> dict[str, Any]:
     sd = season_service.get_season_data(season)
 
     # One query for pre-computed stats (INSTANT path)
@@ -80,7 +84,6 @@ def get_stats(conn: Connection, driver_code: str, season: int) -> dict:
         "head_to_head": head_to_head,
         "season": season,
     }
-    cache.set(key, result)
     return result
 
 
@@ -90,14 +93,14 @@ def head_to_head(conn: Connection, d1: str, d2: str, season: int) -> dict[str, i
         raise ValueError("Cannot compare a driver with themselves")
 
     a, b = sorted((d1, d2))
-    key = cache.key_head_to_head(a, b, season)
-    cached = cache.get(key)
-    if cached is None:
+
+    def compute() -> dict[str, int]:
         a_wins, b_wins = q_d.head_to_head_pair(conn, a, b, season)
-        cached = {a: a_wins, b: b_wins}
-        cache.set(key, cached)
+        return {a: a_wins, b: b_wins}
+
+    wins = cache.get_or_compute(cache.key_head_to_head(a, b, season), compute)
     # Return keys in request order
-    return {d1: cached[d1], d2: cached[d2]}
+    return {d1: wins[d1], d2: wins[d2]}
 
 
 def position_summary(conn: Connection, position: int, season: int) -> list[dict]:
@@ -208,10 +211,12 @@ def _format_position_row(row: dict, position: int) -> dict:
 
 
 def highest_position_all(conn: Connection, season: int) -> list[dict]:
-    key = cache.key_highest_position(season)
-    cached = cache.get(key)
-    if cached is not None:
-        return cached
+    return cache.get_or_compute(
+        cache.key_highest_position(season), lambda: _compute_highest_position_all(conn, season)
+    )
+
+
+def _compute_highest_position_all(conn: Connection, season: int) -> list[dict[str, Any]]:
     rows = q_s.all_driver_statistics(conn, season)
     result = [
         {
@@ -224,5 +229,4 @@ def highest_position_all(conn: Connection, season: int) -> list[dict]:
         }
         for r in rows
     ]
-    cache.set(key, result)
     return result
