@@ -49,8 +49,8 @@
                 "wins": 9,
                 "podiums": 28,
                 "poles": 15,
-                "starts": 88,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 89,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "NOR": {
@@ -65,10 +65,10 @@
             "career": {
                 "wins": 13,
                 "podiums": 49,
-                "poles": 34,
+                "poles": 35,
                 "championships": 1,
-                "starts": 170,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 171,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "VER": {
@@ -81,12 +81,12 @@
             "debut_year": 2015,
             "jolpica_id": "max_verstappen",
             "career": {
-                "wins": 73,
-                "podiums": 137,
+                "wins": 74,
+                "podiums": 138,
                 "poles": 67,
                 "championships": 4,
-                "starts": 251,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 252,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "RUS": {
@@ -102,8 +102,8 @@
                 "wins": 8,
                 "podiums": 32,
                 "poles": 18,
-                "starts": 170,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 171,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "LEC": {
@@ -119,8 +119,8 @@
                 "wins": 9,
                 "podiums": 56,
                 "poles": 35,
-                "starts": 191,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 192,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "HAM": {
@@ -135,10 +135,10 @@
             "career": {
                 "championships": 7,
                 "wins": 106,
-                "podiums": 208,
-                "poles": 119,
-                "starts": 398,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "podiums": 209,
+                "poles": 120,
+                "starts": 399,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "ANT": {
@@ -152,10 +152,10 @@
             "jolpica_id": "antonelli",
             "career": {
                 "wins": 9,
-                "podiums": 18,
+                "podiums": 19,
                 "poles": 10,
-                "starts": 42,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 43,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "ALB": {
@@ -171,8 +171,8 @@
                 "wins": 0,
                 "podiums": 2,
                 "poles": 1,
-                "starts": 147,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 148,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "HAD": {
@@ -188,8 +188,8 @@
                 "wins": 0,
                 "podiums": 3,
                 "poles": 3,
-                "starts": 39,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 40,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "HUL": {
@@ -205,8 +205,8 @@
                 "wins": 0,
                 "podiums": 1,
                 "poles": 1,
-                "starts": 272,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 273,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "STR": {
@@ -222,8 +222,8 @@
                 "wins": 0,
                 "podiums": 3,
                 "poles": 1,
-                "starts": 209,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 210,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "SAI": {
@@ -239,8 +239,8 @@
                 "wins": 4,
                 "podiums": 29,
                 "poles": 11,
-                "starts": 250,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 251,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "LAW": {
@@ -256,8 +256,8 @@
                 "wins": 0,
                 "podiums": 0,
                 "poles": 0,
-                "starts": 53,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 54,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "ALO": {
@@ -274,8 +274,8 @@
                 "wins": 32,
                 "podiums": 106,
                 "poles": 23,
-                "starts": 446,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 447,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "OCO": {
@@ -308,8 +308,8 @@
                 "wins": 1,
                 "podiums": 5,
                 "poles": 1,
-                "starts": 196,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 197,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "BOR": {
@@ -325,8 +325,8 @@
                 "wins": 0,
                 "podiums": 0,
                 "poles": 0,
-                "starts": 42,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 43,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "BEA": {
@@ -342,8 +342,8 @@
                 "wins": 0,
                 "podiums": 0,
                 "poles": 0,
-                "starts": 45,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 46,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "COL": {
@@ -359,8 +359,8 @@
                 "wins": 0,
                 "podiums": 0,
                 "poles": 0,
-                "starts": 45,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 46,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "PER": {
@@ -376,8 +376,8 @@
                 "wins": 6,
                 "podiums": 39,
                 "poles": 4,
-                "starts": 301,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 302,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "BOT": {
@@ -393,8 +393,8 @@
                 "wins": 10,
                 "podiums": 67,
                 "poles": 19,
-                "starts": 265,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 266,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "LIN": {
@@ -410,8 +410,8 @@
                 "wins": 0,
                 "podiums": 0,
                 "poles": 0,
-                "starts": 18,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "starts": 19,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "TSU": {
@@ -429,6 +429,23 @@
                 "poles": 1,
                 "starts": 117,
                 "updated_at": "2026-09-14T11:12:14.270249+00:00"
+            }
+        },
+        "HIR": {
+            "name": "Ryo Hirakawa",
+            "team": "Haas",
+            "number": 50,
+            "flag": "🇯🇵",
+            "nationality": "Japanese",
+            "birthdate": "1994-03-07",
+            "debut_year": 2025,
+            "jolpica_id": "ryo_hirakawa",
+            "career": {
+                "wins": 0,
+                "podiums": 0,
+                "poles": 0,
+                "starts": 1,
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         }
     },
@@ -457,10 +474,10 @@
             "jolpica_id": "red_bull",
             "palmares": {
                 "championships": 6,
-                "wins": 132,
-                "podiums": 309,
+                "wins": 133,
+                "podiums": 310,
                 "first_race_year": 2005,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "Mercedes": {
@@ -473,9 +490,9 @@
             "palmares": {
                 "championships": 8,
                 "wins": 143,
-                "podiums": 333,
+                "podiums": 334,
                 "first_race_year": 1954,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "Ferrari": {
@@ -488,9 +505,9 @@
             "palmares": {
                 "championships": 16,
                 "wins": 251,
-                "podiums": 860,
+                "podiums": 861,
                 "first_race_year": 1950,
-                "updated_at": "2026-10-26T11:50:07.777219+00:00"
+                "updated_at": "2026-11-02T14:07:38.631517+00:00"
             }
         },
         "Aston Martin": {
