@@ -91,17 +91,20 @@ git pull         # the bot commits new results on Mondays and Thursdays
 f1 sync          # fetches anything still missing, rebuilds if the data changed
 ```
 
-A running server picks up a finished rebuild by itself, so you don't need to
-restart it. Run `f1 sync --dry-run` to see the plan without writing anything. Pull
-before syncing, because the bot rewrites the same files.
+A running server picks up new data and a finished rebuild by itself. If the pull
+brought code changes, run `(cd web && npm ci && npm run build)` when `web/` changed,
+and restart the server when Python changed. Run `f1 sync --dry-run` to see the plan
+without writing anything. Pull before syncing, because the bot rewrites the same files.
 
 **New season:** run `f1 new-season --season 2027` once Jolpica has the calendar,
 then `f1 sync --season 2027`. Colors and team details carry over from the
 previous year. Championship titles are edited by hand.
 
-**By hand:** `f1 add-race --season 2026 --race 3 --results "VER:25,NOR:18" [--sprint "VER:8,NOR:7"]`,
-or `f1 fetch-race --season 2026 --round 3` for a single round. `python tools/manage_ui.py`
-opens a small Tkinter manager with the same buttons.
+**By hand:** `f1 add-race --season YYYY --race N --results "VER:25,NOR:18" [--sprint "VER:8,NOR:7"]`
+writes that round's points and rebuilds, and `f1 fetch-race --season YYYY --round N`
+fetches a single round. `python tools/manage_ui.py` opens a small Tkinter manager with
+Sync, Fetch, Build and Start website buttons. Its Build leaves no build stamp, so the
+next `f1 sync` rebuilds once more.
 
 ## CLI
 
