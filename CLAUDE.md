@@ -100,6 +100,19 @@ Tests never call Jolpica; `jolpica_service` is patched. The real API allows 4 re
 - User-visible changes go in `CHANGELOG.md` under `[Unreleased]`.
 - `data-sync.yml` pushes `data:` commits straight to `main` on Mondays and Thursdays at 06:00 UTC, so pull before branching and before `f1 sync`. Sync rewrites the same files: it refuses to run during an unfinished merge or rebase, and warns when the checkout is behind its upstream.
 
+## Finished work ships
+
+Once a change is verified, take it all the way without asking:
+
+1. Branch off an up-to-date `main`. Use a worktree when a sync or build is running in the main checkout.
+2. Commit, push and `gh pr create --base main`. Update `CHANGELOG.md`, and `README.md` where it describes what changed, in the same PR.
+3. Wait for CI with `gh pr checks <n> --watch`, then confirm nothing is still pending, because `--watch` can exit while jobs are queued. `main` has no branch protection, so a green run is yours to check, not GitHub's.
+4. `gh pr merge <n> --merge`, which makes a merge commit as #36–#39 did. Then `git checkout main && git pull`, remove any worktree and delete the local branch. GitHub deletes the remote branch on merge.
+5. Deploy locally. Run `f1 sync` when data changed; it rebuilds only when needed. Run `cd web && npm ci && npm run build` when `web/` changed, and restart uvicorn when Python changed. The server picks up new data and rebuilds without a restart.
+6. Commit data from a local `f1 sync` as `data: ...` straight to `main` and push it right away, the way the bot does, so its next run finds nothing to conflict with.
+
+An uncommitted change or an open PR is unfinished work. Ask only about things that are destructive or hard to undo, such as a force-push to `main`, deleting unmerged work or rewriting data history, and about real product decisions. Use `AskUserQuestion` for those, never to confirm a step listed here. For a small, clear request, skip the design and plan approval rounds and state your calls instead.
+
 ## Stale material
 
 The root `championship/` and `graphql_api/` folders are untracked leftovers holding only bytecode.
