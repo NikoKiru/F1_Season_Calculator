@@ -21,11 +21,11 @@ often.
 ## Screenshots
 
 <p align="center">
-  <img src="docs/images/home.png" alt="Home page with title odds per driver" width="900">
+  <img src="docs/images/win-probability.png" alt="Win probability: each driver's share of titles by number of races counted" width="900">
 </p>
 <p align="center">
-  <img src="docs/images/championship.png" alt="One championship scenario with per-round points" width="445">
-  <img src="docs/images/notable-scenarios.png" alt="Notable Scenarios page" width="445">
+  <img src="docs/images/home.png" alt="Home page with the season's scenario count and standings" width="445">
+  <img src="docs/images/notable-scenarios.png" alt="Notable Scenarios: the closest title, the biggest blowout and more" width="445">
 </p>
 
 ## Why it's interesting
