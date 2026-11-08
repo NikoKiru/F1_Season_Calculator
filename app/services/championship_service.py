@@ -138,15 +138,13 @@ def get_page(conn: Connection, season: int, page: int, per_page: int) -> dict:
 
 
 def get_by_id(conn: Connection, championship_id: int) -> dict | None:
-    cached = cache.get(cache.key_championship(championship_id))
-    if cached is not None:
-        return cached
-    row = q.by_id(conn, championship_id)
-    if row is None:
-        return None
-    formatted = _format(row, int(row["season"]), with_round_points=True)
-    cache.set(cache.key_championship(championship_id), formatted)
-    return formatted
+    def compute() -> dict[str, Any] | None:
+        row = q.by_id(conn, championship_id)
+        if row is None:
+            return None
+        return _format(row, int(row["season"]), with_round_points=True)
+
+    return cache.get_or_compute(cache.key_championship(championship_id), compute)
 
 
 def raced_rounds(conn: Connection, season: int) -> list[int]:
@@ -163,14 +161,12 @@ def find_by_rounds(conn: Connection, rounds: list[int], season: int) -> int | No
     """Returns championship_id if the exact round combination exists for this season."""
     sorted_rounds = sorted(set(rounds))
     csv_str = ",".join(str(r) for r in sorted_rounds)
-    key = cache.key_search_rounds(csv_str, season)
-    cached = cache.get(key)
-    if cached is not None:
-        return cached if cached != 0 else None
-    row = q.by_rounds(conn, csv_str, season)
-    cid = int(row["championship_id"]) if row else None
-    cache.set(key, cid if cid is not None else 0)
-    return cid
+
+    def compute() -> int | None:
+        row = q.by_rounds(conn, csv_str, season)
+        return int(row["championship_id"]) if row else None
+
+    return cache.get_or_compute(cache.key_search_rounds(csv_str, season), compute)
 
 
 def all_wins(conn: Connection, season: int) -> dict[str, int]:

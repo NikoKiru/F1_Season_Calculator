@@ -8,6 +8,21 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Copy link** button in the header on every page. The address keeps its
+  query string, so a Head to Head pairing or a chosen position comes with it.
+- Every page has its own description and Open Graph tags, so a shared link says
+  what it points at. A championship's names its winner and margin.
+- Header search finds drivers and teams by name, with suggestions, as well as
+  scenario numbers.
+- Create Championship has All and Clear buttons and a live count of the rounds
+  selected.
+- Head to Head keeps its picks in the URL (`?a=&b=`) and shows win/loss tiles
+  beside the chart.
+- Driver and Constructor Positions keep the chosen position in the URL
+  (`?p=N`).
+- Standings tables on the home and championship pages show the gap to the
+  leader.
+- Header dropdowns open on hover on desktop.
 - `f1 sync` — one idempotent command that brings a season fully up to
   date from the Jolpica-F1 API: calendar + sprint flags merged into
   `seasons/{YYYY}.json`, missing race results spliced into the CSV,
@@ -31,6 +46,15 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- `f1 sync` refuses to run during an unfinished git merge or rebase, because it
+  rewrites the files being merged, and warns when the checkout is behind its
+  upstream. `--dry-run` only warns.
+- Cards on Driver and Constructor Positions also link to the driver or
+  constructor page, next to opening that position's scenarios.
+- Browsers cache built assets for a year. Their names change with every build,
+  so a new build still reaches them straight away.
+- CI runs the Playwright e2e tests, and a missing browser fails the job instead
+  of skipping them.
 - Win Probability fits on one screen, for drivers and constructors. Only those
   who can win get a row, shaded by how often they win, and each number opens
   exactly those scenarios. Everyone else is one line below the table. On
@@ -39,6 +63,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- A frontend build, a rebuild, a sync or a season JSON edit no longer needs a
+  server restart. The running server picks up new assets and data on its next
+  request, where it used to link to deleted asset files and serve old results
+  for up to an hour.
 - Positions past P20 work. With 23 drivers on the 2026 roster, P21–P23 answered
   400 on the scenario list and API, and Driver Positions had no button for them.
 - Scenario lists no longer sort the whole position on every request: a busy
@@ -82,6 +110,13 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Replaced the 22-card head-to-head grid on driver detail with the new
   table — drops the redundant "<DriverName> vs" prefix and sorts by
   win % descending.
+
+### Removed
+
+- The Flask-era docs: `docs/architecture`, `docs/setup`, `docs/performance`,
+  `docs/ui`, every `wiki/` page except Features, and the flake8
+  `.pre-commit-config.yaml`. `CONTRIBUTING.md` is rewritten for the current
+  stack.
 
 ## [2.1.0] — 2026-05-09
 

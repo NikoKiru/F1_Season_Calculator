@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ data.constructor_name }} — P{{ position }}{% endblock %}
+{% block description %}Every {{ current_season }} F1 scenario where {{ data.constructor_name }} finishes P{{ position }} in the constructors' championship.{% endblock %}
 {% block breadcrumbs %}{% include "partials/breadcrumbs.html" %}{% endblock %}
 
 {% block content %}

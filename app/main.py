@@ -1,15 +1,13 @@
-"""FastAPI app factory.
-
-The new app runs alongside the old Flask app during parallel-run.
-Flask serves the current site; FastAPI serves the rewrite on a different port
-(default 8000) until cutover. Both read the same SQLite database.
-"""
+"""FastAPI app factory: the JSON API under /api and server-rendered pages."""
 import logging
 from contextlib import asynccontextmanager
+from pathlib import PurePath
 
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import Response
+from starlette.types import Scope
 
 from app.config import get_settings
 
@@ -29,6 +27,16 @@ async def lifespan(app: FastAPI):
     settings.instance_folder.mkdir(parents=True, exist_ok=True)
     log.info("Database at %s", settings.database_path)
     yield
+
+
+class AssetFiles(StaticFiles):
+    """Vite puts a content hash in every name under dist/assets, so those files never change."""
+
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        response = await super().get_response(path, scope)
+        if PurePath(path).as_posix().startswith("dist/assets/"):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
 
 
 def create_app() -> FastAPI:
@@ -51,7 +59,7 @@ def create_app() -> FastAPI:
     if settings.static_folder.exists():
         app.mount(
             "/static",
-            StaticFiles(directory=str(settings.static_folder)),
+            AssetFiles(directory=str(settings.static_folder)),
             name="static",
         )
 

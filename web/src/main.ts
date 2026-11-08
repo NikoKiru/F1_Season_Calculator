@@ -1,7 +1,7 @@
 /**
  * Shared bootstrap loaded by every page: hamburger menu, global scenario
- * search, theme toggle, header shadow, and scroll-reveal. Page-specific
- * entries run their own main() after.
+ * search, copy link, theme toggle, header shadow, and scroll-reveal.
+ * Page-specific entries run their own main() after.
  */
 
 import { $, $$, readJsonScript } from "./lib/dom";
@@ -152,6 +152,43 @@ function bindNavGroups(): void {
   });
 }
 
+/* ── Copy link ──────────────────────────────────────────────────────── */
+
+function bindCopyLink(): void {
+  const btn = $<HTMLButtonElement>("[data-copy-link]");
+  if (!btn) return;
+  const status = $<HTMLElement>("[data-copy-link-status]");
+  const idleLabel = btn.getAttribute("aria-label") ?? "";
+  let resetTimer = 0;
+
+  const label = (text: string) => {
+    btn.setAttribute("aria-label", text);
+    btn.title = text;
+  };
+
+  const report = (state: "copied" | "failed", text: string) => {
+    btn.dataset.state = state;
+    label(text);
+    if (status) status.textContent = text;
+    window.clearTimeout(resetTimer);
+    resetTimer = window.setTimeout(() => {
+      delete btn.dataset.state;
+      label(idleLabel);
+      if (status) status.textContent = "";
+    }, 2000);
+  };
+
+  btn.addEventListener("click", async () => {
+    try {
+      // navigator.clipboard only exists on HTTPS and localhost.
+      await navigator.clipboard.writeText(window.location.href);
+      report("copied", "Link copied");
+    } catch {
+      report("failed", "Couldn't copy the link");
+    }
+  });
+}
+
 /* ── Theme ──────────────────────────────────────────────────────────── */
 
 function effectiveTheme(): "light" | "dark" {
@@ -267,6 +304,7 @@ bindHamburger();
 bindGlobalSearch();
 bindNavGroups();
 markCurrentNav();
+bindCopyLink();
 bindThemeToggle();
 bindHeaderState();
 bindReveal();

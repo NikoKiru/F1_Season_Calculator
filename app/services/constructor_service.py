@@ -4,6 +4,8 @@
 Each helper runs at most one query against the pre-computed constructor
 caches. The page-facing layer composes them.
 """
+from typing import Any
+
 from sqlalchemy import Connection
 
 from app.cache import service as cache
@@ -74,9 +76,12 @@ def min_races_to_win(conn: Connection, season: int) -> dict[str, int]:
 
 
 def highest_position_all(conn: Connection, season: int) -> list[dict]:
-    cached = cache.get(_key_highest_position(season))
-    if cached is not None:
-        return cached
+    return cache.get_or_compute(
+        _key_highest_position(season), lambda: _compute_highest_position_all(conn, season)
+    )
+
+
+def _compute_highest_position_all(conn: Connection, season: int) -> list[dict[str, Any]]:
     rows = q.all_statistics(conn, season)
     result = [
         {
@@ -89,17 +94,18 @@ def highest_position_all(conn: Connection, season: int) -> list[dict]:
         }
         for r in rows
     ]
-    cache.set(_key_highest_position(season), result)
     return result
 
 
 def win_probability(conn: Connection, season: int) -> dict:
     """Per-constructor × season-length win share — same shape as the
     driver version produced by statistics_service.win_probability."""
-    cached = cache.get(_key_win_probability(season))
-    if cached is not None:
-        return cached
+    return cache.get_or_compute(
+        _key_win_probability(season), lambda: _compute_win_probability(conn, season)
+    )
 
+
+def _compute_win_probability(conn: Connection, season: int) -> dict[str, Any]:
     cache_rows = q.win_probability_cache(conn, season)
 
     wins_per_length: dict[str, dict[int, int]] = {}
@@ -148,7 +154,6 @@ def win_probability(conn: Connection, season: int) -> dict:
         ],
         "constructors_data": constructors_data,
     }
-    cache.set(_key_win_probability(season), result)
     return result
 
 
@@ -181,11 +186,13 @@ def _sum_total_championships(seasons_per_length: dict[int, int]) -> int:
 
 
 def get_stats(conn: Connection, constructor_name: str, season: int) -> dict:
-    key = _key_stats(constructor_name, season)
-    cached = cache.get(key)
-    if cached is not None:
-        return cached
+    return cache.get_or_compute(
+        _key_stats(constructor_name, season),
+        lambda: _compute_stats(conn, constructor_name, season),
+    )
 
+
+def _compute_stats(conn: Connection, constructor_name: str, season: int) -> dict[str, Any]:
     sd = season_service.get_season_data(season)
     precomputed = q.statistics(conn, constructor_name, season)
 
@@ -241,7 +248,6 @@ def get_stats(conn: Connection, constructor_name: str, season: int) -> dict:
         "head_to_head": head_to_head,
         "season": season,
     }
-    cache.set(key, result)
     return result
 
 
@@ -249,13 +255,13 @@ def head_to_head(conn: Connection, c1: str, c2: str, season: int) -> dict[str, i
     if c1 == c2:
         raise ValueError("Cannot compare a constructor with themselves")
     a, b = sorted((c1, c2))
-    key = _key_h2h(a, b, season)
-    cached = cache.get(key)
-    if cached is None:
+
+    def compute() -> dict[str, int]:
         a_wins, b_wins = q.head_to_head_pair(conn, a, b, season)
-        cached = {a: a_wins, b: b_wins}
-        cache.set(key, cached)
-    return {c1: cached[c1], c2: cached[c2]}
+        return {a: a_wins, b: b_wins}
+
+    wins = cache.get_or_compute(_key_h2h(a, b, season), compute)
+    return {c1: wins[c1], c2: wins[c2]}
 
 
 def championships_at_position(
