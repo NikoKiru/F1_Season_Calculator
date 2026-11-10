@@ -178,3 +178,71 @@ def test_roster_gaps_lists_unknown_codes_sorted():
 def test_roster_gaps_empty_when_all_known():
     raw = {"drivers": {"VER": {}}}
     assert sync_service.roster_gaps(["VER"], raw) == []
+
+
+# --- revised results ------------------------------------------------------
+# Jolpica corrects results after the fact: a penalty applied on Monday, a
+# disqualification a week later. The CSV keeps what was true at first fetch.
+
+
+def test_plan_revisions_lists_what_changed():
+    csv_points = {"LEC": {19: 12, 20: 6}, "LAW": {19: 2, 20: 4}, "NOR": {19: 10, 20: 25}}
+    api_points = {
+        19: {"LEC": 12, "LAW": 2, "NOR": 10},
+        20: {"LEC": 4, "LAW": 6, "NOR": 25},
+    }
+    revisions = sync_service.plan_revisions(csv_points, api_points, rounds={19, 20})
+    assert revisions == {20: {"LAW": (4, 6), "LEC": (6, 4)}}
+
+
+def test_plan_revisions_zeroes_a_driver_dropped_from_the_results():
+    csv_points = {"PIA": {19: 6}, "LAW": {19: 2}}
+    revisions = sync_service.plan_revisions(csv_points, {19: {"LAW": 6}}, rounds={19})
+    assert revisions == {19: {"LAW": (2, 6), "PIA": (6, 0)}}
+
+
+def test_plan_revisions_adds_a_driver_the_csv_never_had():
+    revisions = sync_service.plan_revisions(
+        {"VER": {1: 25}}, {1: {"VER": 25, "HIR": 1}}, rounds={1}
+    )
+    assert revisions == {1: {"HIR": (0, 1)}}
+
+
+def test_plan_revisions_ignores_a_round_the_api_has_no_results_for():
+    # An empty answer is the API having nothing to say, not everyone scoring zero.
+    csv_points = {"VER": {1: 25}}
+    assert sync_service.plan_revisions(csv_points, {}, rounds={1}) == {}
+    assert sync_service.plan_revisions(csv_points, {1: {}}, rounds={1}) == {}
+
+
+def test_plan_revisions_only_looks_at_the_rounds_it_is_given():
+    revisions = sync_service.plan_revisions(
+        {"VER": {1: 25, 2: 25}}, {1: {"VER": 18}, 2: {"VER": 18}}, rounds={2}
+    )
+    assert list(revisions) == [2]
+
+
+def test_confirm_rounds_accepts_a_round_still_at_the_same_circuit():
+    raw = {"rounds": {"1": "AUS", "2": "CHN"}}
+    schedule = [_round(1, "albert_park"), _round(2, "shanghai")]
+    same, warnings = sync_service.confirm_rounds(raw, schedule, raced_rounds={1, 2})
+    assert same == {1, 2}
+    assert warnings == []
+
+
+def test_confirm_rounds_rejects_a_renumbered_round():
+    # Jolpica renumbers when the calendar changes. Round 2's results would then
+    # belong to a different race than the one in the CSV's round 2 column.
+    raw = {"rounds": {"1": "AUS", "2": "CHN"}}
+    schedule = [_round(1, "albert_park"), _round(2, "suzuka"), _round(3, "shanghai")]
+    same, warnings = sync_service.confirm_rounds(raw, schedule, raced_rounds={1, 2})
+    assert same == {1}
+    assert len(warnings) == 1
+    assert "round 2" in warnings[0]
+
+
+def test_confirm_rounds_skips_a_round_the_schedule_dropped():
+    raw = {"rounds": {"1": "AUS"}}
+    same, warnings = sync_service.confirm_rounds(raw, [], raced_rounds={1})
+    assert same == set()
+    assert warnings == []

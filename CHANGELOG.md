@@ -63,6 +63,14 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- `f1 sync` corrects results that Jolpica revised after they were fetched, such
+  as a time penalty applied the day after or a later disqualification. A round
+  used to keep whatever was published first, so the 2026 Mexico City and São
+  Paulo rounds were built on points nine drivers no longer had. Sync now
+  compares every raced round with the season's results on each run, rewrites
+  what changed and rebuilds. It also adds a sprint that wasn't posted yet at the
+  first fetch. A round is left alone when the schedule shows another circuit at
+  its number, since that is a renumbered calendar and not a revision.
 - A frontend build, a rebuild, a sync or a season JSON edit no longer needs a
   server restart. The running server picks up new assets and data on its next
   request, where it used to link to deleted asset files and serve old results

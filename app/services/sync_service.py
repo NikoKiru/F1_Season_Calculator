@@ -14,6 +14,7 @@ CSV/JSON files. Policy encoded here:
 from __future__ import annotations
 
 from datetime import date
+from typing import Any
 
 from app.services import circuit_codes
 
@@ -102,6 +103,66 @@ def plan_missing_rounds(
         if race_date <= today and entry["round"] not in csv_rounds:
             due.append(entry["round"])
     return sorted(due)
+
+
+def confirm_rounds(
+    raw: dict[str, Any], schedule: list[dict[str, Any]], raced_rounds: set[int]
+) -> tuple[set[int], list[str]]:
+    """Raced rounds the schedule still shows at the same circuit.
+
+    Jolpica renumbers rounds when the calendar changes, and a raced round keeps
+    its number here. Results may only be compared for a round whose number
+    still means the same race on both sides. Returns (rounds, warnings); a
+    round the schedule no longer lists is left out without a warning.
+    """
+    labels = raw.get("rounds", {})
+    scheduled = {entry["round"]: entry for entry in schedule}
+    same: set[int] = set()
+    warnings: list[str] = []
+    for round_num in sorted(raced_rounds):
+        entry = scheduled.get(round_num)
+        if entry is None:
+            continue
+        label, _ = _label_for(entry)
+        ours = labels.get(str(round_num))
+        if label == ours:
+            same.add(round_num)
+        else:
+            warnings.append(
+                f"round {round_num}: the schedule has {label} there, the season file "
+                f"{ours} — results not rechecked"
+            )
+    return same, warnings
+
+
+def plan_revisions(
+    csv_points: dict[str, dict[int, int]],
+    api_points: dict[int, dict[str, int]],
+    *,
+    rounds: set[int],
+) -> dict[int, dict[str, tuple[int, int]]]:
+    """Points that differ between the CSV and the API, for one session type.
+
+    Returns {round: {driver_code: (csv_points, api_points)}} holding only the
+    drivers that differ. A driver missing on one side counts as zero there. A
+    round the API returns no results for is skipped: that is the API having
+    nothing to say, not everyone scoring nothing.
+    """
+    revisions: dict[int, dict[str, tuple[int, int]]] = {}
+    for round_num in sorted(rounds):
+        api = api_points.get(round_num)
+        if not api:
+            continue
+        codes = set(api) | {code for code, per in csv_points.items() if round_num in per}
+        changed = {
+            code: (ours, theirs)
+            for code in sorted(codes)
+            if (ours := csv_points.get(code, {}).get(round_num, 0))
+            != (theirs := api.get(code, 0))
+        }
+        if changed:
+            revisions[round_num] = changed
+    return revisions
 
 
 def merge_counts(

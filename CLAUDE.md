@@ -41,7 +41,9 @@ The sources of truth are `data/championships_{YYYY}.csv` (points per round, see 
 
 `app/pipeline/rebuild.py::rebuild_season` is the single regeneration path, used by `sync`, `add-race` and `fetch-race`: combinator → `writer` → `stats_compute`, then `constructor_builder` → `constructor_writer` → `constructor_stats_compute`.
 
-A finished rebuild stamps the CSV's SHA-256 into `season_builds` as its last step, and `clear_season` removes the stamp. `f1 sync` rebuilds whenever `rebuild.is_current` is false, which covers new results, a `git pull` and an interrupted build. `sync` writes data files only after all fetches succeed, so an interrupted run is simply redone. The Tkinter manager's **Build** button (`tools/manage_ui.py`) runs the CLI steps separately and leaves no stamp, so the next `f1 sync` rebuilds once more.
+A finished rebuild stamps the CSV's SHA-256 into `season_builds` as its last step, and `clear_season` removes the stamp. `f1 sync` rebuilds whenever `rebuild.is_current` is false, which covers new results, a `git pull` and an interrupted build.
+
+Jolpica revises results after the fact, so `f1 sync` also compares every round already in the CSV with the season-wide results (`fetch_season_results`, `fetch_season_sprints`) and rewrites the points that changed. It only compares a round whose label in the season JSON still matches the circuit the schedule has at that number (`sync_service.confirm_rounds`), because Jolpica renumbers rounds and raced rounds keep their numbers here. `sync` writes data files only after all fetches succeed, so an interrupted run is simply redone. The Tkinter manager's **Build** button (`tools/manage_ui.py`) runs the CLI steps separately and leaves no stamp, so the next `f1 sync` rebuilds once more.
 
 ### Scale
 
