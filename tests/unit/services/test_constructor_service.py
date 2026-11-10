@@ -160,3 +160,89 @@ def test_wins_can_be_narrowed_to_one_season_length(conn):
     assert narrowed["championships"] == expected
     assert narrowed["total_count"] == len(expected)
     assert narrowed["num_races"] == 1
+
+
+# --- aggregates come from the precomputed cache ---------------------------
+# Same contract as the driver side: no pass over every scenario per request.
+
+
+def _winner(conn) -> str:
+    """A constructor that wins one-round scenarios and longer ones too."""
+    from sqlalchemy import text
+
+    row = conn.execute(
+        text(
+            "SELECT constructor_name FROM constructor_win_probability_cache "
+            "WHERE season = 9999 AND win_count > 0 GROUP BY constructor_name "
+            "HAVING MIN(num_races) = 1 AND COUNT(*) > 1 LIMIT 1"
+        )
+    ).one()
+    return row.constructor_name
+
+
+def _zero_one_round_wins(conn, name: str) -> None:
+    from sqlalchemy import text
+
+    conn.execute(
+        text(
+            "UPDATE constructor_win_probability_cache SET win_count = 0 "
+            "WHERE season = 9999 AND constructor_name = :c AND num_races = 1"
+        ),
+        {"c": name},
+    )
+
+
+def _empty_win_cache(conn) -> None:
+    from sqlalchemy import text
+
+    conn.execute(
+        text("DELETE FROM constructor_win_probability_cache WHERE season = 9999")
+    )
+
+
+def test_all_wins_reads_the_precomputed_cache(conn):
+    name = _winner(conn)
+    before = constructor_service.all_wins(conn, 9999)[name]
+    cache.clear()
+    _zero_one_round_wins(conn, name)
+    assert 0 < constructor_service.all_wins(conn, 9999)[name] < before
+
+
+def test_all_wins_falls_back_when_the_cache_is_empty(conn):
+    baseline = constructor_service.all_wins(conn, 9999)
+    cache.clear()
+    _empty_win_cache(conn)
+    assert constructor_service.all_wins(conn, 9999) == baseline
+
+
+def test_min_races_to_win_reads_the_precomputed_cache(conn):
+    name = _winner(conn)
+    assert constructor_service.min_races_to_win(conn, 9999)[name] == 1
+    cache.clear()
+    _zero_one_round_wins(conn, name)
+    assert constructor_service.min_races_to_win(conn, 9999)[name] > 1
+
+
+def test_min_races_to_win_falls_back_when_the_cache_is_empty(conn):
+    baseline = constructor_service.min_races_to_win(conn, 9999)
+    cache.clear()
+    _empty_win_cache(conn)
+    assert constructor_service.min_races_to_win(conn, 9999) == baseline
+
+
+def test_stats_read_wins_per_length_from_the_cache(conn):
+    name = _winner(conn)
+    assert constructor_service.get_stats(conn, name, 9999)["min_races_to_win"] == 1
+    cache.clear()
+    _zero_one_round_wins(conn, name)
+    stats = constructor_service.get_stats(conn, name, 9999)
+    assert 1 not in stats["win_probability_by_length"]
+    assert stats["min_races_to_win"] > 1
+
+
+def test_stats_fall_back_to_live_counts_when_the_cache_is_empty(conn):
+    name = _winner(conn)
+    baseline = constructor_service.get_stats(conn, name, 9999)
+    cache.clear()
+    _empty_win_cache(conn)
+    assert constructor_service.get_stats(conn, name, 9999) == baseline

@@ -71,6 +71,18 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   400 on the scenario list and API, and Driver Positions had no button for them.
 - Scenario lists no longer sort the whole position on every request: a busy
   driver's first page went from about 570 ms to under 1 ms.
+- Driver and constructor pages, Min Races to Win and the home page read their
+  win counts from the precomputed cache tables. They used to count over every
+  scenario of the season on a cold cache: at 20 rounds a driver page took 0.5
+  to 1 s and Min Races to Clinch 3.8 s, and both doubled with every round. All
+  now answer in about 20 ms.
+- Create Championship finds its scenario through the rounds index, in about
+  15 ms. The search used to filter the whole season, about 400 ms at 20 rounds.
+- A season that doesn't exist (`?season=1999`) answers 404. It used to be a 500.
+- Pages answer a bad address with the error page, not raw JSON:
+  `/driver/VER/position/abc` is a 404 and `?page=0` a 400 that says what was
+  wrong. The error page also gives the reason when there is one, such as an
+  unknown driver code. The API still answers 422 with `VALIDATION_ERROR`.
 
 - Points ties are now split on countback (wins, then P2s, down to P10, race
   finishes only) for drivers and constructors. They used to fall back to CSV

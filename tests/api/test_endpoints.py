@@ -196,3 +196,45 @@ def test_api_404_returns_json(client):
     r = client.get("/api/does-not-exist")
     assert r.status_code == 404
     assert r.headers["content-type"].startswith("application/json")
+
+
+# --- seasons that don't exist ---------------------------------------------
+
+
+def test_unknown_season_is_a_404_for_the_api(client):
+    r = client.get("/api/drivers/VER/stats", params={"season": 1999})
+    assert r.status_code == 404
+    assert r.json()["detail"]["code"] == "SEASON_NOT_FOUND"
+
+
+def test_unknown_season_is_a_404_page(client):
+    r = client.get("/?season=1999", headers={"accept": "text/html"})
+    assert r.status_code == 404
+    assert "text/html" in r.headers["content-type"]
+    assert "No data for the 1999 season" in r.text
+
+
+# --- pages answer bad input with a page, not JSON -------------------------
+
+
+def test_bad_page_number_renders_the_error_page(client):
+    r = client.get(
+        "/driver/VER/position/1?page=0&season=9999", headers={"accept": "text/html"}
+    )
+    assert r.status_code == 400
+    assert "text/html" in r.headers["content-type"]
+    assert "Back to home" in r.text
+
+
+def test_malformed_page_url_is_a_404_page(client):
+    r = client.get(
+        "/driver/VER/position/abc?season=9999", headers={"accept": "text/html"}
+    )
+    assert r.status_code == 404
+    assert "text/html" in r.headers["content-type"]
+
+
+def test_error_page_says_what_was_wrong(client):
+    r = client.get("/driver/ZZZ?season=9999", headers={"accept": "text/html"})
+    assert r.status_code == 404
+    assert "not found in 9999 roster" in r.text

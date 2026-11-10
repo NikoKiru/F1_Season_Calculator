@@ -202,12 +202,14 @@ def _compute_stats(conn: Connection, constructor_name: str, season: int) -> dict
     )
     total_championships = _sum_total_championships(seasons_per_length)
 
+    wins_by_len = q.wins_by_length(conn, constructor_name, season)
+
     if precomputed:
         total_wins = int(precomputed["win_count"])
         highest_position = int(precomputed["highest_position"])
         highest_position_cid = precomputed["highest_position_championship_id"]
     else:
-        total_wins = q.total_wins(conn, constructor_name, season)
+        total_wins = sum(wins_by_len.values())
         highest_position = len(sd.teams) or 1
         highest_position_cid = None
 
@@ -216,9 +218,8 @@ def _compute_stats(conn: Connection, constructor_name: str, season: int) -> dict
         if total_championships else 0.0
     )
 
-    min_races = q.min_race_to_win(conn, constructor_name, season)
+    min_races = min(wins_by_len) if wins_by_len else None
 
-    wins_by_len = q.wins_by_length(conn, constructor_name, season)
     win_prob = {
         length: round((wins / seasons_per_length.get(length, 1)) * 100, 2)
         for length, wins in wins_by_len.items()

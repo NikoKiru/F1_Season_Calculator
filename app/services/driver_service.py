@@ -14,7 +14,7 @@ from app.cache import service as cache
 from app.data.queries import championships as q_c
 from app.data.queries import drivers as q_d
 from app.data.queries import statistics as q_s
-from app.services import season_service
+from app.services import championship_service, season_service
 
 
 def _sum_total_championships(seasons_per_length: dict[int, int]) -> int:
@@ -35,26 +35,24 @@ def _compute_stats(conn: Connection, driver_code: str, season: int) -> dict[str,
     precomputed = q_s.driver_statistics(conn, driver_code, season)
 
     # Shared across all drivers — cached separately
-    seasons_per_length = cache.get_or_compute(
-        f"seasons-per-length:{season}",
-        lambda: q_c.seasons_per_length(conn, season),
-    )
+    seasons_per_length = championship_service.seasons_per_length(conn, season)
     total_championships = _sum_total_championships(seasons_per_length)
+
+    wins_by_len = q_d.wins_by_length(conn, driver_code, season)
 
     if precomputed:
         total_wins = int(precomputed["win_count"])
         highest_position = int(precomputed["highest_position"])
         highest_position_cid = precomputed["highest_position_championship_id"]
     else:
-        total_wins = q_d.total_wins(conn, driver_code, season)
+        total_wins = sum(wins_by_len.values())
         highest_position = 20
         highest_position_cid = None
 
     win_pct = round((total_wins / total_championships) * 100, 2) if total_championships else 0.0
 
-    min_races = q_d.min_race_to_win(conn, driver_code, season)
+    min_races = min(wins_by_len) if wins_by_len else None
 
-    wins_by_len = q_d.wins_by_length(conn, driver_code, season)
     win_prob = {
         length: round((wins / seasons_per_length.get(length, 1)) * 100, 2)
         for length, wins in wins_by_len.items()

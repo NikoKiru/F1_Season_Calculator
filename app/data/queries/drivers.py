@@ -20,36 +20,35 @@ def position_counts(conn: Connection, driver_code: str, season: int) -> dict[int
 
 
 def wins_by_length(conn: Connection, driver_code: str, season: int) -> dict[int, int]:
+    """Titles per season length, for the lengths the driver wins at.
+
+    Read from `win_probability_cache`. Counting live means reading every
+    scenario of the season, so that only happens before compute-stats has run.
+    """
     rows = conn.execute(
         text(
-            "SELECT num_races, COUNT(*) AS wins FROM championship_results "
-            "WHERE winner = :d AND season = :s GROUP BY num_races"
+            "SELECT num_races, win_count AS wins FROM win_probability_cache "
+            "WHERE driver_code = :d AND season = :s"
         ),
         {"d": driver_code, "s": season},
     ).mappings().all()
-    return {int(r["num_races"]): int(r["wins"]) for r in rows}
+    if not rows and not _win_cache_exists(conn, season):
+        rows = conn.execute(
+            text(
+                "SELECT num_races, COUNT(*) AS wins FROM championship_results "
+                "WHERE winner = :d AND season = :s GROUP BY num_races"
+            ),
+            {"d": driver_code, "s": season},
+        ).mappings().all()
+    return {int(r["num_races"]): int(r["wins"]) for r in rows if r["wins"]}
 
 
-def min_race_to_win(conn: Connection, driver_code: str, season: int) -> int | None:
+def _win_cache_exists(conn: Connection, season: int) -> bool:
     row = conn.execute(
-        text(
-            "SELECT MIN(num_races) AS m FROM championship_results "
-            "WHERE winner = :d AND season = :s"
-        ),
-        {"d": driver_code, "s": season},
-    ).one()
-    return int(row.m) if row.m is not None else None
-
-
-def total_wins(conn: Connection, driver_code: str, season: int) -> int:
-    row = conn.execute(
-        text(
-            "SELECT COUNT(*) AS c FROM championship_results "
-            "WHERE winner = :d AND season = :s"
-        ),
-        {"d": driver_code, "s": season},
-    ).one()
-    return int(row.c)
+        text("SELECT 1 FROM win_probability_cache WHERE season = :s LIMIT 1"),
+        {"s": season},
+    ).first()
+    return row is not None
 
 
 def head_to_head_against_all(conn: Connection, driver_code: str, season: int) -> list[dict]:
