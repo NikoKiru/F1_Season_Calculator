@@ -11,7 +11,14 @@ from app.services import season_service
 def current_season(
     season: Annotated[int | None, Query(description="Season year; defaults to the latest configured.")] = None,
 ) -> int:
-    return season if season is not None else season_service.default_season()
+    if season is None:
+        return season_service.default_season()
+    if season not in season_service.available_seasons():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "SEASON_NOT_FOUND", "message": f"No data for the {season} season"},
+        )
+    return season
 
 
 SeasonDep = Annotated[int, Depends(current_season)]

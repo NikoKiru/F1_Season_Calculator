@@ -88,6 +88,10 @@ def key_min_races_to_win(season: int) -> str:
     return f"min-races:{season}"
 
 
+def key_seasons_per_length(season: int) -> str:
+    return f"seasons-per-length:{season}"
+
+
 def key_driver_stats(code: str, season: int) -> str:
     return f"driver-stats:{season}:{code}"
 

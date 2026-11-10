@@ -114,8 +114,15 @@ def _season_csv_path(season: int):
 
 # --- public API ------------------------------------------------------------
 
+def seasons_per_length(conn: Connection, season: int) -> dict[int, int]:
+    """Scenario count per season length. The values add up to the whole season."""
+    return cache.get_or_compute(
+        cache.key_seasons_per_length(season), lambda: q.seasons_per_length(conn, season)
+    )
+
+
 def get_page(conn: Connection, season: int, page: int, per_page: int) -> dict:
-    total = q.count_for_season(conn, season)
+    total = sum(seasons_per_length(conn, season).values())
     offset = (page - 1) * per_page
     rows = q.page(conn, season, per_page, offset)
     total_pages = (total + per_page - 1) // per_page if total else 0

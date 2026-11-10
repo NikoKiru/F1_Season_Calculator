@@ -7,30 +7,6 @@ from sqlalchemy import Connection, text
 # --- championship_results-equivalent --------------------------------------
 
 
-def count_for_season(conn: Connection, season: int) -> int:
-    row = conn.execute(
-        text(
-            "SELECT COUNT(*) AS c FROM constructor_championship_results "
-            "WHERE season = :s"
-        ),
-        {"s": season},
-    ).one()
-    return int(row.c)
-
-
-def by_id(conn: Connection, championship_id: int) -> dict | None:
-    row = conn.execute(
-        text(
-            "SELECT championship_id, season, num_races, rounds, standings, "
-            "       winner, points "
-            "FROM constructor_championship_results "
-            "WHERE championship_id = :id"
-        ),
-        {"id": championship_id},
-    ).mappings().one_or_none()
-    return dict(row) if row else None
-
-
 def latest_for_season(conn: Connection, season: int) -> dict | None:
     """The longest-num_races championship — used as the 'live' WCC standing."""
     row = conn.execute(
@@ -47,39 +23,71 @@ def latest_for_season(conn: Connection, season: int) -> dict | None:
 
 
 def winner_counts(conn: Connection, season: int) -> list[dict]:
+    """Titles per constructor. Like the other aggregates here it reads the
+    win-probability cache, and counts live only before compute-stats has run."""
     rows = conn.execute(
         text(
-            "SELECT winner, COUNT(*) AS wins FROM constructor_championship_results "
-            "WHERE winner IS NOT NULL AND season = :s "
-            "GROUP BY winner ORDER BY wins DESC"
+            "SELECT constructor_name AS winner, SUM(win_count) AS wins "
+            "FROM constructor_win_probability_cache WHERE season = :s "
+            "GROUP BY constructor_name HAVING SUM(win_count) > 0 "
+            "ORDER BY wins DESC, winner"
         ),
         {"s": season},
     ).mappings().all()
+    if not rows:
+        rows = conn.execute(
+            text(
+                "SELECT winner, COUNT(*) AS wins FROM constructor_championship_results "
+                "WHERE winner IS NOT NULL AND season = :s "
+                "GROUP BY winner ORDER BY wins DESC, winner"
+            ),
+            {"s": season},
+        ).mappings().all()
     return [dict(r) for r in rows]
 
 
 def min_races_per_winner(conn: Connection, season: int) -> list[dict]:
     rows = conn.execute(
         text(
-            "SELECT winner, MIN(num_races) AS min_races "
-            "FROM constructor_championship_results "
-            "WHERE winner IS NOT NULL AND season = :s "
-            "GROUP BY winner ORDER BY min_races ASC"
+            "SELECT constructor_name AS winner, MIN(num_races) AS min_races "
+            "FROM constructor_win_probability_cache "
+            "WHERE season = :s AND win_count > 0 "
+            "GROUP BY constructor_name ORDER BY min_races ASC, winner"
         ),
         {"s": season},
     ).mappings().all()
+    if not rows:
+        rows = conn.execute(
+            text(
+                "SELECT winner, MIN(num_races) AS min_races "
+                "FROM constructor_championship_results "
+                "WHERE winner IS NOT NULL AND season = :s "
+                "GROUP BY winner ORDER BY min_races ASC, winner"
+            ),
+            {"s": season},
+        ).mappings().all()
     return [dict(r) for r in rows]
 
 
 def seasons_per_length(conn: Connection, season: int) -> dict[int, int]:
+    """Scenario count per season length. Every cache row of a length carries it."""
     rows = conn.execute(
         text(
-            "SELECT num_races, COUNT(*) AS total "
-            "FROM constructor_championship_results "
+            "SELECT num_races, MAX(total_at_length) AS total "
+            "FROM constructor_win_probability_cache "
             "WHERE season = :s GROUP BY num_races"
         ),
         {"s": season},
     ).mappings().all()
+    if not rows:
+        rows = conn.execute(
+            text(
+                "SELECT num_races, COUNT(*) AS total "
+                "FROM constructor_championship_results "
+                "WHERE season = :s GROUP BY num_races"
+            ),
+            {"s": season},
+        ).mappings().all()
     return {int(r["num_races"]): int(r["total"]) for r in rows}
 
 
@@ -284,34 +292,34 @@ def position_championships_paginated(
 def wins_by_length(
     conn: Connection, constructor_name: str, season: int
 ) -> dict[int, int]:
+    """Titles per season length, for the lengths the constructor wins at.
+    Read from the cache; the driver version in drivers.py says why."""
     rows = conn.execute(
         text(
-            "SELECT num_races, COUNT(*) AS wins "
-            "FROM constructor_championship_results "
-            "WHERE winner = :c AND season = :s GROUP BY num_races"
+            "SELECT num_races, win_count AS wins "
+            "FROM constructor_win_probability_cache "
+            "WHERE constructor_name = :c AND season = :s"
         ),
         {"c": constructor_name, "s": season},
     ).mappings().all()
-    return {int(r["num_races"]): int(r["wins"]) for r in rows}
+    if not rows and not _win_cache_exists(conn, season):
+        rows = conn.execute(
+            text(
+                "SELECT num_races, COUNT(*) AS wins "
+                "FROM constructor_championship_results "
+                "WHERE winner = :c AND season = :s GROUP BY num_races"
+            ),
+            {"c": constructor_name, "s": season},
+        ).mappings().all()
+    return {int(r["num_races"]): int(r["wins"]) for r in rows if r["wins"]}
 
 
-def min_race_to_win(conn: Connection, constructor_name: str, season: int) -> int | None:
+def _win_cache_exists(conn: Connection, season: int) -> bool:
     row = conn.execute(
         text(
-            "SELECT MIN(num_races) AS m FROM constructor_championship_results "
-            "WHERE winner = :c AND season = :s"
+            "SELECT 1 FROM constructor_win_probability_cache "
+            "WHERE season = :s LIMIT 1"
         ),
-        {"c": constructor_name, "s": season},
-    ).one()
-    return int(row.m) if row.m is not None else None
-
-
-def total_wins(conn: Connection, constructor_name: str, season: int) -> int:
-    row = conn.execute(
-        text(
-            "SELECT COUNT(*) AS c FROM constructor_championship_results "
-            "WHERE winner = :c AND season = :s"
-        ),
-        {"c": constructor_name, "s": season},
-    ).one()
-    return int(row.c)
+        {"s": season},
+    ).first()
+    return row is not None

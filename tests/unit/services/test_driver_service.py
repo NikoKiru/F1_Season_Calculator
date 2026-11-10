@@ -248,6 +248,56 @@ def test_wins_can_be_narrowed_to_one_season_length(conn):
     assert narrowed["num_races"] == 1
 
 
+# --- wins per length come from the precomputed cache ----------------------
+# Counting a driver's wins per length live reads every scenario of the season.
+
+
+def test_stats_read_wins_per_length_from_the_cache(conn):
+    from sqlalchemy import text
+
+    assert driver_service.get_stats(conn, "VER", 9999)["min_races_to_win"] == 1
+    cache.clear()
+    conn.execute(
+        text(
+            "UPDATE win_probability_cache SET win_count = 0 "
+            "WHERE season = 9999 AND driver_code = 'VER' AND num_races = 1"
+        )
+    )
+    stats = driver_service.get_stats(conn, "VER", 9999)
+    assert 1 not in stats["win_probability_by_length"]
+    assert stats["min_races_to_win"] == 2
+
+
+def test_stats_read_scenarios_per_length_from_the_cache(conn):
+    from sqlalchemy import text
+
+    conn.execute(
+        text(
+            "UPDATE win_probability_cache SET total_at_length = 100 "
+            "WHERE season = 9999 AND num_races = 4"
+        )
+    )
+    stats = driver_service.get_stats(conn, "VER", 9999)
+    assert stats["seasons_per_length"][4] == 100
+    assert stats["total_championships"] == 114
+
+
+def test_stats_fall_back_to_live_counts_when_the_cache_is_empty(conn):
+    from sqlalchemy import text
+
+    baseline = driver_service.get_stats(conn, "VER", 9999)
+    cache.clear()
+    conn.execute(text("DELETE FROM win_probability_cache WHERE season = 9999"))
+    assert driver_service.get_stats(conn, "VER", 9999) == baseline
+
+
+def test_stats_for_a_driver_who_never_wins(conn):
+    stats = driver_service.get_stats(conn, "LEC", 9999)
+    assert stats["total_wins"] == 0
+    assert stats["min_races_to_win"] is None
+    assert stats["win_probability_by_length"] == {}
+
+
 def test_max_position_follows_the_roster(conn):
     assert driver_service.max_position(9999) == 3
 

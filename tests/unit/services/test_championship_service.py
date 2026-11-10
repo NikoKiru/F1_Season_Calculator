@@ -78,3 +78,78 @@ def test_min_races_to_win_for_each_winner(conn):
     assert set(min_races.keys()) == set(wins.keys())
     for _d, n in min_races.items():
         assert 1 <= n <= 4
+
+
+# --- aggregates come from the precomputed cache ---------------------------
+# Counting over championship_results costs a pass over the whole season per
+# request: hundreds of milliseconds at 20 rounds, doubling with every round.
+# Each test skews win_probability_cache inside this rolled-back transaction
+# and expects the skew back, or empties it and expects the live answer.
+
+
+def _run(conn, sql: str) -> None:
+    from sqlalchemy import text
+
+    conn.execute(text(sql))
+
+
+def test_all_wins_reads_the_precomputed_cache(conn):
+    _run(
+        conn,
+        "UPDATE win_probability_cache SET win_count = 40 "
+        "WHERE season = 9999 AND driver_code = 'LEC' AND num_races = 1",
+    )
+    assert championship_service.all_wins(conn, 9999)["LEC"] == 40
+
+
+def test_all_wins_falls_back_when_the_cache_is_empty(conn):
+    baseline = championship_service.all_wins(conn, 9999)
+    cache.clear()
+    _run(conn, "DELETE FROM win_probability_cache WHERE season = 9999")
+    assert championship_service.all_wins(conn, 9999) == baseline
+
+
+def test_min_races_to_win_reads_the_precomputed_cache(conn):
+    assert championship_service.min_races_to_win(conn, 9999)["VER"] == 1
+    cache.clear()
+    _run(
+        conn,
+        "UPDATE win_probability_cache SET win_count = 0 "
+        "WHERE season = 9999 AND driver_code = 'VER' AND num_races = 1",
+    )
+    assert championship_service.min_races_to_win(conn, 9999)["VER"] == 2
+
+
+def test_min_races_to_win_falls_back_when_the_cache_is_empty(conn):
+    baseline = championship_service.min_races_to_win(conn, 9999)
+    cache.clear()
+    _run(conn, "DELETE FROM win_probability_cache WHERE season = 9999")
+    assert championship_service.min_races_to_win(conn, 9999) == baseline
+
+
+def test_page_total_reads_the_precomputed_cache(conn):
+    _run(
+        conn,
+        "UPDATE win_probability_cache SET total_at_length = 100 "
+        "WHERE season = 9999 AND num_races = 4",
+    )
+    # 4 + 6 + 4 one- to three-round scenarios, plus the skewed full season.
+    assert championship_service.get_page(conn, 9999, 1, 1)["total_results"] == 114
+
+
+def test_page_total_falls_back_when_the_cache_is_empty(conn):
+    _run(conn, "DELETE FROM win_probability_cache WHERE season = 9999")
+    assert championship_service.get_page(conn, 9999, 1, 1)["total_results"] == 15
+
+
+def test_scenario_search_is_an_index_lookup(conn):
+    """Left to itself the planner filters the whole season by `rounds`: without
+    statistics the season index looks as selective as the rounds index."""
+    from sqlalchemy import text
+
+    from app.data.queries import championships as q
+
+    plan = conn.execute(
+        text("EXPLAIN QUERY PLAN " + q.BY_ROUNDS), {"r": "1,2", "s": 9999}
+    ).all()
+    assert any("idx_rounds" in row.detail for row in plan), plan
