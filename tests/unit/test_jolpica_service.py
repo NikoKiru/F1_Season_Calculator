@@ -168,3 +168,99 @@ def test_429_exhaustion_raises_without_final_sleep(monkeypatch):
         jolpica_service.fetch_race(2026, 3, client=c)
     assert calls["n"] == 3  # initial + 2 retries
     assert sleeps == [2.0, 2.0]  # no sleep after the final 429
+
+
+# --- whole-season results -------------------------------------------------
+
+
+def _season_page(races: list[dict], *, total: int, offset: int) -> dict:
+    return {
+        "MRData": {
+            "limit": "100",
+            "offset": str(offset),
+            "total": str(total),
+            "RaceTable": {"Races": races},
+        }
+    }
+
+
+def _result(code: str, points: int) -> dict:
+    return {"Driver": {"code": code}, "points": str(points)}
+
+
+def test_fetch_season_results_groups_points_by_round():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path.endswith("/2026/results.json")
+        return httpx.Response(
+            200,
+            json=_season_page(
+                [
+                    {"round": "1", "Results": [_result("VER", 25), _result("NOR", 18)]},
+                    {"round": "2", "Results": [_result("NOR", 25), _result("VER", 18)]},
+                ],
+                total=4,
+                offset=0,
+            ),
+        )
+
+    with _client(handler) as c:
+        result = jolpica_service.fetch_season_results(2026, client=c)
+    assert result == {1: {"VER": 25, "NOR": 18}, 2: {"NOR": 25, "VER": 18}}
+
+
+def test_fetch_season_results_joins_a_race_split_across_pages(monkeypatch):
+    """Pages hold 100 result rows, so a race usually straddles two of them."""
+    monkeypatch.setattr(jolpica_service.time, "sleep", lambda _: None)
+    offsets: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        offset = request.url.params["offset"]
+        offsets.append(offset)
+        assert request.url.params["limit"] == "100"
+        if offset == "0":
+            races = [{"round": "5", "Results": [_result("VER", 25)]}]
+        else:
+            races = [
+                {"round": "5", "Results": [_result("NOR", 18)]},
+                {"round": "6", "Results": [_result("LEC", 25)]},
+            ]
+        return httpx.Response(200, json=_season_page(races, total=103, offset=int(offset)))
+
+    with _client(handler) as c:
+        result = jolpica_service.fetch_season_results(2026, client=c)
+    assert offsets == ["0", "100"]
+    assert result == {5: {"VER": 25, "NOR": 18}, 6: {"LEC": 25}}
+
+
+def test_fetch_season_results_is_empty_before_the_first_race():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=_season_page([], total=0, offset=0))
+
+    with _client(handler) as c:
+        assert jolpica_service.fetch_season_results(2026, client=c) == {}
+
+
+def test_fetch_season_sprints_reads_sprint_results():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path.endswith("/2026/sprint.json")
+        return httpx.Response(
+            200,
+            json=_season_page(
+                [{"round": "2", "SprintResults": [_result("VER", 8), _result("NOR", 7)]}],
+                total=2,
+                offset=0,
+            ),
+        )
+
+    with _client(handler) as c:
+        assert jolpica_service.fetch_season_sprints(2026, client=c) == {
+            2: {"VER": 8, "NOR": 7}
+        }
+
+
+def test_fetch_season_sprints_is_empty_for_a_season_without_sprints():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, json={})
+
+    with _client(handler) as c:
+        assert jolpica_service.fetch_season_sprints(2026, client=c) == {}

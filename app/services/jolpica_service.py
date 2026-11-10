@@ -14,6 +14,7 @@ MRData.RaceTable.Races[0].Results. Driver codes are 3-letter uppercase.
 from __future__ import annotations
 
 import time
+from typing import Any
 
 import httpx
 
@@ -125,6 +126,72 @@ def fetch_weekend(
     finally:
         if client is None:
             c.close()
+
+
+# --- Whole-season results ---------------------------------------------------
+#
+# One listing per session type instead of one request per round. `f1 sync` uses
+# it to notice results Jolpica revised after they were first fetched.
+
+PAGE_SIZE = 100  # the most Jolpica returns per request
+
+
+def _fetch_all_races(
+    path: str, *, client: httpx.Client | None = None
+) -> list[dict[str, Any]]:
+    """Every race entry of a paginated listing. Pages count result rows, so a
+    race usually appears on two pages with part of its rows on each."""
+    c = client or httpx.Client(timeout=DEFAULT_TIMEOUT)
+    try:
+        races: list[dict[str, Any]] = []
+        offset = 0
+        while True:
+            payload = _fetch(f"{path}?limit={PAGE_SIZE}&offset={offset}", client=c)
+            data = payload.get("MRData", {})
+            races.extend(data.get("RaceTable", {}).get("Races", []))
+            try:
+                total = int(data.get("total", 0))
+            except (TypeError, ValueError):
+                total = 0
+            offset += PAGE_SIZE
+            if offset >= total:
+                return races
+            time.sleep(THROTTLE_SECONDS)
+    finally:
+        if client is None:
+            c.close()
+
+
+def _points_by_round(
+    races: list[dict[str, Any]], key: str
+) -> dict[int, dict[str, int]]:
+    out: dict[int, dict[str, int]] = {}
+    for race in races:
+        try:
+            round_number = int(str(race.get("round")))
+        except ValueError:
+            continue
+        out.setdefault(round_number, {}).update(_to_points_map(race.get(key, [])))
+    return out
+
+
+def fetch_season_results(
+    season: int, *, client: httpx.Client | None = None
+) -> dict[int, dict[str, int]]:
+    """Return {round: {driver_code: race_points}} for every race run so far."""
+    races = _fetch_all_races(f"/{season}/results.json", client=client)
+    return _points_by_round(races, "Results")
+
+
+def fetch_season_sprints(
+    season: int, *, client: httpx.Client | None = None
+) -> dict[int, dict[str, int]]:
+    """Return {round: {driver_code: sprint_points}}, empty without sprints."""
+    try:
+        races = _fetch_all_races(f"/{season}/sprint.json", client=client)
+    except RoundNotFoundError:
+        return {}
+    return _points_by_round(races, "SprintResults")
 
 
 # --- Season schedule + rosters ---------------------------------------------

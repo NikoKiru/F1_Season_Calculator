@@ -83,7 +83,10 @@ results are never renamed or removed.
 
 Both `rounds` and `sprint_rounds` are maintained automatically by
 `f1 sync`; hand-edit only when you want a custom label for a round that
-has already been raced (sync never touches those).
+has already been raced (sync never touches those). A custom label also opts
+that round out of result corrections: sync only corrects a raced round while
+its label matches the circuit the schedule shows at that number, which is how
+it tells a revised result from a renumbered calendar. It says so on every run.
 
 ## Populating data
 
@@ -92,7 +95,8 @@ has already been raced (sync never touches those).
 f1 sync --season 2026
 ```
 Fetches the calendar and every completed-but-missing round from the
-Jolpica-F1 API, updates this folder, and rebuilds the database. A
+Jolpica-F1 API, corrects earlier rounds whose results were revised since
+they were fetched, updates this folder, and rebuilds the database. A
 scheduled GitHub Action does the same twice a week (data files only),
 so after `git pull` the CSV/JSON here are usually already current — run
 `f1 sync` once to rebuild the database from them.

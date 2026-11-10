@@ -7,19 +7,24 @@ One idempotent command that replaces the manual fetch-race/refresh-bio dance:
    cancellations and sprint flags).
 2. Results: fetch every completed round missing from the season CSV and
    splice it in. Rounds whose results aren't posted yet are skipped politely.
-3. Roster: drivers who appear in results but not in the season JSON get a
+3. Revisions: compare the rounds already in the CSV with the season's results
+   as the API has them now, and correct what changed. Jolpica revises results
+   after the fact (a penalty on Monday, a disqualification a week later), and
+   every scenario is built from these points.
+4. Roster: drivers who appear in results but not in the season JSON get a
    stub scaffolded from the API (substitutes, mid-season rookies).
-4. Bios: career/palmarès counts refresh automatically when new rounds land
+5. Bios: career/palmarès counts refresh automatically when new rounds land
    (`--bio` forces, `--no-bio` skips). Timestamps only move on real changes.
-5. Rebuild: championships + stats are regenerated once whenever the database
-   is behind the CSV — new results, a `git pull`, an unfinished rebuild —
-   unless --no-reprocess (used by CI, which only syncs data files).
+6. Rebuild: championships + stats are regenerated once whenever the database
+   is behind the CSV — new or corrected results, a `git pull`, an unfinished
+   rebuild — unless --no-reprocess (used by CI, which only syncs data files).
 
 Data files are written after every fetch has succeeded, so an interrupted run
 leaves its rounds missing and the next run simply does them over.
 
-A run with nothing to do makes one API call and touches no files, so it is
-safe on a timer, in CI, or behind a UI button.
+A run with nothing to do makes a handful of API calls (the schedule, and the
+season's results a page at a time) and touches no files, so it is safe on a
+timer, in CI, or behind a UI button.
 
 It refuses to write during an unfinished merge or rebase, and warns when the
 checkout is behind its upstream, because these are the files data-sync.yml
@@ -31,6 +36,7 @@ import json
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import httpx
 import typer
@@ -113,6 +119,65 @@ def _add_driver_stubs(
     return changed
 
 
+Revisions = dict[int, dict[str, tuple[int, int]]]
+
+
+def _revised_results(
+    raw: dict[str, Any],
+    schedule: list[dict[str, Any]],
+    race_data: dict[str, dict[int, int]],
+    sprint_data: dict[str, dict[int, int]],
+    raced_rounds: set[int],
+    season: int,
+    *,
+    client: httpx.Client,
+) -> tuple[Revisions, Revisions]:
+    """(race, sprint) points the API now reports differently from the CSV."""
+    rounds, warnings = sync_service.confirm_rounds(raw, schedule, raced_rounds)
+    for line in warnings:
+        typer.echo(f"[warn] {line}")
+    if not rounds:
+        return {}, {}
+    try:
+        races = jolpica_service.fetch_season_results(season, client=client)
+        sprints = jolpica_service.fetch_season_sprints(season, client=client)
+    except jolpica_service.JolpicaError as e:
+        typer.echo(f"[warn] could not recheck earlier results: {e}")
+        return {}, {}
+    return (
+        sync_service.plan_revisions(race_data, races, rounds=rounds),
+        sync_service.plan_revisions(sprint_data, sprints, rounds=rounds),
+    )
+
+
+def _describe(changes: dict[str, tuple[int, int]]) -> str:
+    return ", ".join(f"{code} {old} -> {new}" for code, (old, new) in changes.items())
+
+
+def _revision_lines(race_fixes: Revisions, sprint_fixes: Revisions) -> list[str]:
+    lines = [(rnd, 0, f"round {rnd} ({_describe(c)})") for rnd, c in race_fixes.items()]
+    lines += [
+        (rnd, 1, f"round {rnd} sprint ({_describe(c)})") for rnd, c in sprint_fixes.items()
+    ]
+    return [text for _, _, text in sorted(lines)]
+
+
+def _apply_revisions(
+    points: dict[str, dict[int, int]],
+    fixes: Revisions,
+    drivers: list[str],
+    race_data: dict[str, dict[int, int]],
+    sprint_data: dict[str, dict[int, int]],
+) -> None:
+    for rnd, changes in fixes.items():
+        for code, (_, new) in changes.items():
+            if code not in race_data:  # first seen in a corrected result
+                race_data[code] = {}
+                sprint_data.setdefault(code, {})
+                drivers.append(code)
+            points.setdefault(code, {})[rnd] = new
+
+
 def _database_is_behind(settings: Settings, season: int, csv_path: Path) -> bool:
     return csv_path.exists() and not rebuild.is_current(settings, season)
 
@@ -191,6 +256,10 @@ def run(
         )
         today = datetime.now(timezone.utc).date()
         missing = sync_service.plan_missing_rounds(schedule, raced_rounds, today=today)
+        race_fixes, sprint_fixes = _revised_results(
+            raw, schedule, race_data, sprint_data, raced_rounds, season, client=client
+        )
+        revised = _revision_lines(race_fixes, sprint_fixes)
 
         if dry_run:
             _, changes = sync_service.merge_schedule(
@@ -200,13 +269,21 @@ def run(
                 typer.echo(f"  calendar: {line}")
             for rnd in missing:
                 typer.echo(f"  results: would fetch round {rnd}")
+            for line in revised:
+                typer.echo(f"  results: would correct {line}")
             behind = reprocess and _database_is_behind(settings, season, csv_path)
             if behind:
                 typer.echo("  database: would rebuild (behind the CSV)")
-            if not changes and not missing and not behind:
+            if not changes and not missing and not revised and not behind:
                 typer.echo("Season is up to date.")
             typer.echo("(dry run — nothing written)")
             return
+
+        # --- Revisions ----------------------------------------------------
+        _apply_revisions(race_data, race_fixes, drivers, race_data, sprint_data)
+        _apply_revisions(sprint_data, sprint_fixes, drivers, race_data, sprint_data)
+        for line in revised:
+            typer.echo(f"  corrected {line}")
 
         # --- Results ------------------------------------------------------
         fetched: list[int] = []
@@ -229,7 +306,7 @@ def run(
                 f"  round {rnd}: {len(race)} race results"
                 + (f", {len(sprint)} sprint results" if sprint else "")
             )
-        if fetched:
+        if fetched or sprint_fixes:
             raced_rounds |= set(fetched)
             raced_sprints |= {
                 r for per_driver in sprint_data.values() for r in per_driver
@@ -261,15 +338,19 @@ def run(
         refresh_bio.save_season_json(json_path, raw)
         typer.echo(f"[OK] wrote {json_path.name}")
 
-    if fetched:
+    if fetched or revised:
         race_csv.save(csv_path, drivers, race_data, sprint_data)
-        typer.echo(f"[OK] wrote {csv_path.name} (rounds {fetched})")
+        wrote = [f"rounds {fetched}"] if fetched else []
+        if revised:
+            corrected = sorted(set(race_fixes) | set(sprint_fixes))
+            wrote.append(f"corrected rounds {corrected}")
+        typer.echo(f"[OK] wrote {csv_path.name} ({', '.join(wrote)})")
 
     rebuilt = reprocess and _database_is_behind(settings, season, csv_path)
     if rebuilt:
         rebuild.rebuild_season(settings, season, echo=typer.echo)
-    elif fetched:
+    elif fetched or revised:
         typer.echo("Skipping reprocess (--no-reprocess). Run the build before serving.")
 
-    if not (fetched or cal_changes or roster_changed or bio_changed or rebuilt):
+    if not (fetched or revised or cal_changes or roster_changed or bio_changed or rebuilt):
         typer.echo(f"Season {season} is up to date — nothing to do.")

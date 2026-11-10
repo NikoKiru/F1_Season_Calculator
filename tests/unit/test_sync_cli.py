@@ -104,6 +104,14 @@ def sync_env(tmp_path: Path, monkeypatch):
             else (_ for _ in ()).throw(jolpica_service.RoundNotFoundError("no data"))
         ),
     )
+    # The season-wide results the recheck compares the CSV with. Empty means
+    # the API has nothing to say, so a test opts in with _api_results().
+    monkeypatch.setattr(
+        jolpica_service, "fetch_season_results", lambda season, *, client=None: {}
+    )
+    monkeypatch.setattr(
+        jolpica_service, "fetch_season_sprints", lambda season, *, client=None: {}
+    )
     monkeypatch.setattr(
         jolpica_service, "fetch_driver_career", lambda jid, *, client: None
     )
@@ -486,3 +494,136 @@ def test_sync_warns_when_the_checkout_is_behind_upstream(sync_env, tmp_path: Pat
     assert result.exit_code == 0, result.output
     assert "1 commit behind" in result.output
     assert "git pull" in result.output
+
+
+# --- revised results ------------------------------------------------------
+# The seed CSV has round 1 as VER 25, NOR 18. Jolpica corrects results after
+# the fact, and the CSV has to follow or every scenario is built on old points.
+
+
+def _api_results(sync_env, races: dict, sprints: dict | None = None) -> None:
+    sync_env.monkeypatch.setattr(
+        jolpica_service, "fetch_season_results", lambda season, *, client=None: races
+    )
+    sync_env.monkeypatch.setattr(
+        jolpica_service,
+        "fetch_season_sprints",
+        lambda season, *, client=None: sprints or {},
+    )
+
+
+def test_sync_corrects_a_revised_result(sync_env):
+    _nothing_to_fetch(sync_env)
+    _api_results(sync_env, {1: {"VER": 18, "NOR": 25}})
+
+    result = runner.invoke(cli_app, ["sync", "--season", str(SEASON), "--no-bio"])
+
+    assert result.exit_code == 0, result.output
+    assert sync_env.csv_path.read_text(encoding="utf-8").splitlines() == [
+        "Driver,1", "VER,18", "NOR,25",
+    ]
+    assert "round 1" in result.output
+    assert "VER 25 -> 18" in result.output
+    assert sync_env.rebuild_calls == [SEASON]
+    assert "up to date" not in result.output.lower()
+
+
+def test_sync_leaves_matching_results_alone(sync_env):
+    _nothing_to_fetch(sync_env)
+    _api_results(sync_env, {1: {"VER": 25, "NOR": 18}})
+    before = sync_env.csv_path.read_bytes()
+
+    result = runner.invoke(cli_app, ["sync", "--season", str(SEASON), "--no-bio"])
+
+    assert result.exit_code == 0, result.output
+    assert sync_env.csv_path.read_bytes() == before
+    assert sync_env.rebuild_calls == []
+    assert "up to date" in result.output.lower()
+
+
+def test_sync_zeroes_a_driver_who_lost_the_result(sync_env):
+    _nothing_to_fetch(sync_env)
+    _api_results(sync_env, {1: {"VER": 25}})
+
+    result = runner.invoke(cli_app, ["sync", "--season", str(SEASON), "--no-bio"])
+
+    assert result.exit_code == 0, result.output
+    assert sync_env.csv_path.read_text(encoding="utf-8").splitlines() == [
+        "Driver,1", "VER,25", "NOR,0",
+    ]
+
+
+def test_sync_adds_a_sprint_that_was_missing_at_first_fetch(sync_env):
+    _nothing_to_fetch(sync_env)
+    _api_results(
+        sync_env, {1: {"VER": 25, "NOR": 18}}, sprints={1: {"VER": 8, "NOR": 7}}
+    )
+
+    result = runner.invoke(cli_app, ["sync", "--season", str(SEASON), "--no-bio"])
+
+    assert result.exit_code == 0, result.output
+    assert sync_env.csv_path.read_text(encoding="utf-8").splitlines() == [
+        "Driver,1,1s", "VER,25,8", "NOR,18,7",
+    ]
+    assert "round 1 sprint" in result.output
+
+
+def test_sync_dry_run_reports_revisions_without_writing(sync_env):
+    _nothing_to_fetch(sync_env)
+    _api_results(sync_env, {1: {"VER": 18, "NOR": 25}})
+    before = sync_env.csv_path.read_bytes()
+
+    result = runner.invoke(cli_app, ["sync", "--season", str(SEASON), "--dry-run"])
+
+    assert result.exit_code == 0, result.output
+    assert sync_env.csv_path.read_bytes() == before
+    assert "would correct round 1" in result.output
+    assert "up to date" not in result.output.lower()
+    assert sync_env.rebuild_calls == []
+
+
+def test_sync_does_not_recheck_a_round_that_became_another_race(sync_env):
+    # The schedule now has Shanghai at round 1, the season file Australia.
+    sync_env.monkeypatch.setattr(
+        jolpica_service,
+        "fetch_schedule",
+        lambda season, *, client=None: [
+            {"round": 1, "name": "Chinese GP", "circuit_id": "shanghai",
+             "country": "China", "date": "2020-03-08", "has_sprint": False},
+        ],
+    )
+    _api_results(sync_env, {1: {"VER": 18, "NOR": 25}})
+    before = sync_env.csv_path.read_bytes()
+
+    result = runner.invoke(cli_app, ["sync", "--season", str(SEASON), "--no-bio"])
+
+    assert result.exit_code == 0, result.output
+    assert sync_env.csv_path.read_bytes() == before
+    assert "not rechecked" in result.output
+    assert sync_env.rebuild_calls == []
+
+
+def test_sync_carries_on_when_the_recheck_cannot_reach_the_api(sync_env):
+    def unreachable(season, *, client=None):
+        raise jolpica_service.JolpicaError("rate limited")
+
+    sync_env.monkeypatch.setattr(jolpica_service, "fetch_season_results", unreachable)
+
+    result = runner.invoke(cli_app, ["sync", "--season", str(SEASON), "--no-bio"])
+
+    assert result.exit_code == 0, result.output
+    assert "could not recheck" in result.output
+    # The new round still lands.
+    assert sync_env.csv_path.read_text(encoding="utf-8").splitlines()[0] == "Driver,1,2,2s"
+
+
+def test_sync_does_not_recheck_the_rounds_it_just_fetched(sync_env):
+    # Round 2 arrives in this run; the season feed can still lag behind it.
+    _api_results(sync_env, {1: {"VER": 25, "NOR": 18}, 2: {"VER": 1, "NOR": 2}})
+
+    result = runner.invoke(cli_app, ["sync", "--season", str(SEASON), "--no-bio"])
+
+    assert result.exit_code == 0, result.output
+    assert sync_env.csv_path.read_text(encoding="utf-8").splitlines() == [
+        "Driver,1,2,2s", "VER,25,25,8", "NOR,18,18,7",
+    ]

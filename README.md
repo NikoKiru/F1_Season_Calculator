@@ -91,6 +91,9 @@ git pull         # the bot commits new results on Mondays and Thursdays
 f1 sync          # fetches anything still missing, rebuilds if the data changed
 ```
 
+Sync also compares the rounds it already has with the results as Jolpica reports them
+now, and corrects the CSV when a penalty or disqualification changed them afterwards.
+
 A running server picks up new data and a finished rebuild by itself. If the pull
 brought code changes, run `(cd web && npm ci && npm run build)` when `web/` changed,
 and restart the server when Python changed. Run `f1 sync --dry-run` to see the plan
