@@ -1,44 +1,15 @@
-"""Batch-insert generated championships into SQLite.
+"""Write the drivers' championship (WDC) scenarios of a season.
 
-Uses stdlib sqlite3 directly (not SQLAlchemy) to avoid per-row ORM overhead
-during the 2^N-1 insert path — the pipeline is a CLI-only operation and can
-safely take over the connection exclusively.
+The work is in `season_writer`, shared with `constructor_writer`.
 """
 from __future__ import annotations
 
-import sqlite3
 from collections.abc import Callable
 from pathlib import Path
 
-import numpy as np
-
-from app.pipeline.combinator import race_combinations, rank_standings, total_combinations
+from app.pipeline import season_writer
 from app.pipeline.csv_loader import LoadedSeason
-
-# championship_id is set explicitly: the table is AUTOINCREMENT, and after a
-# clear_season + reprocess cycle sqlite_sequence keeps counting from the old
-# maximum — auto-assigned ids would drift from the ids we pair with
-# position_results rows.
-INSERT_CHAMPIONSHIP = (
-    "INSERT INTO championship_results "
-    "(championship_id, season, num_races, rounds, standings, winner, points) "
-    "VALUES (?, ?, ?, ?, ?, ?, ?)"
-)
-INSERT_POSITION = (
-    "INSERT INTO position_results (championship_id, driver_code, position, points, season) "
-    "VALUES (?, ?, ?, ?, ?)"
-)
-
-
-def _tune_for_bulk_load(conn: sqlite3.Connection) -> None:
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA synchronous=OFF")
-    conn.execute("PRAGMA temp_store=MEMORY")
-    conn.execute("PRAGMA cache_size=-200000")
-
-
-def _restore_safe(conn: sqlite3.Connection) -> None:
-    conn.execute("PRAGMA synchronous=NORMAL")
+from app.pipeline.tables import DRIVERS
 
 
 def process_season(
@@ -49,95 +20,19 @@ def process_season(
     on_progress: Callable[[int, int], None] | None = None,
 ) -> int:
     """Generate + insert every weekend combination for one season. Returns row count."""
-    drivers = loaded.drivers
-    scores = loaded.combined
-    countback = loaded.countback
-    round_numbers = loaded.round_numbers.tolist()
-    num_weekends = scores.shape[1]
-    total = total_combinations(num_weekends)
-
-    conn = sqlite3.connect(db_path)
-    try:
-        _tune_for_bulk_load(conn)
-        conn.execute("BEGIN IMMEDIATE")
-
-        next_id = (
-            conn.execute(
-                "SELECT COALESCE(MAX(championship_id), 0) FROM championship_results"
-            ).fetchone()[0]
-            + 1
-        )
-
-        champ_buf: list[tuple] = []
-        stand_buf: list[tuple[np.ndarray, np.ndarray]] = []
-        inserted = 0
-
-        for subset in race_combinations(num_weekends):
-            ordered_drivers, ordered_scores = rank_standings(
-                drivers, scores, subset, countback
-            )
-            rounds_str = ",".join(str(round_numbers[i]) for i in subset)
-            standings_str = ",".join(ordered_drivers.tolist())
-            points_str = ",".join(str(int(p)) for p in ordered_scores)
-            winner = str(ordered_drivers[0])
-
-            cid = next_id + len(champ_buf)
-            champ_buf.append(
-                (cid, season, len(subset), rounds_str, standings_str, winner, points_str)
-            )
-            stand_buf.append((ordered_drivers, ordered_scores))
-
-            if len(champ_buf) >= batch_size:
-                _flush(conn, champ_buf, stand_buf, next_id, season)
-                next_id += len(champ_buf)
-                inserted += len(champ_buf)
-                champ_buf.clear()
-                stand_buf.clear()
-                if on_progress:
-                    on_progress(inserted, total)
-
-        if champ_buf:
-            _flush(conn, champ_buf, stand_buf, next_id, season)
-            inserted += len(champ_buf)
-            if on_progress:
-                on_progress(inserted, total)
-
-        conn.commit()
-        _restore_safe(conn)
-        return inserted
-    finally:
-        conn.close()
-
-
-def _flush(
-    conn: sqlite3.Connection,
-    champ_buf: list[tuple],
-    stand_buf: list[tuple[np.ndarray, np.ndarray]],
-    start_id: int,
-    season: int,
-) -> None:
-    conn.executemany(INSERT_CHAMPIONSHIP, champ_buf)
-
-    position_rows: list[tuple] = []
-    for offset, (ordered_drivers, ordered_scores) in enumerate(stand_buf):
-        cid = start_id + offset
-        for pos, (driver, points) in enumerate(
-            zip(ordered_drivers.tolist(), ordered_scores.tolist(), strict=True), start=1
-        ):
-            position_rows.append((cid, driver, pos, int(points), season))
-    conn.executemany(INSERT_POSITION, position_rows)
+    return season_writer.write_season(
+        db_path,
+        DRIVERS,
+        loaded.drivers,
+        loaded.combined,
+        loaded.countback,
+        loaded.round_numbers,
+        season,
+        batch_size=batch_size,
+        on_progress=on_progress,
+    )
 
 
 def clear_season(db_path: Path, season: int) -> None:
-    """Remove all championship + position rows for a season. Used before reprocess."""
-    conn = sqlite3.connect(db_path)
-    try:
-        conn.execute("BEGIN IMMEDIATE")
-        conn.execute("DELETE FROM season_builds WHERE season = ?", (season,))
-        conn.execute("DELETE FROM position_results WHERE season = ?", (season,))
-        conn.execute("DELETE FROM championship_results WHERE season = ?", (season,))
-        conn.execute("DELETE FROM driver_statistics WHERE season = ?", (season,))
-        conn.execute("DELETE FROM win_probability_cache WHERE season = ?", (season,))
-        conn.commit()
-    finally:
-        conn.close()
+    """Remove every driver-side row for a season. Used before a reprocess."""
+    season_writer.clear_season(db_path, DRIVERS, season)

@@ -16,6 +16,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from app.config import Settings
+from app.data.schema import SCHEMA_VERSION
 from app.pipeline import (
     constructor_builder,
     constructor_stats_compute,
@@ -37,6 +38,8 @@ def is_current(settings: Settings, season: int) -> bool:
         return False
     conn = sqlite3.connect(settings.database_path)
     try:
+        if conn.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION:
+            return False  # built into a layout this code no longer reads
         row = conn.execute(
             "SELECT csv_sha256 FROM season_builds WHERE season = ?", (season,)
         ).fetchone()

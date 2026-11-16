@@ -3,7 +3,7 @@
 For N races we emit sum_{r=1..N} C(N, r) = 2^N - 1 combinations. A 24-race
 season yields 16,777,215 — this is the heavy inner loop of the pipeline.
 
-We stay lazy (generator) so the writer can stream batches straight into SQLite
+We stay lazy (generators) so the writer can stream batches straight into SQLite
 without materializing the full set in memory.
 """
 from __future__ import annotations
@@ -22,6 +22,24 @@ def race_combinations(num_races: int) -> Iterator[tuple[int, ...]]:
     """Yield 0-based race-index tuples for every non-empty subset."""
     for r in range(1, num_races + 1):
         yield from itertools.combinations(range(num_races), r)
+
+
+def subset_batches(num_races: int, batch_size: int) -> Iterator[np.ndarray]:
+    """The subsets of `race_combinations`, in the same order, as index arrays.
+
+    Each array has shape (subsets, length) and holds subsets of one length,
+    at most `batch_size` of them, so a batch can be ranked in one go.
+    """
+    for length in range(1, num_races + 1):
+        combos = itertools.combinations(range(num_races), length)
+        while True:
+            flat = np.fromiter(
+                itertools.chain.from_iterable(itertools.islice(combos, batch_size)),
+                dtype=np.intp,
+            )
+            if flat.size == 0:
+                break
+            yield flat.reshape(-1, length)
 
 
 def total_combinations(num_races: int) -> int:
@@ -63,3 +81,23 @@ def rank_standings(
     subset_countback = countback[:, races].sum(axis=1)
     order = np.lexsort((-subset_countback, -subset_scores))
     return drivers[order], subset_scores[order]
+
+
+def rank_batch(
+    scores: np.ndarray, countback: np.ndarray, subsets: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """`rank_standings` for a whole batch of subsets at once.
+
+    Takes the (subsets, length) index array `subset_batches` yields. Returns
+    (order, points), both shaped (subsets, entries): `order[i]` lists entry
+    indices from first place down for subset i, and `points[i]` their points
+    in that order. The season is 2^N - 1 subsets, so this is the path the
+    writers take; one call replaces thousands of `rank_standings` calls.
+    """
+    selected = np.zeros((subsets.shape[0], scores.shape[1]), dtype=np.int64)
+    np.put_along_axis(selected, subsets, 1, axis=1)
+    subset_scores = selected @ scores.T
+    subset_countback = selected @ countback.T
+    # lexsort is stable, so entries level on both keys keep their array order.
+    order = np.lexsort((-subset_countback, -subset_scores), axis=1)
+    return order, np.take_along_axis(subset_scores, order, axis=1)

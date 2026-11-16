@@ -1,10 +1,32 @@
 """Canonical schema definition — single source of truth.
 
-Schema matches the old db.py exactly so both apps can read the same SQLite
-file during parallel-run. When we introduce Alembic migrations, the baseline
-revision captures this schema.
+The database is derived from the season CSVs, so there are no data migrations.
+`SCHEMA_VERSION` is kept in `PRAGMA user_version`. When a database carries an
+older version, `init_schema` drops what changed shape and every build stamp,
+and the next `f1 sync` rebuilds each season into the current layout.
 """
 from sqlalchemy import Connection, text
+
+# 2: position tables keyed by (season, entry, position, championship_id) with
+#    no rowid and no points column; result tables keep three indexes.
+SCHEMA_VERSION = 2
+
+# Run once on a database below SCHEMA_VERSION, before SCHEMA_STATEMENTS. Every
+# statement must be safe on an empty file and on any earlier layout.
+MIGRATION_STATEMENTS: tuple[str, ...] = (
+    "DROP TABLE IF EXISTS position_results",
+    "DROP TABLE IF EXISTS constructor_position_results",
+    "DROP INDEX IF EXISTS idx_winner",
+    "DROP INDEX IF EXISTS idx_num_races",
+    "DROP INDEX IF EXISTS idx_winner_num_races",
+    "DROP INDEX IF EXISTS idx_season",
+    "DROP INDEX IF EXISTS idx_season_winner",
+    "DROP INDEX IF EXISTS idx_constructor_winner",
+    "DROP INDEX IF EXISTS idx_constructor_num_races",
+    "DROP INDEX IF EXISTS idx_constructor_season",
+    "DROP INDEX IF EXISTS idx_constructor_season_winner",
+    "DROP TABLE IF EXISTS season_builds",
+)
 
 SCHEMA_STATEMENTS: tuple[str, ...] = (
     """
@@ -18,13 +40,13 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
         points TEXT NOT NULL
     )
     """,
-    "CREATE INDEX IF NOT EXISTS idx_winner ON championship_results (winner)",
-    "CREATE INDEX IF NOT EXISTS idx_num_races ON championship_results (num_races)",
-    "CREATE INDEX IF NOT EXISTS idx_winner_num_races ON championship_results (winner, num_races)",
+    # Every index is maintained on each of the 2^N - 1 inserts of a rebuild, so
+    # there is one per access path: the scenario search, the season listing
+    # (longest first) and one winner's list (longest first).
     "CREATE INDEX IF NOT EXISTS idx_rounds ON championship_results (rounds)",
-    "CREATE INDEX IF NOT EXISTS idx_season ON championship_results (season)",
-    "CREATE INDEX IF NOT EXISTS idx_season_winner ON championship_results (season, winner)",
     "CREATE INDEX IF NOT EXISTS idx_season_num_races ON championship_results (season, num_races)",
+    "CREATE INDEX IF NOT EXISTS idx_season_winner_num_races "
+    "ON championship_results (season, winner, num_races)",
     """
     CREATE TABLE IF NOT EXISTS driver_statistics (
         driver_code TEXT NOT NULL,
@@ -39,19 +61,19 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
         PRIMARY KEY (driver_code, season)
     )
     """,
+    # One row per entry per scenario, which makes this the bulk of the file.
+    # The table is its own index: the key reads "this driver's scenarios at
+    # this position, in id order", and ids run shortest scenario first. The
+    # points at that position are in championship_results.points.
     """
     CREATE TABLE IF NOT EXISTS position_results (
-        championship_id INTEGER NOT NULL,
+        season INTEGER NOT NULL,
         driver_code TEXT NOT NULL,
         position INTEGER NOT NULL,
-        points INTEGER NOT NULL,
-        season INTEGER NOT NULL DEFAULT 2025,
-        PRIMARY KEY (championship_id, driver_code),
-        FOREIGN KEY (championship_id) REFERENCES championship_results(championship_id)
-    )
+        championship_id INTEGER NOT NULL,
+        PRIMARY KEY (season, driver_code, position, championship_id)
+    ) WITHOUT ROWID
     """,
-    "CREATE INDEX IF NOT EXISTS idx_driver_position ON position_results (driver_code, position)",
-    "CREATE INDEX IF NOT EXISTS idx_position_season ON position_results (season, driver_code, position)",
     """
     CREATE TABLE IF NOT EXISTS win_probability_cache (
         driver_code TEXT NOT NULL,
@@ -107,11 +129,9 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
         points TEXT NOT NULL
     )
     """,
-    "CREATE INDEX IF NOT EXISTS idx_constructor_winner ON constructor_championship_results (winner)",
-    "CREATE INDEX IF NOT EXISTS idx_constructor_num_races ON constructor_championship_results (num_races)",
-    "CREATE INDEX IF NOT EXISTS idx_constructor_season ON constructor_championship_results (season)",
-    "CREATE INDEX IF NOT EXISTS idx_constructor_season_winner ON constructor_championship_results (season, winner)",
     "CREATE INDEX IF NOT EXISTS idx_constructor_season_num_races ON constructor_championship_results (season, num_races)",
+    "CREATE INDEX IF NOT EXISTS idx_constructor_season_winner_num_races "
+    "ON constructor_championship_results (season, winner, num_races)",
     """
     CREATE TABLE IF NOT EXISTS constructor_statistics (
         constructor_name TEXT NOT NULL,
@@ -128,17 +148,13 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
     """,
     """
     CREATE TABLE IF NOT EXISTS constructor_position_results (
-        championship_id INTEGER NOT NULL,
+        season INTEGER NOT NULL,
         constructor_name TEXT NOT NULL,
         position INTEGER NOT NULL,
-        points INTEGER NOT NULL,
-        season INTEGER NOT NULL,
-        PRIMARY KEY (championship_id, constructor_name),
-        FOREIGN KEY (championship_id) REFERENCES constructor_championship_results(championship_id)
-    )
+        championship_id INTEGER NOT NULL,
+        PRIMARY KEY (season, constructor_name, position, championship_id)
+    ) WITHOUT ROWID
     """,
-    "CREATE INDEX IF NOT EXISTS idx_constructor_position ON constructor_position_results (constructor_name, position)",
-    "CREATE INDEX IF NOT EXISTS idx_constructor_position_season ON constructor_position_results (season, constructor_name, position)",
     """
     CREATE TABLE IF NOT EXISTS constructor_win_probability_cache (
         constructor_name TEXT NOT NULL,
@@ -180,6 +196,13 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
 
 
 def init_schema(conn: Connection) -> None:
+    """Create what is missing, after bringing an older database forward."""
+    version = conn.execute(text("PRAGMA user_version")).scalar_one()
+    if version < SCHEMA_VERSION:
+        for stmt in MIGRATION_STATEMENTS:
+            conn.execute(text(stmt))
     for stmt in SCHEMA_STATEMENTS:
         conn.execute(text(stmt))
+    if version < SCHEMA_VERSION:
+        conn.execute(text(f"PRAGMA user_version = {SCHEMA_VERSION}"))
     conn.commit()
