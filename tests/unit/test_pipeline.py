@@ -158,3 +158,86 @@ def test_csv_loader_sprint_without_matching_race_fails(tmp_path):
     import pytest
     with pytest.raises(csv_loader.CSVLoadError):
         csv_loader.load(csv)
+
+
+# --- the loader reads what a hand-edited file can throw at it -------------
+
+
+def _load(tmp_path, text: str | bytes) -> csv_loader.LoadedSeason:
+    path = tmp_path / "c.csv"
+    path.write_bytes(text if isinstance(text, bytes) else text.encode("utf-8"))
+    return csv_loader.load(path)
+
+
+def _load_fails(tmp_path, text: str) -> str:
+    import pytest
+
+    with pytest.raises(csv_loader.CSVLoadError) as failure:
+        _load(tmp_path, text)
+    return str(failure.value)
+
+
+def test_csv_loader_counts_blank_and_unreadable_cells_as_zero(tmp_path):
+    loaded = _load(tmp_path, "Driver,1,2\nVER,25,\nNOR,DNF,18\n")
+    assert loaded.race_scores.tolist() == [[25, 0], [0, 18]]
+
+
+def test_csv_loader_truncates_decimals(tmp_path):
+    loaded = _load(tmp_path, "Driver,1,2\nVER,12.5,18\nNOR,25.0, 1 \n")
+    assert loaded.race_scores.tolist() == [[12, 18], [25, 1]]
+
+
+def test_csv_loader_pads_a_short_row_with_zeros(tmp_path):
+    loaded = _load(tmp_path, "Driver,1,2\nVER,25\nNOR,18,25\n")
+    assert loaded.race_scores.tolist() == [[25, 0], [18, 25]]
+
+
+def test_csv_loader_skips_blank_lines_and_a_byte_order_mark(tmp_path):
+    loaded = _load(tmp_path, b"\xef\xbb\xbfDriver,1\r\n\r\nver,25\r\n\r\n NOR ,18\r\n")
+    assert loaded.drivers.tolist() == ["VER", "NOR"]
+    assert loaded.race_scores.tolist() == [[25], [18]]
+
+
+def test_csv_loader_refuses_a_row_longer_than_the_header(tmp_path):
+    # pandas read this as an unnamed index column and shifted every value one
+    # place: the "drivers" became 25 and 18.
+    message = _load_fails(tmp_path, "Driver,1,2\nVER,25,18,7\nNOR,18,25\n")
+    assert "VER" in message
+
+
+def test_csv_loader_refuses_a_repeated_column(tmp_path):
+    assert "1" in _load_fails(tmp_path, "Driver,1,1\nVER,25,18\n")
+
+
+def test_csv_loader_refuses_a_row_without_a_driver(tmp_path):
+    _load_fails(tmp_path, "Driver,1\n,25\nNOR,18\n")
+
+
+def test_csv_loader_refuses_duplicate_drivers(tmp_path):
+    _load_fails(tmp_path, "Driver,1\nVER,25\nver,18\n")
+
+
+def test_csv_loader_refuses_an_empty_file_or_one_without_rounds(tmp_path):
+    _load_fails(tmp_path, "")
+    _load_fails(tmp_path, "Driver\nVER\n")
+
+
+def test_csv_loader_reads_a_file_with_rounds_but_no_drivers_yet(tmp_path):
+    loaded = _load(tmp_path, "Driver,1,2\n")
+    assert loaded.drivers.tolist() == []
+    assert loaded.round_numbers.tolist() == [1, 2]
+    assert loaded.race_scores.shape == (0, 2)
+
+
+def test_the_cli_starts_without_pandas():
+    """pandas was a third of the CLI's start-up time, for one read_csv."""
+    import subprocess
+    import sys
+
+    done = subprocess.run(
+        [sys.executable, "-c", "import sys, app.cli; print('pandas' in sys.modules)"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert done.stdout.strip() == "False"
