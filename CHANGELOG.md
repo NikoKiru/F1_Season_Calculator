@@ -56,6 +56,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   notices the old layout and rebuilds once; nothing else needs doing. The file
   on disk keeps its old size, with the freed part reused as rounds are added;
   run `VACUUM` on it if you want the space back now.
+- `f1` commands start in about 0.6 s instead of 1.0 s, and the install is
+  lighter: the season CSV is read with the standard library, so pandas is no
+  longer a dependency. `python-multipart` and `pytest-asyncio` went too, since
+  nothing used them. A row with more values than the header has columns is now
+  an error naming the driver. pandas shifted such a file one column over
+  without a word.
 - `f1 sync` refuses to run during an unfinished git merge or rebase, because it
   rewrites the files being merged, and warns when the checkout is behind its
   upstream. `--dry-run` only warns.

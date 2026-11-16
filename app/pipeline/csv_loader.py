@@ -16,11 +16,11 @@ so the combinator consumes `race + sprint` per weekend as one score.
 """
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 
 from app.pipeline.combinator import countback_weights
 
@@ -77,21 +77,52 @@ def _parse_header(header: list[str]) -> list[tuple[int, str]]:
     return out
 
 
+def _points(cell: str) -> int:
+    """A cell as whole points. Blank or unreadable counts as zero, and a
+    decimal is cut to its whole part."""
+    try:
+        return int(cell)
+    except ValueError:
+        pass
+    try:
+        return int(float(cell))
+    except (ValueError, OverflowError):  # text, nan, inf
+        return 0
+
+
 def load(csv_path: Path) -> LoadedSeason:
     """Parse a season CSV into race/sprint matrices aligned by weekend column."""
     if not csv_path.exists():
         raise CSVLoadError(f"CSV not found: {csv_path}")
 
-    df = pd.read_csv(csv_path, dtype=str)
-    if df.shape[1] < 2:
+    # utf-8-sig drops the byte order mark a spreadsheet export starts with.
+    with csv_path.open("r", newline="", encoding="utf-8-sig") as f:
+        rows = [row for row in csv.reader(f) if any(cell.strip() for cell in row)]
+    if not rows or len(rows[0]) < 2:
         raise CSVLoadError(f"{csv_path.name}: need a driver column + at least one round column")
 
-    drivers = df.iloc[:, 0].astype(str).str.strip().str.upper().to_numpy()
+    header_cols = [cell.strip() for cell in rows[0][1:]]
+    parsed = _parse_header(header_cols)
+    if len(set(parsed)) != len(parsed):
+        repeated = next(c for c in header_cols if header_cols.count(c) > 1)
+        raise CSVLoadError(f"{csv_path.name}: column '{repeated}' appears more than once")
+
+    drivers: list[str] = []
+    values: list[list[int]] = []
+    for row in rows[1:]:
+        code = row[0].strip().upper()
+        if not code:
+            raise CSVLoadError(f"{csv_path.name}: a row has points but no driver code")
+        cells = row[1:]
+        if len(cells) > len(parsed):
+            raise CSVLoadError(
+                f"{csv_path.name}: {code} has {len(cells)} values for {len(parsed)} columns"
+            )
+        drivers.append(code)
+        # A short row is a driver with nothing entered for the later rounds.
+        values.append([_points(cell) for cell in cells] + [0] * (len(parsed) - len(cells)))
     if len(drivers) != len(set(drivers)):
         raise CSVLoadError(f"{csv_path.name}: duplicate driver codes")
-
-    header_cols = [str(c) for c in df.columns[1:]]
-    parsed = _parse_header(header_cols)
 
     # Collect unique rounds in first-appearance order (also the CSV order).
     rounds: list[int] = []
@@ -106,20 +137,14 @@ def load(csv_path: Path) -> LoadedSeason:
     sprint = np.zeros((D, W), dtype=int)
 
     round_to_col = {r: i for i, r in enumerate(rounds)}
-    raw = (
-        df.iloc[:, 1:]
-        .apply(pd.to_numeric, errors="coerce")
-        .fillna(0)
-        .astype(int)
-        .to_numpy()
-    )
+    raw = np.asarray(values, dtype=int).reshape(D, len(parsed))
     for src_idx, (round_num, kind) in enumerate(parsed):
         col = round_to_col[round_num]
         target = race if kind == "race" else sprint
         target[:, col] = raw[:, src_idx]
 
     return LoadedSeason(
-        drivers=drivers,
+        drivers=np.asarray(drivers, dtype=object),
         round_numbers=round_numbers,
         race_scores=race,
         sprint_scores=sprint,
