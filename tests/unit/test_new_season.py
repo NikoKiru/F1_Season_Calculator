@@ -150,6 +150,24 @@ def test_new_season_scaffolds_from_api_with_carry_over(scaffold_env):
     assert new["career"] is None
 
 
+def test_new_season_keeps_a_curated_driver_name(scaffold_env):
+    # The API's "Andrea Kimi Antonelli" is shown as "Kimi Antonelli": a name
+    # edited in one season file has to reach the next one.
+    prev_path = scaffold_env.seasons / f"{PREV}.json"
+    prev = json.loads(prev_path.read_text(encoding="utf-8"))
+    prev["drivers"]["VER"]["name"] = "Max V."
+    prev_path.write_text(json.dumps(prev), encoding="utf-8")
+
+    result = runner.invoke(
+        cli_app,
+        ["new-season", "--season", str(TARGET), "--from-season", str(PREV)],
+    )
+    assert result.exit_code == 0, result.output
+    raw = json.loads(scaffold_env.target_path.read_text(encoding="utf-8"))
+    assert raw["drivers"]["VER"]["name"] == "Max V."
+    assert raw["drivers"]["NEW"]["name"] == "Nina Newbie"
+
+
 def test_new_season_refuses_to_overwrite_without_force(scaffold_env):
     scaffold_env.target_path.write_text("{}", encoding="utf-8")
     result = runner.invoke(cli_app, ["new-season", "--season", str(TARGET)])

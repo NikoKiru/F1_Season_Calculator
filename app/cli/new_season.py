@@ -135,7 +135,8 @@ def run(
                 time.sleep(jolpica_service.THROTTLE_SECONDS)
                 debut = jolpica_service.fetch_driver_first_season(jid, client=client)
             drivers[code] = {
-                "name": info["name"] or carried.get("name", ""),
+                # A name edited by hand (a preferred short form) outlives the API one.
+                "name": carried.get("name") or info["name"],
                 "team": team,
                 "number": info["number"] or carried.get("number", 0),
                 "flag": carried.get("flag") or flags.flag_for(info["nationality"]),

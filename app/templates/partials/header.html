@@ -73,7 +73,7 @@
             <option value="{{ item.label }}"></option>
           {% endfor %}
         </datalist>
-        <button class="global-search__submit" type="submit" aria-label="Search">Go</button>
+        <button class="global-search__submit" type="submit">Go</button>
       </form>
       <script type="application/json" id="nav-search-data">{{ (nav_search or []) | tojson }}</script>
       <button type="button" class="copy-link" data-copy-link

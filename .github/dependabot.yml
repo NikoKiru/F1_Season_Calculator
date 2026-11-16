@@ -13,7 +13,7 @@ updates:
       - "dependencies"
       - "python"
     commit-message:
-      prefix: "deps"
+      prefix: "chore"
       include: "scope"
     groups:
       # Group minor and patch updates together
@@ -37,7 +37,7 @@ updates:
       - "dependencies"
       - "javascript"
     commit-message:
-      prefix: "deps"
+      prefix: "chore"
       include: "scope"
     groups:
       npm-minor-patch:

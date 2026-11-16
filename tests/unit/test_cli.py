@@ -44,6 +44,46 @@ def cli_settings(tmp_path, monkeypatch):
     season_service.clear_cache()
 
 
+def test_piped_output_is_utf8_whatever_the_platform_default(monkeypatch):
+    """Windows encodes a pipe in the ANSI code page. The manager reads the CLI
+    as UTF-8, so "…" and "—" arrived as "?" boxes, and a character outside the
+    code page would abort the command."""
+    import io
+    import sys
+
+    from app import cli
+
+    raw = io.BytesIO()
+    piped = io.TextIOWrapper(raw, encoding="cp1252", errors="strict")
+    monkeypatch.setattr(sys, "stdout", piped)
+    monkeypatch.setattr(sys, "stderr", piped)
+
+    cli.use_utf8_when_piped()
+    sys.stdout.write("Fetching… → done")
+    sys.stdout.flush()
+
+    assert raw.getvalue().decode("utf-8") == "Fetching… → done"
+
+
+def test_a_console_keeps_its_own_encoding(monkeypatch):
+    import io
+    import sys
+
+    from app import cli
+
+    class Console(io.TextIOWrapper):
+        def isatty(self) -> bool:
+            return True
+
+    console = Console(io.BytesIO(), encoding="cp1252")
+    monkeypatch.setattr(sys, "stdout", console)
+    monkeypatch.setattr(sys, "stderr", console)
+
+    cli.use_utf8_when_piped()
+
+    assert console.encoding == "cp1252"
+
+
 def test_help_lists_all_commands():
     result = runner.invoke(cli_app, ["--help"])
     assert result.exit_code == 0
