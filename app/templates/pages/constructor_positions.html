@@ -10,7 +10,7 @@
 </section>
 
 <section class="section" aria-label="Podium">
-  <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: var(--s-3)">
+  <div class="grid podium-picker">
     {% for pos in [1, 2, 3] %}
       <button class="btn" data-position="{{ pos }}" aria-pressed="false" aria-controls="position-results">
         <span class="position-chip {% if pos == 1 %}position-chip--gold{% elif pos == 2 %}position-chip--silver{% else %}position-chip--bronze{% endif %}">P{{ pos }}</span>

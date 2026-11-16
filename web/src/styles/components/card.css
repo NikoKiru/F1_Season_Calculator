@@ -177,3 +177,32 @@
 .grid--stats {
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
 }
+/* A phone fits one 180px tile per row, which made a driver page nine tiles
+ * of scrolling before any chart. Two per row keeps a stat readable. */
+@media (max-width: 640px) {
+  .grid--stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* An odd tile out takes the full row instead of leaving a hole beside it. */
+  .grid--stats > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Positions pages: the three podium buttons share one row at any width.
+ * minmax(0, 1fr) lets a column go narrower than its button's one-line text,
+ * which a bare 1fr does not and which pushed the page sideways on phones. */
+.podium-picker {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-3);
+}
+@media (max-width: 480px) {
+  .podium-picker {
+    gap: var(--s-2);
+  }
+  .podium-picker .btn {
+    flex-direction: column;
+    gap: var(--s-1);
+    padding: var(--s-2);
+  }
+}

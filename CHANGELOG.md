@@ -73,6 +73,18 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Pages no longer scroll sideways on a phone. Driver and constructor pages
+  demanded 340px per chart, more than a 360px phone has, and the podium buttons
+  on Driver and Constructor Positions needed about 415px.
+- On a phone the stat tiles on driver and constructor pages sit two to a row,
+  which halves the scrolling before the first chart.
+- Kimi Antonelli is shown under that name, and `f1 new-season` keeps a driver
+  name edited by hand instead of taking the API's again.
+- The header search button answers to "Go", the text it shows, for screen
+  readers and voice control. Its label said "Search".
+- CLI output read through a pipe is UTF-8 on Windows too. The manager's log
+  showed boxes for "…" and "—", and a character outside the Windows code page
+  would have aborted the command.
 - `f1 sync` corrects results that Jolpica revised after they were fetched, such
   as a time penalty applied the day after or a later disqualification. A round
   used to keep whatever was published first, so the 2026 Mexico City and São

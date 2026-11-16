@@ -1,6 +1,8 @@
 """Typer CLI entry point — `f1 <command>` after install."""
 from __future__ import annotations
 
+import sys
+
 import typer
 
 from app.cli import (
@@ -56,5 +58,19 @@ app.command(
 )(new_season.run)
 
 
+def use_utf8_when_piped() -> None:
+    """Write UTF-8 to a pipe or file, whatever the platform would pick.
+
+    Windows encodes piped output in the ANSI code page. The manager, CI logs
+    and most shells read it as UTF-8, so "…" arrived as a replacement box, and
+    a character outside the code page aborted the command. A console is left
+    alone: it takes text, not bytes.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        if not stream.isatty() and hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
+
 def main() -> None:  # entry point declared in pyproject.toml
+    use_utf8_when_piped()
     app()

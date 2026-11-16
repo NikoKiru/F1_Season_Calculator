@@ -37,6 +37,47 @@ def test_home_renders(client):
     assert 'data-chart="cumulative-points"' in r.text
 
 
+def test_search_button_is_announced_by_the_text_it_shows(client):
+    # The button reads "Go". An aria-label of "Search" replaced that name, so
+    # someone using voice control and saying "click Go" got nothing.
+    html = client.get("/").text
+    button = re.search(r"<button[^>]*global-search__submit[^>]*>(.*?)</button>", html, re.DOTALL)
+    assert button
+    assert button.group(1).strip() == "Go"
+    assert "aria-label" not in button.group(0)
+
+
+@pytest.mark.parametrize("path", ["/driver/VER", "/constructor/red-bull"])
+def test_chart_columns_never_demand_more_than_the_screen(client, path):
+    # A fixed 340px minimum pushed the page sideways on phones narrower than
+    # 372px, which includes the common 360px ones.
+    html = client.get(f"{path}?season={SEASON}").text
+    assert "data-charts-wrapper" in html
+    assert "minmax(340px" not in html
+    assert "minmax(min(340px, 100%), 1fr)" in html
+
+
+@pytest.mark.parametrize("path", ["/driver-positions", "/constructor-positions"])
+def test_podium_buttons_can_shrink_to_fit_a_phone(client, path):
+    # Inline `repeat(3, 1fr)` columns can't go narrower than a button's text,
+    # so three of them overflowed any screen under about 415px.
+    html = client.get(f"{path}?season={SEASON}").text
+    assert 'class="grid podium-picker"' in html
+    assert "repeat(3, 1fr)" not in html
+
+
+def test_antonelli_goes_by_kimi():
+    """Shown as "Kimi Antonelli" everywhere; the API's full name stays out of
+    the season files so every page, search and chart agrees."""
+    from pathlib import Path
+
+    for path in Path("data/seasons").glob("*.json"):
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        driver = raw["drivers"].get("ANT")
+        if driver:
+            assert driver["name"] == "Kimi Antonelli", path.name
+
+
 def test_header_uses_topical_dropdown_nav(client):
     """Regression: the header used to inline 9 links and overflow at typical
     widths. It now renders three top-level dropdown groups (Drivers,
