@@ -47,11 +47,14 @@ Jolpica revises results after the fact, so `f1 sync` also compares every round a
 
 ### Scale
 
-Row counts double with every round. At 18 rounds: 262,143 championships per table, 6M `position_results` rows, 0.9 GB, about 4 minutes to rebuild. A 24-round season is 64 times that. So:
+Row counts double with every round. At 20 rounds: 1,048,575 championships per table, 25M `position_results` rows, 1.3 GB, about 2 minutes to rebuild. A 24-round season is 16 times that. So:
 
 - Treat a full rebuild as expensive and don't run one casually.
+- The write path stays out of per-scenario Python. `season_writer` ranks a batch of subsets per numpy call and has SQLite derive the position rows from each scenario's `standings` text; `season_stats` counts in numpy over chunks of rows. The version this replaced looped in Python and took five times as long.
+- Every index on the result and position tables is maintained 2^N-1 times per rebuild, and `schema.py` keeps one per access path. Add one only for a query the existing ones can't serve.
 - Don't aggregate over `position_results` per request. Add a precomputed cache table in `stats_compute` instead, as `driver_head_to_head` and `driver_position_distribution` do.
-- Position lists depend on insert order. The writers add rows in `championship_id` order and ids run shortest scenario first, so `ORDER BY rowid DESC` returns the longest scenarios from the index with no sort. Keep the writers sequential, or those lists lose their order.
+- Position lists depend on id order. The position tables have no rowid: their primary key is (season, entry, position, championship_id), and ids follow `subset_batches`, shortest scenario first. Reading one entry's position backwards therefore gives the longest scenarios first with no sort. Hand out ids in any other order and those lists lose theirs.
+- The position tables hold no points. A scenario's `standings` and `points` are stored in finishing order, so the points at position P are the P-th value of `points`.
 - Lists can filter by season length only at P1, where `winner` is indexed and `win_probability_cache` has the count. Other positions would need a new per-length cache table and a rebuild.
 
 ### Ranking

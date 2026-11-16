@@ -65,7 +65,7 @@ flowchart LR
 
 The CSV and season JSON are the source of truth. The SQLite database is derived
 from them and can always be rebuilt. Rebuilds are heavy: rows double with every
-round, so an 18-round season is about 0.9 GB and takes about 4 minutes.
+round, so a 20-round season is about 1.3 GB and takes about 2 minutes.
 
 ## Quick start
 
