@@ -190,20 +190,17 @@ def _format_winner_row(row: dict) -> dict:
 
 
 def _format_position_row(row: dict, position: int) -> dict:
-    standings = [d.strip() for d in row["standings"].split(",")]
+    standings = [name.strip() for name in row["standings"].split(",")]
     points_list = [int(p) for p in row["points"].split(",")]
-    driver_points = int(row["driver_points"])
-    margin = (
-        points_list[position - 2] - driver_points
-        if position > 1 and len(points_list) >= position
-        else None
-    )
+    # Standings and points are stored in finishing order.
+    own_points = points_list[position - 1]
+    margin = points_list[position - 2] - own_points if position > 1 else None
     return {
         "championship_id": int(row["championship_id"]),
         "num_races": int(row["num_races"]),
         "rounds": _rounds(row["rounds"]),
         "standings": standings,
-        "driver_points": driver_points,
+        "driver_points": own_points,
         "margin": margin,
     }
 

@@ -185,6 +185,20 @@ def test_position_rows_list_their_rounds(conn, position):
         assert all(isinstance(number, int) for number in row["rounds"])
 
 
+def test_position_rows_carry_the_points_scored_at_that_position(conn):
+    from app.services import championship_service
+
+    rows = driver_service.championships_at_position(
+        conn, "NOR", 2, 9999, page=1, per_page=500
+    )["championships"]
+    assert rows
+    for row in rows:
+        scenario = championship_service.get_by_id(conn, row["championship_id"])
+        assert row["driver_points"] == scenario["driver_points"]["NOR"]
+        leader_points = next(iter(scenario["driver_points"].values()))
+        assert row["margin"] == leader_points - row["driver_points"]
+
+
 def test_position_total_reads_precomputed_distribution(conn):
     """A live COUNT over position_results costs real time on a 24-round
     season, so skew the cache table and expect the skew back."""

@@ -22,6 +22,45 @@ def test_race_combinations_yields_ordered_tuples():
     ]
 
 
+def test_subset_batches_follow_race_combinations_order():
+    # Championship ids are handed out in this order, so it must not change.
+    rows = [
+        tuple(row)
+        for batch in combinator.subset_batches(5, batch_size=4)
+        for row in batch.tolist()
+    ]
+    assert rows == list(combinator.race_combinations(5))
+
+
+def test_subset_batches_hold_one_length_and_stay_within_the_batch_size():
+    for batch in combinator.subset_batches(6, batch_size=7):
+        assert batch.ndim == 2
+        assert 1 <= batch.shape[0] <= 7
+
+
+def test_rank_batch_agrees_with_rank_standings_on_every_subset():
+    # Small scores over few entries, so points ties and countback ties both
+    # occur and the stable fallback to array order is exercised too.
+    rng = np.random.default_rng(7)
+    race = rng.choice([*combinator.SCORING_RACE_POINTS.tolist(), 0, 0], size=(6, 7))
+    sprint = rng.integers(0, 3, size=(6, 7))
+    labels = np.array(["A", "B", "C", "D", "E", "F"], dtype=object)
+    scores = race + sprint
+    countback = combinator.countback_weights(race)
+
+    seen = 0
+    for batch in combinator.subset_batches(7, batch_size=10):
+        order, points = combinator.rank_batch(scores, countback, batch)
+        for row, subset in enumerate(batch.tolist()):
+            want_labels, want_points = combinator.rank_standings(
+                labels, scores, tuple(subset), countback
+            )
+            assert labels[order[row]].tolist() == want_labels.tolist()
+            assert points[row].tolist() == want_points.tolist()
+            seen += 1
+    assert seen == combinator.total_combinations(7)
+
+
 def test_rank_standings_sorts_descending():
     drivers = np.array(["VER", "NOR", "LEC"])
     scores = np.array([[25, 18, 25, 18], [18, 25, 18, 25], [15, 15, 15, 15]])

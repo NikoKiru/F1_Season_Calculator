@@ -70,6 +70,74 @@ def _assert_positions_join(conn: sqlite3.Connection, champ_table: str, pos_table
     assert mismatches == 0
 
 
+def _assert_positions_mirror_standings(
+    conn: sqlite3.Connection, champ_table: str, pos_table: str, entity_col: str
+) -> None:
+    """Every position row names the entry its championship has at that place."""
+    expected = {
+        (cid, position, name)
+        for cid, standings in conn.execute(
+            f"SELECT championship_id, standings FROM {champ_table}"
+        )
+        for position, name in enumerate(standings.split(","), start=1)
+    }
+    actual = set(
+        conn.execute(f"SELECT championship_id, position, {entity_col} FROM {pos_table}")
+    )
+    assert expected
+    assert actual == expected
+
+
+def test_position_rows_mirror_the_stored_standings(tmp_path):
+    db = tmp_path / "wdc.db"
+    _init_db(db)
+    writer.process_season(db, _loaded_season(), season=9999, batch_size=2)
+
+    conn = sqlite3.connect(db)
+    try:
+        _assert_positions_mirror_standings(
+            conn, "championship_results", "position_results", "driver_code"
+        )
+    finally:
+        conn.close()
+
+
+def test_position_rows_survive_names_with_quotes_and_backslashes(tmp_path):
+    # Position rows are derived from the standings text inside SQLite.
+    db = tmp_path / "wcc.db"
+    _init_db(db)
+    built = LoadedConstructorSeason(
+        constructors=np.array(['Team "A"', "B\\C Racing", "O'Neill GP"], dtype=object),
+        round_numbers=np.array([1, 2, 3]),
+        combined=np.array([[30, 10, 20], [20, 25, 10], [5, 30, 5]]),
+        countback=np.zeros((3, 3), dtype=int),
+    )
+    constructor_writer.process_season(db, built, season=9999)
+
+    conn = sqlite3.connect(db)
+    try:
+        _assert_positions_mirror_standings(
+            conn,
+            "constructor_championship_results",
+            "constructor_position_results",
+            "constructor_name",
+        )
+    finally:
+        conn.close()
+
+
+def test_season_without_entries_writes_nothing(tmp_path):
+    db = tmp_path / "wcc.db"
+    _init_db(db)
+    built = LoadedConstructorSeason(
+        constructors=np.empty(0, dtype=object),
+        round_numbers=np.array([1, 2]),
+        combined=np.zeros((0, 2), dtype=int),
+        countback=np.zeros((0, 2), dtype=int),
+    )
+    assert constructor_writer.process_season(db, built, season=9999) == 0
+
+
 def test_rebuild_after_clear_keeps_position_ids_aligned(tmp_path):
     db = tmp_path / "wdc.db"
     _init_db(db)

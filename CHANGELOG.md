@@ -46,6 +46,16 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Rebuilding a season is about five times faster and the database about a third
+  of the size: 15 rounds went from 11.5 s and 111 MB to 2.3 s and 39 MB, and the
+  20-round 2026 season now rebuilds in under 2 minutes into 1.3 GB, where it
+  filled 3.7 GB. Every table holds the same rows as before.
+  Scenarios are ranked a batch at a time instead of one by one, SQLite derives
+  the per-position rows itself, statistics are counted in numpy, and the tables
+  keep only the indexes a query uses. The first `f1 sync` after updating
+  notices the old layout and rebuilds once; nothing else needs doing. The file
+  on disk keeps its old size, with the freed part reused as rounds are added;
+  run `VACUUM` on it if you want the space back now.
 - `f1 sync` refuses to run during an unfinished git merge or rebase, because it
   rewrites the files being merged, and warns when the checkout is behind its
   upstream. `--dry-run` only warns.
@@ -86,6 +96,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   now answer in about 20 ms.
 - Create Championship finds its scenario through the rounds index, in about
   15 ms. The search used to filter the whole season, about 400 ms at 20 rounds.
+- The list of a driver's or constructor's title-winning scenarios opens at once
+  for everyone. For someone who rarely wins, or never, it took 0.4 to 0.65 s at
+  20 rounds, because the page was found by walking the season from its longest
+  scenario down.
 - A season that doesn't exist (`?season=1999`) answers 404. It used to be a 500.
 - Pages answer a bad address with the error page, not raw JSON:
   `/driver/VER/position/abc` is a 404 and `?page=0` a 400 that says what was

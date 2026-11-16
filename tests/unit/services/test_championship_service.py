@@ -153,3 +153,25 @@ def test_scenario_search_is_an_index_lookup(conn):
         text("EXPLAIN QUERY PLAN " + q.BY_ROUNDS), {"r": "1,2", "s": 9999}
     ).all()
     assert any("idx_rounds" in row.detail for row in plan), plan
+
+
+@pytest.mark.parametrize("narrowed", [False, True])
+def test_win_lists_are_read_straight_from_an_index(conn, narrowed):
+    """A rare winner's list used to walk the season from its longest scenario
+    down until it had found a page of wins: 0.4 s and more at 20 rounds."""
+    from sqlalchemy import text
+
+    from app.data.queries import championships as q
+    from app.data.queries import constructors as q_c
+
+    params = {"w": "VER", "s": 9999, "lim": 50, "off": 0}
+    if narrowed:
+        params["n"] = 2
+    for sql, index in (
+        (q.wins_page_sql(narrowed), "idx_season_winner_num_races"),
+        (q_c.wins_page_sql(narrowed), "idx_constructor_season_winner_num_races"),
+    ):
+        plan = conn.execute(text("EXPLAIN QUERY PLAN " + sql), params).all()
+        details = " | ".join(row.detail for row in plan)
+        assert index in details, details
+        assert "TEMP B-TREE" not in details, details

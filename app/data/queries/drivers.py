@@ -108,12 +108,12 @@ def position_driver_counts_from_distribution(
 def position_championships_paginated(
     conn: Connection, driver_code: str, position: int, season: int, limit: int, offset: int
 ) -> tuple[int, list[dict]]:
-    """Longest scenarios first, read straight from the index.
+    """Longest scenarios first, read straight from the position table's key.
 
-    The writer inserts rows in championship_id order and ids follow
-    race_combinations, shortest first, so rowid DESC needs no sort. Joining
-    first and sorting on num_races took over a second for a busy position at
-    18 rounds, and that cost grows 64-fold by round 24.
+    The key ends in championship_id and ids run shortest scenario first, so
+    walking one driver's position backwards needs no sort. Joining first and
+    sorting on num_races took over a second for a busy position at 18 rounds,
+    and that cost grows 64-fold by round 24.
     """
     total = conn.execute(
         text(
@@ -128,11 +128,10 @@ def position_championships_paginated(
     ).one().c
     rows = conn.execute(
         text(
-            "SELECT cr.championship_id, cr.num_races, cr.rounds, cr.standings, cr.points, "
-            "       pr.points AS driver_points "
-            "FROM (SELECT championship_id, points FROM position_results "
+            "SELECT cr.championship_id, cr.num_races, cr.rounds, cr.standings, cr.points "
+            "FROM (SELECT championship_id FROM position_results "
             "      WHERE season = :s AND driver_code = :d AND position = :p "
-            "      ORDER BY rowid DESC LIMIT :lim OFFSET :off) pr "
+            "      ORDER BY championship_id DESC LIMIT :lim OFFSET :off) pr "
             "JOIN championship_results cr ON cr.championship_id = pr.championship_id "
             "ORDER BY cr.championship_id DESC"
         ),

@@ -47,22 +47,29 @@ Jolpica revises results after the fact, so `f1 sync` also compares every round a
 
 ### Scale
 
-Row counts double with every round. At 18 rounds: 262,143 championships per table, 6M `position_results` rows, 0.9 GB, about 4 minutes to rebuild. A 24-round season is 64 times that. So:
+Row counts double with every round. At 20 rounds: 1,048,575 championships per table, 25M `position_results` rows, 1.3 GB, about 2 minutes to rebuild. A 24-round season is 16 times that. So:
 
 - Treat a full rebuild as expensive and don't run one casually.
+- The write path stays out of per-scenario Python. `season_writer` ranks a batch of subsets per numpy call and has SQLite derive the position rows from each scenario's `standings` text; `season_stats` counts in numpy over chunks of rows. The version this replaced looped in Python and took five times as long.
+- Every index on the result and position tables is maintained 2^N-1 times per rebuild, and `schema.py` keeps one per access path. Add one only for a query the existing ones can't serve.
 - Don't aggregate over `position_results` per request. Add a precomputed cache table in `stats_compute` instead, as `driver_head_to_head` and `driver_position_distribution` do.
-- Position lists depend on insert order. The writers add rows in `championship_id` order and ids run shortest scenario first, so `ORDER BY rowid DESC` returns the longest scenarios from the index with no sort. Keep the writers sequential, or those lists lose their order.
+- Position lists depend on id order. The position tables have no rowid: their primary key is (season, entry, position, championship_id), and ids follow `subset_batches`, shortest scenario first. Reading one entry's position backwards therefore gives the longest scenarios first with no sort. Hand out ids in any other order and those lists lose theirs.
+- The position tables hold no points. A scenario's `standings` and `points` are stored in finishing order, so the points at position P are the P-th value of `points`.
 - Lists can filter by season length only at P1, where `winner` is indexed and `win_probability_cache` has the count. Other positions would need a new per-length cache table and a rebuild.
 
 ### Ranking
 
-`combinator.rank_standings` orders by points, then countback, then array (CSV) order. `countback_weights` encodes each scoring position as one digit of a base-(races + 1) number, which keeps the weights additive across any subset and the sort vectorized. Don't replace it with a per-subset Python loop.
+Standings are ordered by points, then countback, then array (CSV) order. `countback_weights` encodes each scoring position as one digit of a base-(races + 1) number, which keeps the weights additive across any subset and the sort vectorized.
+
+`combinator.rank_batch` ranks a whole batch of subsets in one numpy call and is what the writers use. `rank_standings` does one subset and is the reference a test holds `rank_batch` to on every subset. Don't put a per-subset Python loop back on the write path: ranking alone was 15 µs per scenario that way against 1.4 now.
 
 Subsets select weekends, so a round's race and sprint points always travel together, but countback uses race results only. The CSV stores points rather than positions, so countback can't see past P10.
 
 ### Drivers and constructors are mirrored
 
-The WDC and WCC sides are parallel implementations: `writer` / `constructor_writer`, `stats_compute` / `constructor_stats_compute`, `driver_service` / `constructor_service`, `championship_results` / `constructor_championship_results`, and so on. A change to one side usually belongs on the other too. Constructor scores are derived from the driver CSV using each driver's team in the season JSON, which is static for the whole season.
+The WDC and WCC sides store the same shapes under different names: `championship_results` / `constructor_championship_results`, `position_results` / `constructor_position_results`, and so on.
+
+In the pipeline the two sides share their code. `writer` / `constructor_writer` and `stats_compute` / `constructor_stats_compute` are thin wrappers over `season_writer` and `season_stats`, which take the table names from `pipeline/tables.py`. On the request path they are still parallel implementations (`driver_service` / `constructor_service`, `queries/drivers.py` + `queries/championships.py` / `queries/constructors.py`), so a change to one side usually belongs on the other too. Constructor scores are derived from the driver CSV using each driver's team in the season JSON, which is static for the whole season.
 
 ### Request path
 
@@ -86,7 +93,9 @@ Each interactive page has one entry in `web/src/pages/`. A new entry must be lis
 
 ### Schema
 
-`app/data/schema.py` is a list of `CREATE ... IF NOT EXISTS` statements with no migrations. New tables appear on the next `ensure_schema`, but column changes never reach an existing database. `stats_compute` keeps its own DDL for its cache tables so it doesn't re-run index creation on `position_results`, so a table it writes to has to be declared in both places.
+`app/data/schema.py` is a list of `CREATE ... IF NOT EXISTS` statements plus `SCHEMA_VERSION`, which is kept in `PRAGMA user_version`. New tables and indexes appear on the next `ensure_schema`. There are no data migrations, because the database is derived. To change the shape of a table, bump the version and add `DROP ... IF EXISTS` statements to `MIGRATION_STATEMENTS`: `init_schema` then drops the old shape and every build stamp, `rebuild.is_current` calls every season stale, and the next `f1 sync` rebuilds into the new layout.
+
+`stats_compute` and `constructor_stats_compute` keep their own DDL for their cache tables, so that `f1 compute-stats` works on a database that predates them. A table they write to has to be declared in both places.
 
 ## Testing
 

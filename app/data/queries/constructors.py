@@ -91,6 +91,18 @@ def seasons_per_length(conn: Connection, season: int) -> dict[int, int]:
     return {int(r["num_races"]): int(r["total"]) for r in rows}
 
 
+def wins_page_sql(narrowed: bool) -> str:
+    """One page of a constructor's titles, longest first. See the driver
+    version in championships.py."""
+    length = "AND num_races = :n " if narrowed else ""
+    return (
+        "SELECT championship_id, num_races, rounds, standings, points "
+        "FROM constructor_championship_results "
+        f"WHERE season = :s AND winner = :w {length}"
+        "ORDER BY num_races DESC, championship_id DESC LIMIT :lim OFFSET :off"
+    )
+
+
 def winner_paginated(
     conn: Connection,
     season: int,
@@ -100,27 +112,22 @@ def winner_paginated(
     num_races: int | None = None,
 ) -> tuple[int, list[dict]]:
     length = "" if num_races is None else "AND num_races = :n "
-    params = {"c": constructor_name, "s": season}
+    params = {"w": constructor_name, "s": season}
     if num_races is not None:
         params["n"] = num_races
     total = conn.execute(
         text(
             "SELECT COALESCE("
             "  (SELECT SUM(win_count) FROM constructor_win_probability_cache "
-            f"  WHERE constructor_name = :c AND season = :s {length}), "
+            f"  WHERE constructor_name = :w AND season = :s {length}), "
             "  (SELECT COUNT(*) FROM constructor_championship_results "
-            f"  WHERE winner = :c AND season = :s {length})"
+            f"  WHERE winner = :w AND season = :s {length})"
             ") AS c"
         ),
         params,
     ).one().c
     rows = conn.execute(
-        text(
-            "SELECT championship_id, num_races, rounds, standings, points "
-            "FROM constructor_championship_results "
-            f"WHERE winner = :c AND season = :s {length}"
-            "ORDER BY num_races DESC, championship_id DESC LIMIT :lim OFFSET :off"
-        ),
+        text(wins_page_sql(num_races is not None)),
         {**params, "lim": limit, "off": offset},
     ).mappings().all()
     return int(total), [dict(r) for r in rows]
@@ -257,8 +264,8 @@ def position_championships_paginated(
     limit: int,
     offset: int,
 ) -> tuple[int, list[dict]]:
-    """Longest scenarios first, read straight from the index. See the driver
-    version in drivers.py for why rowid DESC gives that order without a sort."""
+    """Longest scenarios first, read straight from the position table's key.
+    See the driver version in drivers.py for why that needs no sort."""
     total = conn.execute(
         text(
             "SELECT COALESCE("
@@ -272,11 +279,10 @@ def position_championships_paginated(
     ).one().c
     rows = conn.execute(
         text(
-            "SELECT cr.championship_id, cr.num_races, cr.rounds, cr.standings, "
-            "       cr.points, pr.points AS constructor_points "
-            "FROM (SELECT championship_id, points FROM constructor_position_results "
+            "SELECT cr.championship_id, cr.num_races, cr.rounds, cr.standings, cr.points "
+            "FROM (SELECT championship_id FROM constructor_position_results "
             "      WHERE season = :s AND constructor_name = :c AND position = :p "
-            "      ORDER BY rowid DESC LIMIT :lim OFFSET :off) pr "
+            "      ORDER BY championship_id DESC LIMIT :lim OFFSET :off) pr "
             "JOIN constructor_championship_results cr "
             "  ON cr.championship_id = pr.championship_id "
             "ORDER BY cr.championship_id DESC"

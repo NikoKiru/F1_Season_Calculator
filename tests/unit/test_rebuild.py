@@ -130,6 +130,18 @@ def test_database_from_before_build_tracking_counts_as_stale(settings):
     assert not rebuild.is_current(settings, SEASON)
 
 
+def test_build_under_an_older_schema_counts_as_stale(settings):
+    # The stamp matches the CSV, but the tables it vouches for have changed
+    # shape since: only a rebuild fills the new ones.
+    _build(settings)
+    con = sqlite3.connect(settings.database_path)
+    con.execute("PRAGMA user_version = 1")
+    con.commit()
+    con.close()
+
+    assert not rebuild.is_current(settings, SEASON)
+
+
 def test_build_of_one_season_says_nothing_about_another(settings):
     other = SEASON - 1
     (settings.data_folder / f"championships_{other}.csv").write_text(CSV, encoding="utf-8")
