@@ -190,3 +190,45 @@ def test_header_controls_fit_on_screen(live_server, page, width):
         assert page.locator("[data-hamburger]").bounding_box()["width"] == 40
     assert page.locator(".brand-text").is_visible() == (width >= 360)
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+
+
+# Records every opacity transition inside <main> from the first moment of the
+# page load, before any of the page's own scripts run.
+_FADE_RECORDER = """
+window.__fades = [];
+addEventListener("transitionrun", (e) => {
+  if (e.propertyName === "opacity" && e.target.closest && e.target.closest("main")) {
+    window.__fades.push(e.target.className || e.target.tagName);
+  }
+}, true);
+"""
+
+
+@pytest.mark.parametrize("path", ["/", "/drivers", "/driver/VER", "/championship/1"])
+def test_content_on_screen_at_load_is_never_hidden(live_server, page, path):
+    # The scroll reveal is for content further down. Anything already on
+    # screen was painted visible, so hiding and fading it in reads as a flash.
+    page.add_init_script(_FADE_RECORDER)
+    page.set_viewport_size({"width": 1280, "height": 2400})
+    page.goto(f"{live_server}{path}")
+    page.wait_for_timeout(1000)
+    assert page.evaluate("window.__fades") == []
+    assert page.evaluate(
+        """[...document.querySelectorAll("main .section, main .grid > *, main .stack > *")]
+             .every((el) => getComputedStyle(el).opacity === "1")"""
+    )
+
+
+def test_content_below_the_fold_reveals_on_scroll(live_server, page):
+    page.set_viewport_size({"width": 390, "height": 500})
+    page.goto(f"{live_server}/driver/VER")
+    hidden = page.locator("html[data-reveal-ready] .reveal:not(.is-in)")
+    assert hidden.count() > 0, "expected content below the fold to wait for the scroll"
+    # Step down the page: one huge jump would skip sections past the
+    # viewport without them ever intersecting it.
+    while page.evaluate("scrollY + innerHeight < document.documentElement.scrollHeight - 1"):
+        page.mouse.wheel(0, 300)
+        page.wait_for_timeout(50)
+    page.wait_for_function(
+        "document.querySelectorAll('html[data-reveal-ready] .reveal:not(.is-in)').length === 0"
+    )

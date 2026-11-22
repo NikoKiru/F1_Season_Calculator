@@ -79,6 +79,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Pages no longer flash as they load. Cards and sections already on screen
+  were hidden and faded back in just after they appeared; now only content
+  further down the page rises in as you scroll to it.
 - Pages no longer scroll sideways on a phone. Driver and constructor pages
   demanded 340px per chart, more than a 360px phone has, and the podium buttons
   on Driver and Constructor Positions needed about 415px.
