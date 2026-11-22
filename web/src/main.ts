@@ -243,24 +243,28 @@ function bindHeaderState(): void {
 }
 
 /* ── Scroll reveal ──────────────────────────────────────────────────── */
-/* Sections rise in as they enter the viewport; card grids stagger their
- * children. Fully inert without JS or with reduced motion — content is
- * only hidden after [data-reveal-ready] is stamped on <html>. */
+/* Sections below the fold rise in as they enter the viewport; card grids
+ * stagger their children. Content already on screen at load is never
+ * touched: it has been painted, so hiding it to fade it back in flashes.
+ * Fully inert without JS or with reduced motion — content is only hidden
+ * after [data-reveal-ready] is stamped on <html>. */
+
+interface RevealTarget {
+  el: HTMLElement;
+  stagger?: number;
+}
 
 function bindReveal(): void {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   if (!("IntersectionObserver" in window)) return;
 
-  const targets: HTMLElement[] = [];
+  const candidates: RevealTarget[] = [];
   const staggered = new Set<Element>();
 
   const stagger = (group: HTMLElement) => {
     let i = 0;
     for (const child of Array.from(group.children)) {
-      const el = child as HTMLElement;
-      el.classList.add("reveal");
-      el.style.setProperty("--reveal-i", String(Math.min(i++, 10)));
-      targets.push(el);
+      candidates.push({ el: child as HTMLElement, stagger: Math.min(i++, 10) });
     }
     staggered.add(group);
   };
@@ -273,11 +277,20 @@ function bindReveal(): void {
   }
   for (const section of $$<HTMLElement>("main .section")) {
     if ([...staggered].some((g) => section.contains(g))) continue;
-    section.classList.add("reveal");
-    targets.push(section);
+    candidates.push({ el: section });
   }
+
+  // Measure everything before hiding anything. A rect read after .reveal is
+  // applied forces the browser to commit opacity 0 to content it has already
+  // painted, which is exactly the flash this avoids.
+  const fold = window.innerHeight * 0.95;
+  const targets = candidates.filter(({ el }) => el.getBoundingClientRect().top >= fold);
   if (targets.length === 0) return;
 
+  for (const { el, stagger: i } of targets) {
+    el.classList.add("reveal");
+    if (i !== undefined) el.style.setProperty("--reveal-i", String(i));
+  }
   document.documentElement.dataset.revealReady = "true";
 
   const io = new IntersectionObserver(
@@ -291,13 +304,7 @@ function bindReveal(): void {
     { rootMargin: "0px 0px -8% 0px", threshold: 0.05 },
   );
 
-  // Anything already on screen reveals instantly (same frame — no flicker);
-  // everything below the fold animates on scroll.
-  const fold = window.innerHeight * 0.95;
-  for (const el of targets) {
-    if (el.getBoundingClientRect().top < fold) el.classList.add("is-in");
-    else io.observe(el);
-  }
+  for (const { el } of targets) io.observe(el);
 }
 
 bindHamburger();
